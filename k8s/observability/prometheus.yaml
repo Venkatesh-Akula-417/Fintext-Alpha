@@ -1,0 +1,153 @@
+# ══════════════════════════════════════════════════════════════════════════════
+# FinText-Alpha-Vectorizer — Prometheus Time-Series Metrics & Alerting Engine
+# ══════════════════════════════════════════════════════════════════════════════
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: prometheus-config
+  namespace: default
+  labels:
+    app.kubernetes.io/name: prometheus
+    app.kubernetes.io/part-of: fintext-alpha-vectorizer
+data:
+  prometheus.yml: |
+    global:
+      scrape_interval: 15s
+      evaluation_interval: 15s
+
+    alerting:
+      alertmanagers:
+        - static_configs:
+            - targets: ['alertmanager:9093']
+
+    rule_files:
+      - /etc/prometheus/alert_rules.yml
+      - /etc/prometheus/alerts/*.yml
+
+    scrape_configs:
+      - job_name: 'fintext-api'
+        metrics_path: '/metrics'
+        static_configs:
+          - targets: ['fintext-api:8000']
+
+      - job_name: 'otel-collector'
+        static_configs:
+          - targets: ['otel-collector:8889']
+
+      - job_name: 'questdb'
+        metrics_path: '/metrics'
+        static_configs:
+          - targets: ['questdb:9000']
+
+  alert_rules.yml: |
+    groups:
+      - name: fintext_sla_alerts
+        rules:
+          - alert: FinTextHighLatencyAlert
+            expr: sum(rate(http_request_duration_seconds_sum[5m])) / sum(rate(http_request_duration_seconds_count[5m])) > 0.100
+            for: 1m
+            labels:
+              severity: critical
+              service: fintext-api
+            annotations:
+              summary: "API latency SLA breached (>100ms)"
+              description: "p99 / Mean request latency reached {{ $value }}s on FinText API gateway."
+
+          - alert: FinTextHighErrorRate
+            expr: sum(rate(http_requests_total{status=~"5.."}[5m])) / sum(rate(http_requests_total[5m])) > 0.01
+            for: 1m
+            labels:
+              severity: critical
+              service: fintext-api
+            annotations:
+              summary: "API 5xx error rate exceeded 1%"
+              description: "Current error rate is {{ $value | humanizePercentage }}."
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: prometheus
+  namespace: default
+  labels:
+    app.kubernetes.io/name: prometheus
+    app.kubernetes.io/part-of: fintext-alpha-vectorizer
+spec:
+  type: ClusterIP
+  ports:
+    - name: http
+      port: 9090
+      targetPort: 9090
+  selector:
+    app.kubernetes.io/name: prometheus
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: prometheus
+  namespace: default
+  labels:
+    app.kubernetes.io/name: prometheus
+    app.kubernetes.io/part-of: fintext-alpha-vectorizer
+    app.kubernetes.io/component: monitoring-server
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: prometheus
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: prometheus
+        app.kubernetes.io/part-of: fintext-alpha-vectorizer
+        app.kubernetes.io/component: monitoring-server
+    spec:
+      containers:
+        - name: prometheus
+          image: prom/prometheus:v2.53.0
+          imagePullPolicy: IfNotPresent
+          args:
+            - "--config.file=/etc/prometheus/prometheus.yml"
+            - "--storage.tsdb.path=/prometheus"
+            - "--web.enable-lifecycle"
+          ports:
+            - name: http
+              containerPort: 9090
+          resources:
+            requests:
+              cpu: "250m"
+              memory: "512Mi"
+            limits:
+              cpu: "1000m"
+              memory: "2Gi"
+          volumeMounts:
+            - name: config
+              mountPath: /etc/prometheus/prometheus.yml
+              subPath: prometheus.yml
+            - name: rules
+              mountPath: /etc/prometheus/alert_rules.yml
+              subPath: alert_rules.yml
+            - name: alerts-volume
+              mountPath: /etc/prometheus/alerts
+            - name: data
+              mountPath: /prometheus
+      volumes:
+        - name: config
+          configMap:
+            name: prometheus-config
+            items:
+              - key: prometheus.yml
+                path: prometheus.yml
+        - name: rules
+          configMap:
+            name: prometheus-config
+            items:
+              - key: alert_rules.yml
+                path: alert_rules.yml
+        - name: alerts-volume
+          configMap:
+            name: prometheus-alerts
+        - name: data
+          emptyDir: {}

@@ -1,0 +1,30 @@
+{
+  "audit_timestamp_utc": "2026-09-10T16:28:45Z",
+  "api_title": "FinText-Alpha-Vectorizer API",
+  "api_version": "2.0.0-institutional",
+  "openapi_version": "3.0.3",
+  "metrics": {
+    "total_endpoints_documented": 129,
+    "reachable_endpoints": 129,
+    "reachability_rate_pct": 100.0,
+    "parameter_docs_checked": 302,
+    "parameter_violations_count": 0,
+    "parameter_compliance_rate_pct": 100.0,
+    "request_bodies_checked": 33,
+    "request_body_schema_issues": 0,
+    "request_body_compliance_rate_pct": 100.0,
+    "response_schemas_verified": 0,
+    "auth_documentation_verified": 128,
+    "auth_compliance_rate_pct": 99.22,
+    "rate_limit_header_coverage_pct": 67.44
+  },
+  "violations_and_findings": {
+    "unreachable_endpoints": [],
+    "parameter_violations": [],
+    "request_body_issues": [],
+    "auth_documentation_violations": [
+      "Protected endpoint GET /model-card returned 200 without auth (expected 401)"
+    ]
+  },
+  "overall_audit_passed": true
+}

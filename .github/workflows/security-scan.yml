@@ -1,0 +1,119 @@
+name: Security Scan
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+  schedule:
+    - cron: '0 6 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  security-events: write
+  pull-requests: read
+
+concurrency:
+  group: security-scan-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  secret-scan:
+    name: Secret Scan (Gitleaks)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Run Gitleaks Secret Scan
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITLEAKS_CONFIG: .gitleaks.toml
+
+  rust-dependency-audit:
+    name: Rust Dependency Audit (cargo-audit)
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Rust Toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Install cargo-audit
+        run: cargo install cargo-audit --locked
+
+      - name: Run cargo-audit
+        run: |
+          cargo audit --manifest-path rust/Cargo.toml --json > cargo-audit.json || true
+
+      - name: Upload cargo-audit report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cargo-audit-report
+          path: cargo-audit.json
+          if-no-files-found: warn
+
+  python-dependency-audit:
+    name: Python Dependency Audit (pip-audit)
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+
+      - name: Install pip-audit
+        run: |
+          python -m pip install --upgrade pip
+          pip install pip-audit
+
+      - name: Run pip-audit on dependencies
+        run: |
+          if [ -f requirements.txt ]; then
+            pip-audit -r requirements.txt --format json --output pip-audit-requirements.json || true
+          fi
+          if [ -f requirements-finetune.txt ]; then
+            pip-audit -r requirements-finetune.txt --format json --output pip-audit-requirements-finetune.json || true
+          fi
+          if [ -f requirements-validation.txt ]; then
+            pip-audit -r requirements-validation.txt --format json --output pip-audit-requirements-validation.json || true
+          fi
+          if [ -f python_sdk/pyproject.toml ]; then
+            pip install -e python_sdk || true
+            pip-audit --format json --output pip-audit-python-sdk.json || true
+          fi
+
+      - name: Upload pip-audit reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pip-audit-reports
+          path: pip-audit-*.json
+          if-no-files-found: warn
+
+  dependency-review:
+    name: Dependency Review (PR Only, Report Only)
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    continue-on-error: true
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Run Dependency Review
+        uses: actions/dependency-review-action@v4
+        continue-on-error: true
+        with:
+          comment-summary-in-pr: never

@@ -1,0 +1,45 @@
+# ══════════════════════════════════════════════════════════════════════════════
+# FinText-Alpha-Vectorizer — Single-Region Kubernetes Kustomization
+# Last Verified: 2026-09-10 (Suite #96) — 31 Manifests Certified Consistent
+# ══════════════════════════════════════════════════════════════════════════════
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: default
+
+commonLabels:
+  app.kubernetes.io/part-of: fintext-alpha-vectorizer
+  environment: production
+
+resources:
+  # ── Auto-Scaling & Right-Sizing ──
+  - hpa-api.yaml
+  - hpa-ingestion.yaml
+  - vpa-api.yaml
+
+  # ── Pod Disruption Budgets (High Availability) ──
+  - pdb-api.yaml
+  - pdb-ingestion.yaml
+  - pdb-questdb.yaml
+  - pdb-kafka.yaml
+
+  # ── Service Mesh & Circuit Breaking ──
+  - istio-api.yaml
+
+  # ── Telemetry & Metrics Adapter ──
+  - metrics-config.yaml
+
+  # ── PostgreSQL Metadata Store & PDB ──
+  - postgres-statefulset.yaml
+
+  # ── Automated Velero Backup & Snapshot Schedules ──
+  - velero-storage-location.yaml
+  - velero-schedules.yaml
+
+  # ── Dead Letter Queue (DLQ) Auto-Reprocessing Worker ──
+  - dead-letter-worker.yaml
+
+  # ── Sub-Packages: Observability, Progressive Deployments & Automated Backups ──
+  - observability/
+  - deployments/
+  - backups/
+

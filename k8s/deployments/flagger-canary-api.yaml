@@ -1,0 +1,55 @@
+# ══════════════════════════════════════════════════════════════════════════════
+# FinText-Alpha-Vectorizer — Flagger Canary Release for Axum HTTP/WS Gateway
+# ══════════════════════════════════════════════════════════════════════════════
+# Orchestrates progressive traffic shifting (10% -> 50%) with automatic rollback
+# on latency breaches (>100ms) or success rate drops (<99%).
+# ══════════════════════════════════════════════════════════════════════════════
+
+apiVersion: flagger.app/v1beta1
+kind: Canary
+metadata:
+  name: fintext-api
+  namespace: default
+  labels:
+    app.kubernetes.io/name: fintext-api
+    app.kubernetes.io/part-of: fintext-alpha-vectorizer
+    app.kubernetes.io/component: progressive-delivery
+spec:
+  provider: istio
+  targetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: fintext-api
+  progressDeadlineSeconds: 300
+  service:
+    port: 8000
+    targetPort: 8000
+    gateways:
+      - istio-system/public-gateway
+    hosts:
+      - "api.fintext.internal"
+      - "api.fintext.local"
+    trafficPolicy:
+      tls:
+        mode: DISABLE
+  analysis:
+    interval: 30s
+    threshold: 5
+    maxWeight: 50
+    stepWeight: 10
+    metrics:
+      - name: request-success-rate
+        thresholdRange:
+          min: 99
+        interval: 1m
+      - name: request-duration
+        thresholdRange:
+          max: 100
+        interval: 30s
+    webhooks:
+      - name: "load-test-verification"
+        type: rollout
+        url: http://flagger-loadtester.default/
+        timeout: 5s
+        metadata:
+          cmd: "hey -z 15s -q 20 -c 2 http://fintext-api-canary:8000/health"

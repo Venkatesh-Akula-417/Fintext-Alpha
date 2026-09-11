@@ -1,0 +1,29 @@
+apiVersion: autoscaling.k8s.io/v1
+kind: VerticalPodAutoscaler
+metadata:
+  name: fintext-api-vpa
+  namespace: default
+  labels:
+    app.kubernetes.io/name: fintext-api
+    app.kubernetes.io/part-of: fintext-alpha-vectorizer
+    app.kubernetes.io/component: api-gateway
+spec:
+  targetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: fintext-api
+  updatePolicy:
+    # Set to 'Off' (Recommendation Mode) to avoid disruptive pod restarts
+    # and prevent conflicts with the Horizontal Pod Autoscaler (HPA).
+    updateMode: "Off"
+  resourcePolicy:
+    containerPolicies:
+      - containerName: fintext-api
+        minAllowed:
+          cpu: "250m"
+          memory: "512Mi"
+        maxAllowed:
+          cpu: "4000m"
+          memory: "8Gi"
+        controlledResources: ["cpu", "memory"]
+        controlledValues: RequestsAndLimits

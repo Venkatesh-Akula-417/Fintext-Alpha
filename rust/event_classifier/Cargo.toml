@@ -1,0 +1,15 @@
+[package]
+name = "fintext_event_classifier"
+version = "0.1.0"
+edition = "2021"
+description = "Ultra-high-performance corporate event taxonomy classifier for FinText Alpha Vectorizer"
+authors = ["FinText Alpha Engineering Team"]
+
+[lib]
+name = "fintext_event_classifier"
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+pyo3 = { version = "0.29", features = ["extension-module"] }
+regex = "1.10"
+once_cell = "1.19"

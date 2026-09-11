@@ -1,0 +1,15 @@
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: fintext-api-pdb
+  namespace: default
+  labels:
+    app.kubernetes.io/name: fintext-api
+    app.kubernetes.io/part-of: fintext-alpha-vectorizer
+    app.kubernetes.io/component: api-gateway
+spec:
+  # Ensure at least 1 API Gateway pod remains available during voluntary node drains / upgrades
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: fintext-api

@@ -1,0 +1,83 @@
+# ══════════════════════════════════════════════════════════════════════════════
+# FinText-Alpha-Vectorizer — Dead Letter Queue (DLQ) Auto-Reprocessing Worker
+# ══════════════════════════════════════════════════════════════════════════════
+# Subscribes to Kafka topic (sentiment-dlq), retries with exponential backoff,
+# and routes exhausted messages to S3 or local quarantine fallback.
+# ══════════════════════════════════════════════════════════════════════════════
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: fintext-dead-letter-worker
+  namespace: default
+  labels:
+    app.kubernetes.io/name: fintext-dead-letter-worker
+    app.kubernetes.io/part-of: fintext-alpha-vectorizer
+    app.kubernetes.io/component: dlq-reprocessing
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: fintext-dead-letter-worker
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: fintext-dead-letter-worker
+        app.kubernetes.io/part-of: fintext-alpha-vectorizer
+        app.kubernetes.io/component: dlq-reprocessing
+    spec:
+      containers:
+        - name: dead-letter-worker
+          image: ghcr.io/fintext-alpha/fintext_dead_letter_worker:latest
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: KAFKA_BOOTSTRAP_SERVERS
+              value: "kafka:9092"
+            - name: KAFKA_DLQ_TOPIC
+              value: "sentiment-dlq"
+            - name: KAFKA_REPROCESS_TOPIC
+              value: "sentiment-updates"
+            - name: KAFKA_GROUP_ID
+              value: "fintext-dlq-worker"
+            - name: S3_QUARANTINE_BUCKET
+              value: "fintext-dlq-quarantine"
+            - name: LOCAL_QUARANTINE_DIR
+              value: "/app/data/quarantine/"
+            - name: DLQ_MAX_RETRIES
+              value: "5"
+            - name: DLQ_INITIAL_BACKOFF_MS
+              value: "100"
+            - name: DLQ_MAX_BACKOFF_MS
+              value: "5000"
+            - name: DLQ_MOCK_MODE
+              value: "false"
+            - name: RUST_LOG
+              value: "info"
+          resources:
+            requests:
+              cpu: "50m"
+              memory: "64Mi"
+            limits:
+              cpu: "250m"
+              memory: "256Mi"
+          volumeMounts:
+            - name: quarantine-storage
+              mountPath: /app/data/quarantine
+      volumes:
+        - name: quarantine-storage
+          emptyDir: {}
+
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: fintext-dead-letter-worker-pdb
+  namespace: default
+  labels:
+    app.kubernetes.io/name: fintext-dead-letter-worker
+    app.kubernetes.io/part-of: fintext-alpha-vectorizer
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: fintext-dead-letter-worker

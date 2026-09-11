@@ -1,0 +1,53 @@
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: fintext-ingestion-hpa
+  namespace: default
+  labels:
+    app.kubernetes.io/name: fintext-ingestion
+    app.kubernetes.io/part-of: fintext-alpha-vectorizer
+    app.kubernetes.io/component: ingestion-engine
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: fintext-ingestion
+  minReplicas: 1
+  maxReplicas: 5
+  metrics:
+    # ── CPU Utilization Target ────────────────────────────────────────────────
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 60
+
+    # ── External Metric: Kafka / Redpanda Consumer Group Lag ───────────────────
+    # Requires KEDA or Prometheus Adapter to scale worker pool under ingestion bursts
+    - type: External
+      external:
+        metric:
+          name: kafka_consumergroup_lag
+          selector:
+            matchLabels:
+              topic: sentiment-events
+        target:
+          type: Value
+          value: "1000"
+
+  behavior:
+    scaleUp:
+      stabilizationWindowSeconds: 0
+      selectPolicy: Max
+      policies:
+        - type: Percent
+          value: 50
+          periodSeconds: 30
+    scaleDown:
+      stabilizationWindowSeconds: 300
+      selectPolicy: Min
+      policies:
+        - type: Pods
+          value: 1
+          periodSeconds: 120

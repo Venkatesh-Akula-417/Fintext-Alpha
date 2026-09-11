@@ -1,0 +1,15 @@
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: fintext-ingestion-pdb
+  namespace: default
+  labels:
+    app.kubernetes.io/name: fintext-ingestion
+    app.kubernetes.io/part-of: fintext-alpha-vectorizer
+    app.kubernetes.io/component: ingestion-engine
+spec:
+  # Guarantee at least 1 ingestion pipeline daemon remains running to prevent feed buffer overflows
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: fintext-ingestion

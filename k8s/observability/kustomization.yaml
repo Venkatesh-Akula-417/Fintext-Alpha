@@ -1,0 +1,15 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: default
+
+commonLabels:
+  app.kubernetes.io/part-of: fintext-alpha-vectorizer
+  environment: production
+  tier: observability
+
+resources:
+  - opentelemetry-collector.yaml
+  - prometheus.yaml
+  - grafana.yaml
+  - loki.yaml
+  - anomaly-detector.yaml

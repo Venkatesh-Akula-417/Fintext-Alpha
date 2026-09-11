@@ -1,0 +1,33 @@
+[2m2026-09-10T16:30:46.072313Z[0m [32m INFO[0m [2mfintext_api[0m[2m:[0m ═══════════════════════════════════════════════════════════════════════════
+[2m2026-09-10T16:30:46.072449Z[0m [32m INFO[0m [2mfintext_api[0m[2m:[0m  FinText-Alpha-Vectorizer — Native Rust Axum API Gateway & WebSocket Push
+[2m2026-09-10T16:30:46.072462Z[0m [32m INFO[0m [2mfintext_api[0m[2m:[0m ═══════════════════════════════════════════════════════════════════════════
+[2m2026-09-10T16:30:46.072762Z[0m [32m INFO[0m [2mfintext_api[0m[2m:[0m  [Production Mode Guard] INACTIVE (development/testing mode). Mocks and fallbacks enabled.
+[2m2026-09-10T16:30:46.072868Z[0m [32m INFO[0m [2mfintext_api[0m[2m:[0m [Secrets Manager] Provider: 'env' (Region: 'us-east-1', ARN: '[NONE]')
+[2m2026-09-10T16:30:46.073012Z[0m [32m INFO[0m [2mfintext_api[0m[2m:[0m [Kafka Subscriber] Subscribed to broker='localhost:9092', topic='sentiment-updates', group='fintext-api-websocket' (WS capacity: 1024)
+[2m2026-09-10T16:30:46.073054Z[0m [32m INFO[0m [2mfintext_api_server::streaming::kafka_consumer[0m[2m:[0m [Kafka Subscriber] Running in offline/mock mode (enabled=true, mock_mode=true).
+[2m2026-09-10T16:30:47.583346Z[0m [33m WARN[0m [2mfintext_api[0m[2m:[0m [Auth, Metering, Webhooks, Universes, Transcripts, IP Whitelist, News, Digest, Kafka, FIX, DLQ, Provenance & Audit Logs] PostgreSQL not available at 'postgres://fintext:fintext': pool timed out while waiting for an open connection. Events will be tracked in-memory/fallback mode.
+[2m2026-09-10T16:30:47.583582Z[0m [32m INFO[0m [2mfintext_api_server::metering[0m[2m:[0m [Usage Metering] Background batch worker started (Batch size: 100, Flush interval: 1000ms)
+[2m2026-09-10T16:30:47.583989Z[0m [32m INFO[0m [2mfintext_api_server::news_articles[0m[2m:[0m [News Articles] Seeded 8 mock institutional financial news articles
+[2m2026-09-10T16:30:47.584298Z[0m [32m INFO[0m [2mfintext_api[0m[2m:[0m [Security] JWT Auth, API Keys & Per-User Rate Limiting initialized (Limit: 100 reqs / 60s, Secret: [MASKED], Admin Token: [MASKED], DB: OFFLINE/FALLBACK)
+[2m2026-09-10T16:30:47.584455Z[0m [32m INFO[0m [2mfintext_api[0m[2m:[0m [Database Circuit Breaker] Initialized: enabled=true, failure_threshold=5, recovery_timeout=30000ms, half_open_max_probes=2
+[2m2026-09-10T16:30:47.584530Z[0m [32m INFO[0m [2mfintext_api[0m[2m:[0m [Cache Governance] Initialized: default_ttl=300s, max_capacity=10000, cleanup_interval=60s
+[2m2026-09-10T16:30:47.584858Z[0m [32m INFO[0m [2mfintext_api_server::pit[0m[2m:[0m [PIT Engine] Loading Point-in-Time configuration from: ./config
+[2m2026-09-10T16:30:47.586100Z[0m [32m INFO[0m [2mfintext_api_server::pit[0m[2m:[0m [PIT Engine] Initialized: 10 ticker intervals, 51 delisted securities, 558 S&P 500 members
+[2m2026-09-10T16:30:47.586151Z[0m [32m INFO[0m [2mfintext_api_server::sector[0m[2m:[0m [SectorMap] Loading GICS sector mapping from: D:\FinText-Alpha-Vectorizer\config\sector_mapping.csv
+[2m2026-09-10T16:30:47.586272Z[0m [32m INFO[0m [2mfintext_api_server::sector[0m[2m:[0m [SectorMap] Initialized with 10 sectors and 97 total mapped tickers
+[2m2026-09-10T16:30:47.586320Z[0m [32m INFO[0m [2mfintext_api_server::symbol_map[0m[2m:[0m [SymbolMap] Loading permanent identifiers from: ./config/permanent_identifiers.json
+[2m2026-09-10T16:30:47.586411Z[0m [32m INFO[0m [2mfintext_api_server::symbol_map[0m[2m:[0m [SymbolMap] Loaded 11 tickers, 10 FIGIs, 10 CUSIPs, 10 ISINs
+[2m2026-09-10T16:30:47.586475Z[0m [32m INFO[0m [2mfintext_api_server::supply_chain[0m[2m:[0m [SupplyChainGraph] Loading supply chain map from: ./config/supply_chain_map.json
+[2m2026-09-10T16:30:47.586570Z[0m [32m INFO[0m [2mfintext_api_server::supply_chain[0m[2m:[0m [SupplyChainGraph] Loading supply chain events from: ./config/supply_chain_events.json
+[2m2026-09-10T16:30:47.586700Z[0m [32m INFO[0m [2mfintext_api_server::supply_chain[0m[2m:[0m [SupplyChainGraph] Initialized with 30 companies in graph and 17 corporate risk events
+[2m2026-09-10T16:30:47.587215Z[0m [32m INFO[0m [2mfintext_api_server::news_articles[0m[2m:[0m [News Articles] Seeded 8 mock institutional financial news articles
+[2m2026-09-10T16:30:47.588196Z[0m [32m INFO[0m [2mfintext_api_server::webhooks[0m[2m:[0m [Webhook Dispatcher] Initialized real-time Kafka event dispatcher worker.
+[2m2026-09-10T16:30:47.588222Z[0m [32m INFO[0m [2mfintext_api_server::kafka_stream[0m[2m:[0m [Kafka Cleanup Worker] Started background cleanup worker (Interval: 600s)
+[2m2026-09-10T16:30:47.588235Z[0m [32m INFO[0m [2mfintext_api_server::polling_webhooks[0m[2m:[0m [Polling Scheduler] Initialized background scheduler (poll frequency: every 60s)
+[2m2026-09-10T16:30:47.588203Z[0m [32m INFO[0m [2mfintext_api_server::digest[0m[2m:[0m [Email Digest Worker] Started background delivery worker (Interval: 3600s)
+[2m2026-09-10T16:30:47.588252Z[0m [32m INFO[0m [2mfintext_api_server::retention[0m[2m:[0m [Retention Worker] Started background data retention enforcement worker (Interval: 21600s)
+[2m2026-09-10T16:30:47.588289Z[0m [32m INFO[0m [2mfintext_api_server::retraining[0m[2m:[0m [Model Retraining] Background retraining worker active (Check interval: 60s, Max concurrent: 3)
+[2m2026-09-10T16:30:47.588313Z[0m [32m INFO[0m [2mfintext_api_server::anomaly_worker[0m[2m:[0m [Anomaly Worker] Starting background anomaly detection worker (Interval: 60s, Threshold: |z| >= 2.0)
+[2m2026-09-10T16:30:47.588333Z[0m [32m INFO[0m [2mfintext_api_server::chat_alerts[0m[2m:[0m [Chat Alerts Dispatcher] Background worker started (Interval: 60s)
+[2m2026-09-10T16:30:47.605049Z[0m [32m INFO[0m [2mfintext_api[0m[2m:[0m Server listening on http://0.0.0.0:8099 (REST) and ws://0.0.0.0:8099/ws (WebSocket)
+[2m2026-09-10T16:30:47.943694Z[0m [32m INFO[0m [2mfintext_api_server::handlers::market_regime[0m[2m:[0m [MarketRegime] Computed regime: 'Neutral' (confidence: 0.92, market_sent: 0.0964, breadth: 80.41%, vol_proxy: 0.2344, records: 1455)

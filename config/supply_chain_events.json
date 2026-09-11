@@ -1,0 +1,53 @@
+[
+  {
+    "event_id": "SCE-001",
+    "timestamp_iso": "2020-01-01T00:00:00Z",
+    "event_type": "SUPPLIER_AGREEMENT",
+    "source_company": "TSM",
+    "target_company": "AAPL",
+    "relationship_type": "supplier",
+    "strength": 0.95,
+    "description": "TSMC long-term wafer fabrication supplier agreement with Apple"
+  },
+  {
+    "event_id": "SCE-002",
+    "timestamp_iso": "2020-01-01T00:00:00Z",
+    "event_type": "SUPPLIER_AGREEMENT",
+    "source_company": "TSM",
+    "target_company": "NVDA",
+    "relationship_type": "supplier",
+    "strength": 0.90,
+    "description": "TSMC foundry fabrication partnership with Nvidia"
+  },
+  {
+    "event_id": "SCE-003",
+    "timestamp_iso": "2022-06-01T00:00:00Z",
+    "event_type": "PARTNERSHIP",
+    "source_company": "NVDA",
+    "target_company": "MSFT",
+    "relationship_type": "partner",
+    "strength": 0.85,
+    "description": "Nvidia and Microsoft strategic AI supercomputer infrastructure alliance"
+  },
+  {
+    "event_id": "SCE-004",
+    "timestamp_iso": "2023-01-15T00:00:00Z",
+    "event_type": "SUPPLIER_AGREEMENT",
+    "source_company": "ASML",
+    "target_company": "TSM",
+    "relationship_type": "supplier",
+    "strength": 0.92,
+    "description": "ASML EUV lithography systems delivery to TSMC"
+  },
+  {
+    "event_id": "SCE-005",
+    "timestamp_iso": "2023-09-01T00:00:00Z",
+    "event_type": "SUPPLIER_DIVESTITURE",
+    "source_company": "INTC",
+    "target_company": "AAPL",
+    "relationship_type": "supplier",
+    "strength": 0.0,
+    "is_closure": true,
+    "description": "Apple fully completes transition away from Intel modem and CPU components"
+  }
+]

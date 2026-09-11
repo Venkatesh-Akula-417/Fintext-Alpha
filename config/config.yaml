@@ -1,0 +1,329 @@
+# ══════════════════════════════════════════════════════════════════════════════
+# FinText-Alpha-Vectorizer — Production Native Rust & QuestDB Configuration
+# ══════════════════════════════════════════════════════════════════════════════
+
+# ── Production Mode Guard ──────────────────────────────────────────────────
+# When set to true (or PRODUCTION_MODE=true env var), all synthetic/mock
+# fallbacks are strictly disabled and real external service connections are mandatory.
+production_mode: false
+
+# ── Public API Gateway Surface ─────────────────────────────────────────────
+# Exposes only the 32 core endpoints under versioned prefix (e.g. /v1).
+public_api_version: "v1"
+enable_full_api_surface: false
+
+questdb:
+
+  url: "http://localhost:9000"
+  table: "sentiment_news"
+  ilp_port: 9009
+  pgwire_port: 8812
+  timeout_ms: 3000
+  max_retries: 3
+  triple_timestamp_tracking: true  # Tracks published_utc (designated), ingested_utc, and db_commit_utc for look-ahead bias prevention
+
+questdb_buffer:
+  enabled: true
+  topic: "sentiment-questdb-buffer"
+  consumer_group_id: "fintext-questdb-recovery"
+  retry_max_attempts: 5
+  retry_base_delay_ms: 1000
+  retry_max_delay_ms: 60000
+
+kafka:
+  bootstrap_servers: "localhost:9092"
+  topic: "sentiment-events"
+  realtime_topic: "sentiment-updates"
+  dlq_topic: "sentiment-dlq"
+  delivery_timeout_ms: 5000
+  max_retries: 3
+  enabled: true
+
+streaming:
+  enable_finnhub_websocket: true
+  enable_polygon_websocket: true
+  finnhub_ws_url: "wss://ws.finnhub.io"
+  polygon_ws_url: "wss://socket.polygon.io/options"
+  reconnect_base_delay_ms: 1000
+  reconnect_max_delay_ms: 60000
+
+
+source_weights:
+  Reuters: 1.0
+  SEC_8K: 1.0
+  FOMC: 1.0
+  Financial_Times: 0.8
+  MarketWatch: 0.8
+  Google_News_Finance: 0.8
+  wallstreetbets: 0.5
+  stocks: 0.5
+  investing: 0.5
+  StockTwits: 0.5
+  Google_Trends: 0.6
+
+sentiment_velocity:
+  enabled: true
+  window_minutes: 5
+  threshold: 0.2
+
+api_server:
+  host: "0.0.0.0"
+  port: 8000
+  timeout_seconds: 5
+  workers: 4
+  auth:
+    jwt_secret: "fintext-alpha-vectorizer-institutional-jwt-secret-key-2026"
+    admin_token: "fintext-admin-dev-secret-token"
+    token_expiry_seconds: 3600
+  rate_limit:
+    requests_per_window: 100
+    window_seconds: 60
+  database:
+    url: "postgres://fintext:fintext@localhost:5432/fintext_metadata"
+    max_connections: 10
+    batch_size: 100
+    flush_interval_ms: 1000
+
+ingestion_engine:
+  poll_interval_sec: 30
+  max_tokens: 512
+  tradable_sla_ms: 437
+  sentiment_chunking_enabled: true
+  sentiment_max_tokens: 512
+  sentiment_chunk_overlap_tokens: 16
+
+sentiment_config:
+  model_path: "models/finbert-finetuned/model.onnx"
+  tokenizer_path: "models/finbert-finetuned"
+  fallback_model_path: "models/finbert/finbert.onnx"
+  fallback_tokenizer_path: "models/finbert"
+  fallback_headline_model_path: "models/minilm_seq32/model_static.onnx"
+  fallback_headline_tokenizer_path: "models/minilm_seq32"
+  max_seq_len: 512
+  overlap_tokens: 16
+
+# ── Data Licensing & Source Enablement Matrix ──────────────────────────────────
+# Controls active market data and news ingestion providers to ensure full
+# compliance with commercial redistribution and licensing restrictions.
+sources:
+  sec_edgar:
+    enabled: true
+    redistribution_note: "Public regulatory filing data (SEC EDGAR); safe for commercial redistribution."
+  finnhub:
+    enabled: true
+    redistribution_note: "Active for internal quantitative analytics; verify commercial redistribution license before external distribution."
+  polygon:
+    enabled: true
+    redistribution_note: "Active for internal options microstructure (VPIN/GEX); commercial license required for redistribution."
+  stock_prices:
+    enabled: true
+    provider: "polygon"
+    table: "stock_daily_bars"
+    universe: "AAPL,MSFT,NVDA,GOOGL,AMZN,META,TSLA,SPY"
+    lookback_days: 365
+    poll_interval_seconds: 3600
+    redistribution_note: "Daily aggregate OHLCV price bars for realistic quantitative portfolio backtesting simulation."
+
+sla:
+  default_target_ms: 437
+  compliance_threshold_pct: 99.0
+  latency_metrics_enabled: true
+
+sentiment_model:
+  model_dir: "models/finbert-finetuned"
+  fallback_model_dir: "models/finbert"
+  quantization: "int8"
+  max_sequence_length: 512
+  target_f1_score: 0.88
+
+model_card:
+  model_id: "fintext-sentiment-finbert"
+  model_name: "FinBERT (ProsusAI) Fine-Tuned for Financial Sentiment"
+  architecture: "bert"
+  base_model: "ProsusAI/finbert"
+  fine_tuning_dataset: "financial_phrasebank_and_fiqa"
+  task: "financial_sentiment_classification"
+  precision: "FP16"
+  quantization: "INT8_dynamic"
+  sequence_length: 512
+  chunking_strategy: "sliding_window_overlap_16"
+  mean_latency_ms: 4.8
+  p95_latency_ms: 8.5
+  p99_latency_ms: 14.2
+  hardware_requirements:
+    cpu: "8 vCPU"
+    memory_gb: 4
+    gpu: "optional_cuda_tensorrt"
+  version_history:
+    - version: "3.0.0"
+      release_date: "2026-09-05"
+      changes: "FinBERT domain-specific model integration with INT8 quantization"
+    - version: "2.1.0"
+      release_date: "2025-08-01"
+      changes: "Sliding window chunking added"
+    - version: "2.0.0"
+      release_date: "2025-06-15"
+      changes: "Base MiniLM-L6-v2 fine-tuned for sentiment"
+  licensing:
+    model_license: "apache_2.0"
+    training_data_rights: "prosusai_finbert_open_access"
+
+alerting:
+  enabled: true
+  p95_latency_threshold_sec: 0.500
+  server_error_rate_threshold_pct: 1.0
+  questdb_min_throughput_5m: 100
+  kafka_max_consumer_lag: 100000
+  disk_utilization_threshold_pct: 80.0
+  memory_utilization_threshold_pct: 90.0
+  slack_channel: "#fintext-ops-alerts"
+
+backups:
+  postgres:
+    schedule: "0 */6 * * *"
+    retention_days: 7
+    compression: "gzip"
+    format: "sql.gz"
+  questdb:
+    schedule: "0 2 * * *"
+    retention_days: 30
+    method: "velero_volume_snapshot"
+
+enterprise_features:
+  enable_fix_bridge: true  # Controls FIX 4.4 protocol bridge endpoint registration (POST /fix/order, GET /fix/orders, POST /fix/cancel)
+  enable_provider_health: true  # Controls Provider Health Status API (GET /providers/health) for SLA and uptime tracking
+  enable_model_validation: true  # Controls Model Validation & Calibration API (GET /model-validation)
+
+model_validation:
+  dataset_path: "config/model_validation_dataset.json"
+  dataset_version: "1.0.0"
+  calibration_bins: 10
+  min_accuracy_threshold: 0.80
+  min_macro_f1_threshold: 0.80
+  max_ece_threshold: 0.15
+
+# Automated SEC EDGAR Corporate Actions & Ticker History Updater
+sec_updater:
+  enabled: true
+  interval_hours: 24
+  snapshot_path: "data/sec_ticker_snapshot.json"
+  ticker_history_path: "config/ticker_history.json"
+  delisted_securities_path: "config/delisted_securities.json"
+  user_agent: "FinText Alpha Vectorizer contact@example.com"
+  api_server_reload_url: "http://127.0.0.1:8000/admin/reload-pit-data"
+  mock: false
+
+# Data Source Quality Scoring & Ingestion Validation Gates
+data_quality:
+  source_quality_threshold: 0.6
+  duplicate_cache_size: 10000
+  quarantine_path: "data/quarantine"
+  quality_metrics_enabled: true
+  future_skew_tolerance_secs: 300
+
+# TimescaleDB Time-Series Database & Database Resilience (Suite #263, #264, #271)
+database:
+  timescaledb:
+    enabled: false
+    primary: false
+    auto_backfill_on_startup: false
+    url: "postgres://fintext:fintext@localhost:5432/fintext_timeseries"
+    max_connections: 10
+    timeout_ms: 3000
+
+  # Database Circuit Breaker & Retry Policy (Suite #271)
+  circuit_breaker:
+    enabled: true
+    failure_threshold: 5
+    recovery_timeout_ms: 30000
+    half_open_max_probes: 2
+    retry_attempts: 3
+    retry_base_delay_ms: 100
+    retry_max_delay_ms: 2000
+
+
+# Raw Data Archive (Apache Parquet & S3/MinIO Object Storage - Suite #265 & #273)
+raw_archive:
+  enabled: false
+  provider: "local"   # "local", "s3", "minio"
+  bucket: "fintext-raw-archive"
+  prefix: "raw"
+  region: "us-east-1"
+  endpoint: ""         # MinIO endpoint if provider=minio
+  access_key: ""
+  secret_key: ""
+  batch_size: 1000
+  flush_interval_secs: 60
+  local_path: "data/archive"
+  lifecycle_transition_days: 30
+  lifecycle_expiration_days: 3650
+  verify_upload: false
+
+# Secrets Management Abstraction Layer (Local Environment vs AWS Secrets Manager)
+secrets:
+  provider: "env"          # "env" (default, reads from environment/.env) or "aws_secrets_manager"
+  aws_region: "us-east-1"  # AWS region for Secrets Manager
+  aws_secret_arn: ""       # ARN or secret name in AWS Secrets Manager (required if provider=aws_secrets_manager)
+
+# Subscription Billing & Revenue Automation (Stripe Integration - Suite #267)
+billing:
+  webhook_secret: ""       # STRIPE_WEBHOOK_SECRET env var takes precedence
+  mock_mode: false         # STRIPE_MOCK_MODE env var takes precedence
+  webhook:
+    secret_env: "STRIPE_WEBHOOK_SECRET"
+  plans:
+    - id: "free"
+      name: "Free"
+      price: 0
+      monthly_request_quota: 10000
+      features: ["sentiment", "news"]
+    - id: "pro_monthly"
+      name: "Pro"
+      price: 99
+      monthly_request_quota: 100000
+      features: ["sentiment", "news", "events", "export"]
+    - id: "enterprise_monthly"
+      name: "Enterprise"
+      price: 499
+      monthly_request_quota: 1000000
+      features: ["all"]
+
+# Point-in-Time (PIT) Certificate Cryptographic Proof Archival (Suite #268)
+pit_certificate_archive:
+  enabled: true
+  provider: "local"   # "local", "s3", "minio"
+  bucket: "fintext-pit-cert-archive"
+  prefix: "pit-cert"
+  region: "us-east-1"
+  endpoint: ""
+  access_key: ""
+  secret_key: ""
+  local_path: "data/pit-cert-archive"
+
+# PostgreSQL Bi-Temporal Point-in-Time Reference Database (Suite #269)
+pit_database:
+  enabled: false
+  url: "postgres://fintext:fintext@localhost:5432/fintext_metadata"
+  fallback_to_json: true
+  max_connections: 10
+  timeout_ms: 3000
+
+# Ingestion Bounded Concurrency & Backpressure Limiter (Suite #270)
+ingestion:
+  max_concurrent_tasks: 100
+  input_queue_capacity: 1000
+  task_timeout_ms: 30000
+
+# In-Memory Cache TTL & Capacity Governance (Suite #272)
+cache:
+  default_ttl_seconds: 300
+  default_max_capacity: 10000
+  cleanup_interval_seconds: 60
+  quota_cache_ttl_seconds: 300
+  quota_cache_max_capacity: 10000
+  rate_limit_bucket_ttl_seconds: 300
+  rate_limit_max_buckets: 10000
+  provider_health_ttl_seconds: 60
+  provider_health_max_capacity: 1000
+  scd2_cache_ttl_seconds: 300
+  scd2_cache_max_capacity: 5000

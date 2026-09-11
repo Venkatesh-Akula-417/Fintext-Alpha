@@ -1,0 +1,42 @@
+[
+  {
+    "ticker": "AAPL",
+    "action_date": "2020-08-31T00:00:00Z",
+    "type": "split",
+    "split_ratio": 4.0,
+    "dividend_per_share": null,
+    "description": "Apple 4-for-1 stock split"
+  },
+  {
+    "ticker": "TSLA",
+    "action_date": "2022-08-25T00:00:00Z",
+    "type": "split",
+    "split_ratio": 3.0,
+    "dividend_per_share": null,
+    "description": "Tesla 3-for-1 stock split"
+  },
+  {
+    "ticker": "NVDA",
+    "action_date": "2021-07-20T00:00:00Z",
+    "type": "split",
+    "split_ratio": 4.0,
+    "dividend_per_share": null,
+    "description": "NVIDIA 4-for-1 stock split"
+  },
+  {
+    "ticker": "MSFT",
+    "action_date": "2023-05-17T00:00:00Z",
+    "type": "dividend",
+    "split_ratio": null,
+    "dividend_per_share": 0.68,
+    "description": "Microsoft quarterly dividend $0.68/share"
+  },
+  {
+    "ticker": "AMZN",
+    "action_date": "2022-06-03T00:00:00Z",
+    "type": "split",
+    "split_ratio": 20.0,
+    "dividend_per_share": null,
+    "description": "Amazon 20-for-1 stock split"
+  }
+]

@@ -1,0 +1,48 @@
+# Ignore all executables and system libraries anywhere
+**/*.exe
+**/*.dll
+**/*.so
+**/*.dylib
+**/*.pdb
+
+# Ignore all target and build directories
+**/target/
+target/
+build/
+dist/
+
+# Ignore all model weights and checkpoints
+**/*.bin
+**/*.pt
+**/*.pth
+**/*.onnx
+**/*.safetensors
+**/*.h5
+**/*.ckpt
+
+# Ignore heavy data formats & archives
+**/*.parquet
+**/*.csv
+**/*.tsv
+**/*.zip
+**/*.tar.gz
+**/*.jsonl
+**/*.db
+**/*.sqlite3
+
+# Ignore specific large data directories
+**/data/
+data/
+**/logs/
+logs/
+**/scratch/
+scratch/
+**/tools/
+tools/
+**/_archive/
+_archive/
+**/.env
+.env
+**/.venv/
+**/venv/
+**/__pycache__/

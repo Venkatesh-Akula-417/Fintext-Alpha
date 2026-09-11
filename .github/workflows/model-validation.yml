@@ -1,0 +1,77 @@
+name: Model Validation
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: model-validation-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  model-validation:
+    name: FinBERT Model Quality & Calibration Validation
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+
+      - name: Install dependencies from requirements-model-validation.txt
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements-model-validation.txt
+
+      - name: Check model presence
+        id: check-model
+        run: |
+          if [ ! -f models/finbert-finetuned/model.onnx ] && [ ! -f models/finbert-finetuned/finbert.onnx ]; then
+            echo "::warning::Model artifacts not present; skipping model validation."
+            echo "SKIPPED=true" >> "$GITHUB_ENV"
+          else
+            echo "SKIPPED=false" >> "$GITHUB_ENV"
+          fi
+
+      - name: Run Model Quality Validation
+        run: |
+          if [ "$SKIPPED" = "true" ]; then
+            echo "Running harness in SKIP verification mode..."
+            python scripts/validate_model_quality.py \
+              --dataset config/model_validation_dataset.json \
+              --model-dir models/finbert-finetuned \
+              --output-dir data/model-validation \
+              --report-path docs/MODEL_VALIDATION_REPORT.md || exit_code=$?
+            if [ "${exit_code:-0}" -eq 3 ]; then
+              echo "Harness exited with code 3 (clean SKIP as expected)."
+            else
+              echo "Unexpected exit code: ${exit_code:-0}"
+              exit "${exit_code:-0}"
+            fi
+          else
+            python scripts/validate_model_quality.py \
+              --dataset config/model_validation_dataset.json \
+              --model-dir models/finbert-finetuned \
+              --output-dir data/model-validation \
+              --report-path docs/MODEL_VALIDATION_REPORT.md
+          fi
+
+      - name: Upload validation reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: model-validation-report
+          path: |
+            data/model-validation/*.json
+            docs/MODEL_VALIDATION_REPORT.md
+          if-no-files-found: warn

@@ -1,0 +1,96 @@
+name: PIT Correctness Validation
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+  workflow_dispatch:
+
+concurrency:
+  group: pit-validation-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  DATABASE_URL: "postgres://fintext:fintext@localhost:5432/fintext_metadata"
+  PYTHONUNBUFFERED: "1"
+
+jobs:
+  pit-validation:
+    name: PostgreSQL 16 PIT Correctness Validation
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: fintext
+          POSTGRES_PASSWORD: fintext
+          POSTGRES_DB: fintext_metadata
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U fintext -d fintext_metadata"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+
+      - name: Install dependencies from requirements-validation.txt
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements-validation.txt
+
+      - name: Wait for PostgreSQL readiness
+        run: |
+          python - << 'EOF'
+          import os
+          import sys
+          import time
+          import psycopg
+
+          db_url = os.environ.get("DATABASE_URL")
+          deadline = time.time() + 60
+          print(f"Checking PostgreSQL readiness at {db_url} (timeout 60s)...")
+
+          while time.time() < deadline:
+              try:
+                  with psycopg.connect(db_url, connect_timeout=3) as conn:
+                      with conn.cursor() as cur:
+                          cur.execute("SELECT version();")
+                          version = cur.fetchone()[0]
+                          print(f"Connected successfully to PostgreSQL: {version}")
+                          sys.exit(0)
+              except Exception as err:
+                  print(f"Waiting for PostgreSQL... ({err})")
+                  time.sleep(2)
+
+          print("ERROR: Timed out waiting for PostgreSQL readiness.", file=sys.stderr)
+          sys.exit(1)
+          EOF
+
+      - name: Run PIT correctness validation harness
+        run: |
+          python scripts/validate_pit_correctness.py \
+            --database-url "$DATABASE_URL" \
+            --output-dir data/pit-validation \
+            --report-path docs/PIT_VALIDATION_REPORT.md
+
+      - name: Upload validation reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pit-validation-report
+          path: |
+            data/pit-validation/*.json
+            docs/PIT_VALIDATION_REPORT.md
+          if-no-files-found: warn

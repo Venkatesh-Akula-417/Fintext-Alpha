@@ -1,0 +1,182 @@
+[
+  {
+    "ticker": "AAPL",
+    "index": "S&P500",
+    "effective_date": "2015-01-01T00:00:00Z",
+    "removal_date": null
+  },
+  {
+    "ticker": "MSFT",
+    "index": "S&P500",
+    "effective_date": "2015-01-01T00:00:00Z",
+    "removal_date": null
+  },
+  {
+    "ticker": "NVDA",
+    "index": "S&P500",
+    "effective_date": "2015-01-01T00:00:00Z",
+    "removal_date": null
+  },
+  {
+    "ticker": "AMZN",
+    "index": "S&P500",
+    "effective_date": "2015-01-01T00:00:00Z",
+    "removal_date": null
+  },
+  {
+    "ticker": "GOOGL",
+    "index": "S&P500",
+    "effective_date": "2015-01-01T00:00:00Z",
+    "removal_date": null
+  },
+  {
+    "ticker": "META",
+    "index": "S&P500",
+    "effective_date": "2022-06-09T00:00:00Z",
+    "removal_date": null
+  },
+  {
+    "ticker": "FB",
+    "index": "S&P500",
+    "effective_date": "2015-01-01T00:00:00Z",
+    "removal_date": "2022-06-09T00:00:00Z"
+  },
+  {
+    "ticker": "TWTR",
+    "index": "S&P500",
+    "effective_date": "2015-01-01T00:00:00Z",
+    "removal_date": "2022-10-28T00:00:00Z"
+  },
+  {
+    "ticker": "TSLA",
+    "index": "S&P500",
+    "effective_date": "2020-12-21T00:00:00Z",
+    "removal_date": null
+  },
+  {
+    "ticker": "AMD",
+    "index": "S&P500",
+    "effective_date": "2018-09-19T00:00:00Z",
+    "removal_date": null
+  },
+  {
+    "ticker": "INTC",
+    "index": "S&P500",
+    "effective_date": "2015-01-01T00:00:00Z",
+    "removal_date": null
+  },
+  {
+    "ticker": "JPM",
+    "index": "S&P500",
+    "effective_date": "2015-01-01T00:00:00Z",
+    "removal_date": null
+  },
+  {
+    "ticker": "BAC",
+    "index": "S&P500",
+    "effective_date": "2015-01-01T00:00:00Z",
+    "removal_date": null
+  },
+  {
+    "ticker": "V",
+    "index": "S&P500",
+    "effective_date": "2015-01-01T00:00:00Z",
+    "removal_date": null
+  },
+  {
+    "ticker": "WMT",
+    "index": "S&P500",
+    "effective_date": "2015-01-01T00:00:00Z",
+    "removal_date": null
+  },
+  {
+    "ticker": "XOM",
+    "index": "S&P500",
+    "effective_date": "2015-01-01T00:00:00Z",
+    "removal_date": null
+  },
+  {
+    "ticker": "JNJ",
+    "index": "S&P500",
+    "effective_date": "2015-01-01T00:00:00Z",
+    "removal_date": null
+  },
+  {
+    "ticker": "AAPL",
+    "index": "Russell3000",
+    "effective_date": "2015-01-01T00:00:00Z",
+    "removal_date": null
+  },
+  {
+    "ticker": "MSFT",
+    "index": "Russell3000",
+    "effective_date": "2015-01-01T00:00:00Z",
+    "removal_date": null
+  },
+  {
+    "ticker": "NVDA",
+    "index": "Russell3000",
+    "effective_date": "2015-01-01T00:00:00Z",
+    "removal_date": null
+  },
+  {
+    "ticker": "TSLA",
+    "index": "Russell3000",
+    "effective_date": "2015-01-01T00:00:00Z",
+    "removal_date": null
+  },
+  {
+    "ticker": "AMZN",
+    "index": "Russell3000",
+    "effective_date": "2015-01-01T00:00:00Z",
+    "removal_date": null
+  },
+  {
+    "ticker": "AMD",
+    "index": "Russell3000",
+    "effective_date": "2015-01-01T00:00:00Z",
+    "removal_date": null
+  },
+  {
+    "ticker": "PLTR",
+    "index": "Russell3000",
+    "effective_date": "2021-06-28T00:00:00Z",
+    "removal_date": null
+  },
+  {
+    "ticker": "COIN",
+    "index": "Russell3000",
+    "effective_date": "2021-12-20T00:00:00Z",
+    "removal_date": null
+  },
+  {
+    "ticker": "FIT",
+    "index": "Russell3000",
+    "effective_date": "2015-01-01T00:00:00Z",
+    "removal_date": "2021-01-14T00:00:00Z"
+  },
+  {
+    "ticker": "TWTR",
+    "index": "Russell3000",
+    "effective_date": "2015-01-01T00:00:00Z",
+    "removal_date": "2022-10-28T00:00:00Z"
+  },
+  {
+    "ticker": "GME",
+    "index": "Russell3000",
+    "effective_date": "2015-01-01T00:00:00Z",
+    "removal_date": null
+  },
+  {
+    "ticker": "AMC",
+    "index": "Russell3000",
+    "effective_date": "2015-01-01T00:00:00Z",
+    "removal_date": null
+  },
+  {
+    "ticker": "RIVN",
+    "index": "Russell3000",
+    "effective_date": "2022-06-27T00:00:00Z",
+    "removal_date": null
+  }
+]

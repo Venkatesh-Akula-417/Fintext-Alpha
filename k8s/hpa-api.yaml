@@ -1,0 +1,61 @@
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: fintext-api-hpa
+  namespace: default
+  labels:
+    app.kubernetes.io/name: fintext-api
+    app.kubernetes.io/part-of: fintext-alpha-vectorizer
+    app.kubernetes.io/component: api-gateway
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: fintext-api
+  minReplicas: 2
+  maxReplicas: 10
+  metrics:
+    # ── CPU Utilization Target ────────────────────────────────────────────────
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 70
+
+    # ── Memory Utilization Target ─────────────────────────────────────────────
+    - type: Resource
+      resource:
+        name: memory
+        target:
+          type: Utilization
+          averageUtilization: 80
+
+    # ── Custom Metric: Active WebSocket Streaming Connections ─────────────────
+    # Requires Prometheus Adapter / Custom Metrics API server
+    - type: Pods
+      pods:
+        metric:
+          name: websocket_active_connections
+        target:
+          type: AverageValue
+          averageValue: "500"
+
+  behavior:
+    scaleUp:
+      stabilizationWindowSeconds: 0
+      selectPolicy: Max
+      policies:
+        - type: Percent
+          value: 100
+          periodSeconds: 15
+        - type: Pods
+          value: 4
+          periodSeconds: 15
+    scaleDown:
+      stabilizationWindowSeconds: 300
+      selectPolicy: Min
+      policies:
+        - type: Percent
+          value: 10
+          periodSeconds: 60

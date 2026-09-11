@@ -1,0 +1,33 @@
+# ══════════════════════════════════════════════════════════════════════════════
+# FinText-Alpha-Vectorizer — Flagger Canary Release for Spillover Engine
+# ══════════════════════════════════════════════════════════════════════════════
+
+apiVersion: flagger.app/v1beta1
+kind: Canary
+metadata:
+  name: fintext-spillover
+  namespace: default
+  labels:
+    app.kubernetes.io/name: fintext-spillover
+    app.kubernetes.io/part-of: fintext-alpha-vectorizer
+    app.kubernetes.io/component: progressive-delivery
+spec:
+  provider: istio
+  targetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: fintext-spillover
+  progressDeadlineSeconds: 300
+  service:
+    port: 9092
+    targetPort: 9092
+  analysis:
+    interval: 30s
+    threshold: 3
+    maxWeight: 50
+    stepWeight: 25
+    metrics:
+      - name: request-success-rate
+        thresholdRange:
+          min: 99
+        interval: 1m

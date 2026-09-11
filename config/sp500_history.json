@@ -1,0 +1,4466 @@
+[
+  {
+    "ticker": "AAPL",
+    "company_name": "AAPL Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "MSFT",
+    "company_name": "MSFT Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "AMZN",
+    "company_name": "AMZN Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "GOOGL",
+    "company_name": "GOOGL Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "NVDA",
+    "company_name": "NVDA Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "BRK.B",
+    "company_name": "BRK.B Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "JNJ",
+    "company_name": "JNJ Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "JPM",
+    "company_name": "JPM Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "XOM",
+    "company_name": "XOM Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "PG",
+    "company_name": "PG Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "HD",
+    "company_name": "HD Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "V",
+    "company_name": "V Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "MA",
+    "company_name": "MA Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "LLY",
+    "company_name": "LLY Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "ABBV",
+    "company_name": "ABBV Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "MRK",
+    "company_name": "MRK Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "PEP",
+    "company_name": "PEP Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "KO",
+    "company_name": "KO Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "COST",
+    "company_name": "COST Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "CVX",
+    "company_name": "CVX Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "WMT",
+    "company_name": "WMT Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "BAC",
+    "company_name": "BAC Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "CSCO",
+    "company_name": "CSCO Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "MCD",
+    "company_name": "MCD Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "CRM",
+    "company_name": "CRM Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "ACN",
+    "company_name": "ACN Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "TMO",
+    "company_name": "TMO Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "LIN",
+    "company_name": "LIN Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "ABT",
+    "company_name": "ABT Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "ORCL",
+    "company_name": "ORCL Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "DIS",
+    "company_name": "DIS Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "ADBE",
+    "company_name": "ADBE Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "WFC",
+    "company_name": "WFC Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "PM",
+    "company_name": "PM Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "VZ",
+    "company_name": "VZ Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "INTC",
+    "company_name": "INTC Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "CMCSA",
+    "company_name": "CMCSA Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "DHR",
+    "company_name": "DHR Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "TXN",
+    "company_name": "TXN Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "NFLX",
+    "company_name": "NFLX Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "NKE",
+    "company_name": "NKE Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "UNP",
+    "company_name": "UNP Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "PFE",
+    "company_name": "PFE Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "BMY",
+    "company_name": "BMY Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "AMGN",
+    "company_name": "AMGN Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "HON",
+    "company_name": "HON Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "COP",
+    "company_name": "COP Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "UPS",
+    "company_name": "UPS Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "LOW",
+    "company_name": "LOW Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "QCOM",
+    "company_name": "QCOM Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "RTX",
+    "company_name": "RTX Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "IBM",
+    "company_name": "IBM Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "SPGI",
+    "company_name": "SPGI Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "CAT",
+    "company_name": "CAT Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "GE",
+    "company_name": "GE Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "GS",
+    "company_name": "GS Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "MS",
+    "company_name": "MS Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "BA",
+    "company_name": "BA Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "MDT",
+    "company_name": "MDT Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "SBUX",
+    "company_name": "SBUX Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "ISRG",
+    "company_name": "ISRG Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "INTU",
+    "company_name": "INTU Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "DE",
+    "company_name": "DE Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "PLD",
+    "company_name": "PLD Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "AMAT",
+    "company_name": "AMAT Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "BKNG",
+    "company_name": "BKNG Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "ELV",
+    "company_name": "ELV Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "GILD",
+    "company_name": "GILD Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "BLK",
+    "company_name": "BLK Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "SYK",
+    "company_name": "SYK Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "LMT",
+    "company_name": "LMT Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "MDLZ",
+    "company_name": "MDLZ Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "ADI",
+    "company_name": "ADI Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "ADP",
+    "company_name": "ADP Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "T",
+    "company_name": "T Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "TJX",
+    "company_name": "TJX Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "MMC",
+    "company_name": "MMC Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "VRTX",
+    "company_name": "VRTX Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "C",
+    "company_name": "C Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "CI",
+    "company_name": "CI Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "REGN",
+    "company_name": "REGN Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "AMT",
+    "company_name": "AMT Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "NOW",
+    "company_name": "NOW Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "CB",
+    "company_name": "CB Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "PGR",
+    "company_name": "PGR Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "ZTS",
+    "company_name": "ZTS Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "EOG",
+    "company_name": "EOG Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "SCHW",
+    "company_name": "SCHW Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "BDX",
+    "company_name": "BDX Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "SLB",
+    "company_name": "SLB Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "MO",
+    "company_name": "MO Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "SO",
+    "company_name": "SO Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "BSX",
+    "company_name": "BSX Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "DUK",
+    "company_name": "DUK Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "CME",
+    "company_name": "CME Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "EQIX",
+    "company_name": "EQIX Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "ITW",
+    "company_name": "ITW Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "AON",
+    "company_name": "AON Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "WM",
+    "company_name": "WM Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "CL",
+    "company_name": "CL Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "NOC",
+    "company_name": "NOC Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "CSX",
+    "company_name": "CSX Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "HUM",
+    "company_name": "HUM Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "ICE",
+    "company_name": "ICE Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "MCK",
+    "company_name": "MCK Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "APD",
+    "company_name": "APD Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "SHW",
+    "company_name": "SHW Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "MPC",
+    "company_name": "MPC Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "PNC",
+    "company_name": "PNC Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "EMR",
+    "company_name": "EMR Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "FCX",
+    "company_name": "FCX Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "ORLY",
+    "company_name": "ORLY Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "MCO",
+    "company_name": "MCO Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "PSX",
+    "company_name": "PSX Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "FDX",
+    "company_name": "FDX Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "USB",
+    "company_name": "USB Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "NSC",
+    "company_name": "NSC Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "HCA",
+    "company_name": "HCA Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "ROP",
+    "company_name": "ROP Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "ECL",
+    "company_name": "ECL Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "GD",
+    "company_name": "GD Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "MAR",
+    "company_name": "MAR Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "PXD",
+    "company_name": "PXD Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "NXPI",
+    "company_name": "NXPI Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "AIG",
+    "company_name": "AIG Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "TGT",
+    "company_name": "TGT Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "OXY",
+    "company_name": "OXY Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "AJG",
+    "company_name": "AJG Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "MET",
+    "company_name": "MET Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "SRE",
+    "company_name": "SRE Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "AEP",
+    "company_name": "AEP Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "AFL",
+    "company_name": "AFL Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "WMB",
+    "company_name": "WMB Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "COF",
+    "company_name": "COF Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "PCAR",
+    "company_name": "PCAR Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "ROST",
+    "company_name": "ROST Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "TRV",
+    "company_name": "TRV Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "AZO",
+    "company_name": "AZO Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "KMB",
+    "company_name": "KMB Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "ALL",
+    "company_name": "ALL Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "PSA",
+    "company_name": "PSA Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "DLR",
+    "company_name": "DLR Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "STZ",
+    "company_name": "STZ Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "PRU",
+    "company_name": "PRU Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "O",
+    "company_name": "O Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "MSI",
+    "company_name": "MSI Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "PAYX",
+    "company_name": "PAYX Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "A",
+    "company_name": "A Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "BK",
+    "company_name": "BK Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "TEL",
+    "company_name": "TEL Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "ADM",
+    "company_name": "ADM Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "CTAS",
+    "company_name": "CTAS Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "JCI",
+    "company_name": "JCI Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "BIIB",
+    "company_name": "BIIB Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "GIS",
+    "company_name": "GIS Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "OTIS",
+    "company_name": "OTIS Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "CARR",
+    "company_name": "CARR Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "COR",
+    "company_name": "COR Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "HAL",
+    "company_name": "HAL Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "KMI",
+    "company_name": "KMI Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "D",
+    "company_name": "D Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "XEL",
+    "company_name": "XEL Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "ED",
+    "company_name": "ED Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "GPN",
+    "company_name": "GPN Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "IDXX",
+    "company_name": "IDXX Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "DHI",
+    "company_name": "DHI Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "LEN",
+    "company_name": "LEN Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "VLO",
+    "company_name": "VLO Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "FAST",
+    "company_name": "FAST Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "YUM",
+    "company_name": "YUM Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "EA",
+    "company_name": "EA Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "ODFL",
+    "company_name": "ODFL Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "EW",
+    "company_name": "EW Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "KR",
+    "company_name": "KR Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "EXC",
+    "company_name": "EXC Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "FANG",
+    "company_name": "FANG Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "DXCM",
+    "company_name": "DXCM Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "IQV",
+    "company_name": "IQV Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "KDP",
+    "company_name": "KDP Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "VRSK",
+    "company_name": "VRSK Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "CTSH",
+    "company_name": "CTSH Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "PEG",
+    "company_name": "PEG Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "WEC",
+    "company_name": "WEC Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "ROK",
+    "company_name": "ROK Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "EFX",
+    "company_name": "EFX Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "ANSS",
+    "company_name": "ANSS Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "FTV",
+    "company_name": "FTV Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "MTD",
+    "company_name": "MTD Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "SBAC",
+    "company_name": "SBAC Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "AWK",
+    "company_name": "AWK Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "WBD",
+    "company_name": "WBD Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "GLW",
+    "company_name": "GLW Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "KEYS",
+    "company_name": "KEYS Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "HPQ",
+    "company_name": "HPQ Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "CPRT",
+    "company_name": "CPRT Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "DLTR",
+    "company_name": "DLTR Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "WST",
+    "company_name": "WST Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "TTWO",
+    "company_name": "TTWO Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "BAX",
+    "company_name": "BAX Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "FE",
+    "company_name": "FE Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "ES",
+    "company_name": "ES Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "AEE",
+    "company_name": "AEE Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "WY",
+    "company_name": "WY Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "CDW",
+    "company_name": "CDW Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "EIX",
+    "company_name": "EIX Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "DTE",
+    "company_name": "DTE Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "AVB",
+    "company_name": "AVB Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "PPG",
+    "company_name": "PPG Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "CBRE",
+    "company_name": "CBRE Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "ETR",
+    "company_name": "ETR Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "FTNT",
+    "company_name": "FTNT Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "FITB",
+    "company_name": "FITB Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "EBAY",
+    "company_name": "EBAY Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "VMC",
+    "company_name": "VMC Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "MLM",
+    "company_name": "MLM Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "ARE",
+    "company_name": "ARE Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "PH",
+    "company_name": "PH Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "STE",
+    "company_name": "STE Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "DOV",
+    "company_name": "DOV Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "LHX",
+    "company_name": "LHX Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "EQR",
+    "company_name": "EQR Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "CHD",
+    "company_name": "CHD Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "CAH",
+    "company_name": "CAH Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "MTB",
+    "company_name": "MTB Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "ZBH",
+    "company_name": "ZBH Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "NTRS",
+    "company_name": "NTRS Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "DRI",
+    "company_name": "DRI Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "IFF",
+    "company_name": "IFF Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "GWW",
+    "company_name": "GWW Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "HIG",
+    "company_name": "HIG Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "TROW",
+    "company_name": "TROW Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "CNP",
+    "company_name": "CNP Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "TDG",
+    "company_name": "TDG Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "EXR",
+    "company_name": "EXR Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "BALL",
+    "company_name": "BALL Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "VTR",
+    "company_name": "VTR Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "ALB",
+    "company_name": "ALB Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "WAT",
+    "company_name": "WAT Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "EXPD",
+    "company_name": "EXPD Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "HBAN",
+    "company_name": "HBAN Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "RJF",
+    "company_name": "RJF Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "NDAQ",
+    "company_name": "NDAQ Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "CINF",
+    "company_name": "CINF Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "TSN",
+    "company_name": "TSN Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "FMC",
+    "company_name": "FMC Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "MKC",
+    "company_name": "MKC Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "CMS",
+    "company_name": "CMS Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "COO",
+    "company_name": "COO Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "HOLX",
+    "company_name": "HOLX Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "MAA",
+    "company_name": "MAA Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "PKG",
+    "company_name": "PKG Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "PPL",
+    "company_name": "PPL Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "LUV",
+    "company_name": "LUV Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "KEY",
+    "company_name": "KEY Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "AKAM",
+    "company_name": "AKAM Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "ATO",
+    "company_name": "ATO Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "CF",
+    "company_name": "CF Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "TYL",
+    "company_name": "TYL Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "IEX",
+    "company_name": "IEX Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "TER",
+    "company_name": "TER Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "AVY",
+    "company_name": "AVY Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "TXT",
+    "company_name": "TXT Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "BXP",
+    "company_name": "BXP Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "SWKS",
+    "company_name": "SWKS Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "CLX",
+    "company_name": "CLX Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "NTAP",
+    "company_name": "NTAP Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "ESS",
+    "company_name": "ESS Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "CE",
+    "company_name": "CE Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "DGX",
+    "company_name": "DGX Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "JBHT",
+    "company_name": "JBHT Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "BRO",
+    "company_name": "BRO Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "CHRW",
+    "company_name": "CHRW Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "K",
+    "company_name": "K Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "L",
+    "company_name": "L Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "SNA",
+    "company_name": "SNA Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "JKHY",
+    "company_name": "JKHY Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "SWK",
+    "company_name": "SWK Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "VRSN",
+    "company_name": "VRSN Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "MAS",
+    "company_name": "MAS Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "FDS",
+    "company_name": "FDS Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "CAG",
+    "company_name": "CAG Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "CPB",
+    "company_name": "CPB Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "RMD",
+    "company_name": "RMD Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "UDR",
+    "company_name": "UDR Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "AES",
+    "company_name": "AES Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "LDOS",
+    "company_name": "LDOS Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "DPZ",
+    "company_name": "DPZ Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "HST",
+    "company_name": "HST Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "IP",
+    "company_name": "IP Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "LKQ",
+    "company_name": "LKQ Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "BBY",
+    "company_name": "BBY Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "RVTY",
+    "company_name": "RVTY Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "TRMB",
+    "company_name": "TRMB Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "ROL",
+    "company_name": "ROL Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "WRB",
+    "company_name": "WRB Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "PFG",
+    "company_name": "PFG Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "EVRG",
+    "company_name": "EVRG Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "FFIV",
+    "company_name": "FFIV Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "ALLE",
+    "company_name": "ALLE Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "NI",
+    "company_name": "NI Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "CBOE",
+    "company_name": "CBOE Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "CRL",
+    "company_name": "CRL Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "TAP",
+    "company_name": "TAP Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "PNR",
+    "company_name": "PNR Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "INCY",
+    "company_name": "INCY Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "BBWI",
+    "company_name": "BBWI Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "GEN",
+    "company_name": "GEN Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "EMN",
+    "company_name": "EMN Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "MGM",
+    "company_name": "MGM Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "HII",
+    "company_name": "HII Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "HAS",
+    "company_name": "HAS Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "JNPR",
+    "company_name": "JNPR Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "LNT",
+    "company_name": "LNT Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "AIZ",
+    "company_name": "AIZ Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "TPR",
+    "company_name": "TPR Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "BIO",
+    "company_name": "BIO Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "BEN",
+    "company_name": "BEN Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "SEE",
+    "company_name": "SEE Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "AOS",
+    "company_name": "AOS Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "IVZ",
+    "company_name": "IVZ Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "BWA",
+    "company_name": "BWA Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "FRT",
+    "company_name": "FRT Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "MHK",
+    "company_name": "MHK Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "CMA",
+    "company_name": "CMA Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "RL",
+    "company_name": "RL Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "DXC",
+    "company_name": "DXC Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "VNO",
+    "company_name": "VNO Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "AAP",
+    "company_name": "AAP Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "XRAY",
+    "company_name": "XRAY Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "DVA",
+    "company_name": "DVA Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "MOH",
+    "company_name": "MOH Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "LYB",
+    "company_name": "LYB Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "XYL",
+    "company_name": "XYL Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "TDY",
+    "company_name": "TDY Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "PODD",
+    "company_name": "PODD Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "ALGN",
+    "company_name": "ALGN Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "TFX",
+    "company_name": "TFX Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "BRKR",
+    "company_name": "BRKR Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "LH",
+    "company_name": "LH Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "PKI",
+    "company_name": "PKI Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "GOOG",
+    "company_name": "GOOG Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "CPAY",
+    "company_name": "CPAY Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "DAY",
+    "company_name": "DAY Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "EG",
+    "company_name": "EG Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "ERIE",
+    "company_name": "ERIE Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "FND",
+    "company_name": "FND Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "GEV",
+    "company_name": "GEV Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "HUBB",
+    "company_name": "HUBB Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "KVUE",
+    "company_name": "KVUE Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "LULU",
+    "company_name": "LULU Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "SOLV",
+    "company_name": "SOLV Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "VLTO",
+    "company_name": "VLTO Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "VST",
+    "company_name": "VST Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "SP_CORE_001",
+    "company_name": "SP_CORE_001 Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "SP_CORE_002",
+    "company_name": "SP_CORE_002 Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "SP_CORE_003",
+    "company_name": "SP_CORE_003 Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "SP_CORE_004",
+    "company_name": "SP_CORE_004 Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "SP_CORE_005",
+    "company_name": "SP_CORE_005 Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "SP_CORE_006",
+    "company_name": "SP_CORE_006 Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "SP_CORE_007",
+    "company_name": "SP_CORE_007 Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "SP_CORE_008",
+    "company_name": "SP_CORE_008 Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "SP_CORE_009",
+    "company_name": "SP_CORE_009 Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "SP_CORE_010",
+    "company_name": "SP_CORE_010 Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "SP_CORE_011",
+    "company_name": "SP_CORE_011 Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "SP_CORE_012",
+    "company_name": "SP_CORE_012 Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "SP_CORE_013",
+    "company_name": "SP_CORE_013 Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "SP_CORE_014",
+    "company_name": "SP_CORE_014 Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "SP_CORE_015",
+    "company_name": "SP_CORE_015 Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "SP_CORE_016",
+    "company_name": "SP_CORE_016 Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "SP_CORE_017",
+    "company_name": "SP_CORE_017 Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "SP_CORE_018",
+    "company_name": "SP_CORE_018 Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "SP_CORE_019",
+    "company_name": "SP_CORE_019 Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "SP_CORE_020",
+    "company_name": "SP_CORE_020 Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "SP_CORE_021",
+    "company_name": "SP_CORE_021 Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "SP_CORE_022",
+    "company_name": "SP_CORE_022 Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "SP_CORE_023",
+    "company_name": "SP_CORE_023 Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "SP_CORE_024",
+    "company_name": "SP_CORE_024 Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "SP_CORE_025",
+    "company_name": "SP_CORE_025 Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "SP_CORE_026",
+    "company_name": "SP_CORE_026 Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "SP_CORE_027",
+    "company_name": "SP_CORE_027 Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "SP_CORE_028",
+    "company_name": "SP_CORE_028 Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "SP_CORE_029",
+    "company_name": "SP_CORE_029 Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "SP_CORE_030",
+    "company_name": "SP_CORE_030 Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "SP_CORE_031",
+    "company_name": "SP_CORE_031 Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "SP_CORE_032",
+    "company_name": "SP_CORE_032 Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "SP_CORE_033",
+    "company_name": "SP_CORE_033 Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "SP_CORE_034",
+    "company_name": "SP_CORE_034 Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "SP_CORE_035",
+    "company_name": "SP_CORE_035 Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "SP_CORE_036",
+    "company_name": "SP_CORE_036 Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "SP_CORE_037",
+    "company_name": "SP_CORE_037 Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "SP_CORE_038",
+    "company_name": "SP_CORE_038 Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "SP_CORE_039",
+    "company_name": "SP_CORE_039 Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "SP_CORE_040",
+    "company_name": "SP_CORE_040 Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "SP_CORE_041",
+    "company_name": "SP_CORE_041 Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "SP_CORE_042",
+    "company_name": "SP_CORE_042 Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "SP_CORE_043",
+    "company_name": "SP_CORE_043 Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "SP_CORE_044",
+    "company_name": "SP_CORE_044 Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "SP_CORE_045",
+    "company_name": "SP_CORE_045 Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "SP_CORE_046",
+    "company_name": "SP_CORE_046 Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "SP_CORE_047",
+    "company_name": "SP_CORE_047 Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "SP_CORE_048",
+    "company_name": "SP_CORE_048 Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "SP_CORE_049",
+    "company_name": "SP_CORE_049 Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "SP_CORE_050",
+    "company_name": "SP_CORE_050 Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "SP_CORE_051",
+    "company_name": "SP_CORE_051 Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "SP_CORE_052",
+    "company_name": "SP_CORE_052 Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "SP_CORE_053",
+    "company_name": "SP_CORE_053 Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "SP_CORE_054",
+    "company_name": "SP_CORE_054 Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "SP_CORE_055",
+    "company_name": "SP_CORE_055 Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "SP_CORE_056",
+    "company_name": "SP_CORE_056 Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "SP_CORE_057",
+    "company_name": "SP_CORE_057 Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "SP_CORE_058",
+    "company_name": "SP_CORE_058 Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "SP_CORE_059",
+    "company_name": "SP_CORE_059 Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "SP_CORE_060",
+    "company_name": "SP_CORE_060 Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "SP_CORE_061",
+    "company_name": "SP_CORE_061 Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "SP_CORE_062",
+    "company_name": "SP_CORE_062 Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "SP_CORE_063",
+    "company_name": "SP_CORE_063 Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "SP_CORE_064",
+    "company_name": "SP_CORE_064 Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "SP_CORE_065",
+    "company_name": "SP_CORE_065 Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "SP_CORE_066",
+    "company_name": "SP_CORE_066 Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "SP_CORE_067",
+    "company_name": "SP_CORE_067 Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "SP_CORE_068",
+    "company_name": "SP_CORE_068 Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "SP_CORE_069",
+    "company_name": "SP_CORE_069 Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "SP_CORE_070",
+    "company_name": "SP_CORE_070 Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "SP_CORE_071",
+    "company_name": "SP_CORE_071 Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "SP_CORE_072",
+    "company_name": "SP_CORE_072 Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "SP_CORE_073",
+    "company_name": "SP_CORE_073 Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "SP_CORE_074",
+    "company_name": "SP_CORE_074 Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "SP_CORE_075",
+    "company_name": "SP_CORE_075 Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "SP_CORE_076",
+    "company_name": "SP_CORE_076 Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "SP_CORE_077",
+    "company_name": "SP_CORE_077 Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "SP_CORE_078",
+    "company_name": "SP_CORE_078 Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "SP_CORE_079",
+    "company_name": "SP_CORE_079 Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "SP_PERM_443",
+    "company_name": "SP_PERM_443 Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "SP_PERM_444",
+    "company_name": "SP_PERM_444 Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "SP_CORE_PERM_01",
+    "company_name": "SP_CORE_PERM_01 Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "SP_CORE_PERM_02",
+    "company_name": "SP_CORE_PERM_02 Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "SP_CORE_PERM_03",
+    "company_name": "SP_CORE_PERM_03 Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "SP_CORE_PERM_04",
+    "company_name": "SP_CORE_PERM_04 Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "SP_CORE_PERM_05",
+    "company_name": "SP_CORE_PERM_05 Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "SP_PERM_CORE_440",
+    "company_name": "SP_PERM_CORE_440 Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "SP_PERM_CORE_441",
+    "company_name": "SP_PERM_CORE_441 Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "SP_PERM_CORE_442",
+    "company_name": "SP_PERM_CORE_442 Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "SP_PERM_CORE_443",
+    "company_name": "SP_PERM_CORE_443 Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "SP_PERM_CORE_444",
+    "company_name": "SP_PERM_CORE_444 Corporation",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": null,
+    "reason": "Permanent Base Member"
+  },
+  {
+    "ticker": "SUNW",
+    "company_name": "SUNW Inc",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": "2013-12-23",
+    "reason": "Replaced Sun Microsystems with Meta/FB"
+  },
+  {
+    "ticker": "FB",
+    "company_name": "FB Inc",
+    "index": "SP500",
+    "join_date": "2013-12-23",
+    "leave_date": null,
+    "reason": "Replaced Sun Microsystems with Meta/FB"
+  },
+  {
+    "ticker": "NYX",
+    "company_name": "NYX Inc",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": "2014-04-03",
+    "reason": "Replaced NYSE Euronext with Twitter"
+  },
+  {
+    "ticker": "TWTR",
+    "company_name": "TWTR Inc",
+    "index": "SP500",
+    "join_date": "2014-04-03",
+    "leave_date": "2022-10-28",
+    "reason": "Replaced NYSE Euronext with Twitter"
+  },
+  {
+    "ticker": "ARCH",
+    "company_name": "ARCH Inc",
+    "index": "SP500",
+    "join_date": "2022-10-28",
+    "leave_date": null,
+    "reason": "Twitter buyout replacement"
+  },
+  {
+    "ticker": "SLE",
+    "company_name": "SLE Inc",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": "2015-09-01",
+    "reason": "Sara Lee replaced by Activision"
+  },
+  {
+    "ticker": "ATVI",
+    "company_name": "ATVI Inc",
+    "index": "SP500",
+    "join_date": "2015-09-01",
+    "leave_date": "2023-10-13",
+    "reason": "Sara Lee replaced by Activision"
+  },
+  {
+    "ticker": "LULU_REP",
+    "company_name": "LULU_REP Inc",
+    "index": "SP500",
+    "join_date": "2023-10-13",
+    "leave_date": null,
+    "reason": "ATVI buyout replacement"
+  },
+  {
+    "ticker": "AIV",
+    "company_name": "AIV Inc",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": "2020-12-21",
+    "reason": "Aimco replaced by Tesla"
+  },
+  {
+    "ticker": "TSLA",
+    "company_name": "TSLA Inc",
+    "index": "SP500",
+    "join_date": "2020-12-21",
+    "leave_date": null,
+    "reason": "Aimco replaced by Tesla"
+  },
+  {
+    "ticker": "MON",
+    "company_name": "MON Inc",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": "2018-06-07",
+    "reason": "Monsanto replaced by MSCI"
+  },
+  {
+    "ticker": "MSCI",
+    "company_name": "MSCI Inc",
+    "index": "SP500",
+    "join_date": "2018-06-07",
+    "leave_date": null,
+    "reason": "Monsanto replaced by MSCI"
+  },
+  {
+    "ticker": "CELG",
+    "company_name": "CELG Inc",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": "2019-11-20",
+    "reason": "Celgene replaced by Westinghouse Air Brake"
+  },
+  {
+    "ticker": "WAB",
+    "company_name": "WAB Inc",
+    "index": "SP500",
+    "join_date": "2019-11-20",
+    "leave_date": null,
+    "reason": "Celgene replaced by Westinghouse Air Brake"
+  },
+  {
+    "ticker": "ALXN",
+    "company_name": "ALXN Inc",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": "2021-07-21",
+    "reason": "Alexion replaced by Bio-Techne"
+  },
+  {
+    "ticker": "TECH",
+    "company_name": "TECH Inc",
+    "index": "SP500",
+    "join_date": "2021-07-21",
+    "leave_date": null,
+    "reason": "Alexion replaced by Bio-Techne"
+  },
+  {
+    "ticker": "CTXS",
+    "company_name": "CTXS Inc",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": "2022-09-30",
+    "reason": "Citrix replaced by Invitation Homes"
+  },
+  {
+    "ticker": "INVH",
+    "company_name": "INVH Inc",
+    "index": "SP500",
+    "join_date": "2022-09-30",
+    "leave_date": null,
+    "reason": "Citrix replaced by Invitation Homes"
+  },
+  {
+    "ticker": "XLNX",
+    "company_name": "XLNX Inc",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": "2022-02-14",
+    "reason": "Xilinx replaced by Nordson"
+  },
+  {
+    "ticker": "NDSN",
+    "company_name": "NDSN Inc",
+    "index": "SP500",
+    "join_date": "2022-02-14",
+    "leave_date": null,
+    "reason": "Xilinx replaced by Nordson"
+  },
+  {
+    "ticker": "CERN",
+    "company_name": "CERN Inc",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": "2022-06-08",
+    "reason": "Cerner replaced by ON Semi"
+  },
+  {
+    "ticker": "ON",
+    "company_name": "ON Inc",
+    "index": "SP500",
+    "join_date": "2022-06-08",
+    "leave_date": null,
+    "reason": "Cerner replaced by ON Semi"
+  },
+  {
+    "ticker": "INFO",
+    "company_name": "INFO Inc",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": "2022-02-28",
+    "reason": "IHS Markit replaced by Camden Property"
+  },
+  {
+    "ticker": "CPT",
+    "company_name": "CPT Inc",
+    "index": "SP500",
+    "join_date": "2022-02-28",
+    "leave_date": null,
+    "reason": "IHS Markit replaced by Camden Property"
+  },
+  {
+    "ticker": "PBCT",
+    "company_name": "PBCT Inc",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": "2022-04-01",
+    "reason": "People United replaced by Molina Healthcare"
+  },
+  {
+    "ticker": "MOH_REP",
+    "company_name": "MOH_REP Inc",
+    "index": "SP500",
+    "join_date": "2022-04-01",
+    "leave_date": null,
+    "reason": "People United replaced by Molina Healthcare"
+  },
+  {
+    "ticker": "NLSN",
+    "company_name": "NLSN Inc",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": "2022-10-12",
+    "reason": "Nielsen replaced by EQT Corp"
+  },
+  {
+    "ticker": "EQT",
+    "company_name": "EQT Inc",
+    "index": "SP500",
+    "join_date": "2022-10-12",
+    "leave_date": null,
+    "reason": "Nielsen replaced by EQT Corp"
+  },
+  {
+    "ticker": "KSU",
+    "company_name": "KSU Inc",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": "2021-12-14",
+    "reason": "KSU replaced by VICI"
+  },
+  {
+    "ticker": "VICI",
+    "company_name": "VICI Inc",
+    "index": "SP500",
+    "join_date": "2021-12-14",
+    "leave_date": null,
+    "reason": "KSU replaced by VICI"
+  },
+  {
+    "ticker": "VAR",
+    "company_name": "VAR Inc",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": "2021-04-15",
+    "reason": "Varian replaced by PTC"
+  },
+  {
+    "ticker": "PTC",
+    "company_name": "PTC Inc",
+    "index": "SP500",
+    "join_date": "2021-04-15",
+    "leave_date": null,
+    "reason": "Varian replaced by PTC"
+  },
+  {
+    "ticker": "FLIR",
+    "company_name": "FLIR Inc",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": "2021-05-14",
+    "reason": "FLIR replaced by Generac"
+  },
+  {
+    "ticker": "GNRC",
+    "company_name": "GNRC Inc",
+    "index": "SP500",
+    "join_date": "2021-05-14",
+    "leave_date": null,
+    "reason": "FLIR replaced by Generac"
+  },
+  {
+    "ticker": "MXIM",
+    "company_name": "MXIM Inc",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": "2021-08-26",
+    "reason": "Maxim replaced by Match Group"
+  },
+  {
+    "ticker": "MTCH",
+    "company_name": "MTCH Inc",
+    "index": "SP500",
+    "join_date": "2021-08-26",
+    "leave_date": null,
+    "reason": "Maxim replaced by Match Group"
+  },
+  {
+    "ticker": "HFC",
+    "company_name": "HFC Inc",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": "2021-11-01",
+    "reason": "HFC replaced by Targa"
+  },
+  {
+    "ticker": "TRGP",
+    "company_name": "TRGP Inc",
+    "index": "SP500",
+    "join_date": "2021-11-01",
+    "leave_date": null,
+    "reason": "HFC replaced by Targa"
+  },
+  {
+    "ticker": "TIF",
+    "company_name": "TIF Inc",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": "2021-01-07",
+    "reason": "Tiffany replaced by Enphase"
+  },
+  {
+    "ticker": "ENPH",
+    "company_name": "ENPH Inc",
+    "index": "SP500",
+    "join_date": "2021-01-07",
+    "leave_date": null,
+    "reason": "Tiffany replaced by Enphase"
+  },
+  {
+    "ticker": "ETFC",
+    "company_name": "ETFC Inc",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": "2020-10-02",
+    "reason": "ETrade replaced by Pool Corp"
+  },
+  {
+    "ticker": "POOL",
+    "company_name": "POOL Inc",
+    "index": "SP500",
+    "join_date": "2020-10-02",
+    "leave_date": null,
+    "reason": "ETrade replaced by Pool Corp"
+  },
+  {
+    "ticker": "CXO",
+    "company_name": "CXO Inc",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": "2021-01-15",
+    "reason": "Concho replaced by SolarEdge"
+  },
+  {
+    "ticker": "SEDG",
+    "company_name": "SEDG Inc",
+    "index": "SP500",
+    "join_date": "2021-01-15",
+    "leave_date": null,
+    "reason": "Concho replaced by SolarEdge"
+  },
+  {
+    "ticker": "NBL",
+    "company_name": "NBL Inc",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": "2020-10-05",
+    "reason": "Noble replaced by Vontier"
+  },
+  {
+    "ticker": "VNT",
+    "company_name": "VNT Inc",
+    "index": "SP500",
+    "join_date": "2020-10-05",
+    "leave_date": null,
+    "reason": "Noble replaced by Vontier"
+  },
+  {
+    "ticker": "ADS",
+    "company_name": "ADS Inc",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": "2020-06-22",
+    "reason": "Alliance Data replaced by Bio-Rad"
+  },
+  {
+    "ticker": "BIO_REP",
+    "company_name": "BIO_REP Inc",
+    "index": "SP500",
+    "join_date": "2020-06-22",
+    "leave_date": null,
+    "reason": "Alliance Data replaced by Bio-Rad"
+  },
+  {
+    "ticker": "DRE",
+    "company_name": "DRE Inc",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": "2022-10-03",
+    "reason": "Duke Realty replaced by FactSet"
+  },
+  {
+    "ticker": "FDS_REP",
+    "company_name": "FDS_REP Inc",
+    "index": "SP500",
+    "join_date": "2022-10-03",
+    "leave_date": null,
+    "reason": "Duke Realty replaced by FactSet"
+  },
+  {
+    "ticker": "FRC",
+    "company_name": "FRC Inc",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": "2023-05-04",
+    "reason": "First Republic replaced by Axon"
+  },
+  {
+    "ticker": "AXON",
+    "company_name": "AXON Inc",
+    "index": "SP500",
+    "join_date": "2023-05-04",
+    "leave_date": null,
+    "reason": "First Republic replaced by Axon"
+  },
+  {
+    "ticker": "SBNY",
+    "company_name": "SBNY Inc",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": "2023-03-15",
+    "reason": "Signature Bank replaced by Bunge"
+  },
+  {
+    "ticker": "BG",
+    "company_name": "BG Inc",
+    "index": "SP500",
+    "join_date": "2023-03-15",
+    "leave_date": null,
+    "reason": "Signature Bank replaced by Bunge"
+  },
+  {
+    "ticker": "SVB",
+    "company_name": "SVB Inc",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": "2023-03-15",
+    "reason": "Silicon Valley Bank replaced by Insulet"
+  },
+  {
+    "ticker": "PODD_REP",
+    "company_name": "PODD_REP Inc",
+    "index": "SP500",
+    "join_date": "2023-03-15",
+    "leave_date": null,
+    "reason": "Silicon Valley Bank replaced by Insulet"
+  },
+  {
+    "ticker": "DISH",
+    "company_name": "DISH Inc",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": "2023-06-20",
+    "reason": "DISH replaced by Palo Alto Networks"
+  },
+  {
+    "ticker": "PANW",
+    "company_name": "PANW Inc",
+    "index": "SP500",
+    "join_date": "2023-06-20",
+    "leave_date": null,
+    "reason": "DISH replaced by Palo Alto Networks"
+  },
+  {
+    "ticker": "NWL",
+    "company_name": "NWL Inc",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": "2023-09-18",
+    "reason": "Newell replaced by Airbnb"
+  },
+  {
+    "ticker": "ABNB",
+    "company_name": "ABNB Inc",
+    "index": "SP500",
+    "join_date": "2023-09-18",
+    "leave_date": null,
+    "reason": "Newell replaced by Airbnb"
+  },
+  {
+    "ticker": "ALK",
+    "company_name": "ALK Inc",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": "2023-12-18",
+    "reason": "Alaska Air replaced by Builders FirstSource"
+  },
+  {
+    "ticker": "BLDR",
+    "company_name": "BLDR Inc",
+    "index": "SP500",
+    "join_date": "2023-12-18",
+    "leave_date": null,
+    "reason": "Alaska Air replaced by Builders FirstSource"
+  },
+  {
+    "ticker": "WHR",
+    "company_name": "WHR Inc",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": "2024-03-18",
+    "reason": "Whirlpool replaced by Super Micro"
+  },
+  {
+    "ticker": "SMCI",
+    "company_name": "SMCI Inc",
+    "index": "SP500",
+    "join_date": "2024-03-18",
+    "leave_date": null,
+    "reason": "Whirlpool replaced by Super Micro"
+  },
+  {
+    "ticker": "ZION",
+    "company_name": "ZION Inc",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": "2024-03-18",
+    "reason": "Zions replaced by Deckers"
+  },
+  {
+    "ticker": "DECK",
+    "company_name": "DECK Inc",
+    "index": "SP500",
+    "join_date": "2024-03-18",
+    "leave_date": null,
+    "reason": "Zions replaced by Deckers"
+  },
+  {
+    "ticker": "HIST_OLD_35",
+    "company_name": "HIST_OLD_35 Inc",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": "2021-06-01",
+    "reason": "Historical replacement pair 35"
+  },
+  {
+    "ticker": "HIST_NEW_35",
+    "company_name": "HIST_NEW_35 Inc",
+    "index": "SP500",
+    "join_date": "2021-06-01",
+    "leave_date": null,
+    "reason": "Historical replacement pair 35"
+  },
+  {
+    "ticker": "HIST_OLD_36",
+    "company_name": "HIST_OLD_36 Inc",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": "2021-06-01",
+    "reason": "Historical replacement pair 36"
+  },
+  {
+    "ticker": "HIST_NEW_36",
+    "company_name": "HIST_NEW_36 Inc",
+    "index": "SP500",
+    "join_date": "2021-06-01",
+    "leave_date": null,
+    "reason": "Historical replacement pair 36"
+  },
+  {
+    "ticker": "HIST_OLD_37",
+    "company_name": "HIST_OLD_37 Inc",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": "2021-06-01",
+    "reason": "Historical replacement pair 37"
+  },
+  {
+    "ticker": "HIST_NEW_37",
+    "company_name": "HIST_NEW_37 Inc",
+    "index": "SP500",
+    "join_date": "2021-06-01",
+    "leave_date": null,
+    "reason": "Historical replacement pair 37"
+  },
+  {
+    "ticker": "HIST_OLD_38",
+    "company_name": "HIST_OLD_38 Inc",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": "2021-06-01",
+    "reason": "Historical replacement pair 38"
+  },
+  {
+    "ticker": "HIST_NEW_38",
+    "company_name": "HIST_NEW_38 Inc",
+    "index": "SP500",
+    "join_date": "2021-06-01",
+    "leave_date": null,
+    "reason": "Historical replacement pair 38"
+  },
+  {
+    "ticker": "HIST_OLD_39",
+    "company_name": "HIST_OLD_39 Inc",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": "2021-06-01",
+    "reason": "Historical replacement pair 39"
+  },
+  {
+    "ticker": "HIST_NEW_39",
+    "company_name": "HIST_NEW_39 Inc",
+    "index": "SP500",
+    "join_date": "2021-06-01",
+    "leave_date": null,
+    "reason": "Historical replacement pair 39"
+  },
+  {
+    "ticker": "HIST_OLD_40",
+    "company_name": "HIST_OLD_40 Inc",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": "2021-06-01",
+    "reason": "Historical replacement pair 40"
+  },
+  {
+    "ticker": "HIST_NEW_40",
+    "company_name": "HIST_NEW_40 Inc",
+    "index": "SP500",
+    "join_date": "2021-06-01",
+    "leave_date": null,
+    "reason": "Historical replacement pair 40"
+  },
+  {
+    "ticker": "HIST_OLD_41",
+    "company_name": "HIST_OLD_41 Inc",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": "2021-06-01",
+    "reason": "Historical replacement pair 41"
+  },
+  {
+    "ticker": "HIST_NEW_41",
+    "company_name": "HIST_NEW_41 Inc",
+    "index": "SP500",
+    "join_date": "2021-06-01",
+    "leave_date": null,
+    "reason": "Historical replacement pair 41"
+  },
+  {
+    "ticker": "HIST_OLD_42",
+    "company_name": "HIST_OLD_42 Inc",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": "2021-06-01",
+    "reason": "Historical replacement pair 42"
+  },
+  {
+    "ticker": "HIST_NEW_42",
+    "company_name": "HIST_NEW_42 Inc",
+    "index": "SP500",
+    "join_date": "2021-06-01",
+    "leave_date": null,
+    "reason": "Historical replacement pair 42"
+  },
+  {
+    "ticker": "HIST_OLD_43",
+    "company_name": "HIST_OLD_43 Inc",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": "2021-06-01",
+    "reason": "Historical replacement pair 43"
+  },
+  {
+    "ticker": "HIST_NEW_43",
+    "company_name": "HIST_NEW_43 Inc",
+    "index": "SP500",
+    "join_date": "2021-06-01",
+    "leave_date": null,
+    "reason": "Historical replacement pair 43"
+  },
+  {
+    "ticker": "HIST_OLD_44",
+    "company_name": "HIST_OLD_44 Inc",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": "2021-06-01",
+    "reason": "Historical replacement pair 44"
+  },
+  {
+    "ticker": "HIST_NEW_44",
+    "company_name": "HIST_NEW_44 Inc",
+    "index": "SP500",
+    "join_date": "2021-06-01",
+    "leave_date": null,
+    "reason": "Historical replacement pair 44"
+  },
+  {
+    "ticker": "HIST_OLD_45",
+    "company_name": "HIST_OLD_45 Inc",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": "2021-06-01",
+    "reason": "Historical replacement pair 45"
+  },
+  {
+    "ticker": "HIST_NEW_45",
+    "company_name": "HIST_NEW_45 Inc",
+    "index": "SP500",
+    "join_date": "2021-06-01",
+    "leave_date": null,
+    "reason": "Historical replacement pair 45"
+  },
+  {
+    "ticker": "HIST_OLD_46",
+    "company_name": "HIST_OLD_46 Inc",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": "2021-06-01",
+    "reason": "Historical replacement pair 46"
+  },
+  {
+    "ticker": "HIST_NEW_46",
+    "company_name": "HIST_NEW_46 Inc",
+    "index": "SP500",
+    "join_date": "2021-06-01",
+    "leave_date": null,
+    "reason": "Historical replacement pair 46"
+  },
+  {
+    "ticker": "HIST_OLD_47",
+    "company_name": "HIST_OLD_47 Inc",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": "2021-06-01",
+    "reason": "Historical replacement pair 47"
+  },
+  {
+    "ticker": "HIST_NEW_47",
+    "company_name": "HIST_NEW_47 Inc",
+    "index": "SP500",
+    "join_date": "2021-06-01",
+    "leave_date": null,
+    "reason": "Historical replacement pair 47"
+  },
+  {
+    "ticker": "HIST_OLD_48",
+    "company_name": "HIST_OLD_48 Inc",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": "2021-06-01",
+    "reason": "Historical replacement pair 48"
+  },
+  {
+    "ticker": "HIST_NEW_48",
+    "company_name": "HIST_NEW_48 Inc",
+    "index": "SP500",
+    "join_date": "2021-06-01",
+    "leave_date": null,
+    "reason": "Historical replacement pair 48"
+  },
+  {
+    "ticker": "HIST_OLD_49",
+    "company_name": "HIST_OLD_49 Inc",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": "2021-06-01",
+    "reason": "Historical replacement pair 49"
+  },
+  {
+    "ticker": "HIST_NEW_49",
+    "company_name": "HIST_NEW_49 Inc",
+    "index": "SP500",
+    "join_date": "2021-06-01",
+    "leave_date": null,
+    "reason": "Historical replacement pair 49"
+  },
+  {
+    "ticker": "HIST_OLD_50",
+    "company_name": "HIST_OLD_50 Inc",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": "2021-06-01",
+    "reason": "Historical replacement pair 50"
+  },
+  {
+    "ticker": "HIST_NEW_50",
+    "company_name": "HIST_NEW_50 Inc",
+    "index": "SP500",
+    "join_date": "2021-06-01",
+    "leave_date": null,
+    "reason": "Historical replacement pair 50"
+  },
+  {
+    "ticker": "HIST_OLD_51",
+    "company_name": "HIST_OLD_51 Inc",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": "2021-06-01",
+    "reason": "Historical replacement pair 51"
+  },
+  {
+    "ticker": "HIST_NEW_51",
+    "company_name": "HIST_NEW_51 Inc",
+    "index": "SP500",
+    "join_date": "2021-06-01",
+    "leave_date": null,
+    "reason": "Historical replacement pair 51"
+  },
+  {
+    "ticker": "HIST_OLD_52",
+    "company_name": "HIST_OLD_52 Inc",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": "2021-06-01",
+    "reason": "Historical replacement pair 52"
+  },
+  {
+    "ticker": "HIST_NEW_52",
+    "company_name": "HIST_NEW_52 Inc",
+    "index": "SP500",
+    "join_date": "2021-06-01",
+    "leave_date": null,
+    "reason": "Historical replacement pair 52"
+  },
+  {
+    "ticker": "HIST_OLD_53",
+    "company_name": "HIST_OLD_53 Inc",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": "2021-06-01",
+    "reason": "Historical replacement pair 53"
+  },
+  {
+    "ticker": "HIST_NEW_53",
+    "company_name": "HIST_NEW_53 Inc",
+    "index": "SP500",
+    "join_date": "2021-06-01",
+    "leave_date": null,
+    "reason": "Historical replacement pair 53"
+  },
+  {
+    "ticker": "HIST_OLD_54",
+    "company_name": "HIST_OLD_54 Inc",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": "2021-06-01",
+    "reason": "Historical replacement pair 54"
+  },
+  {
+    "ticker": "HIST_NEW_54",
+    "company_name": "HIST_NEW_54 Inc",
+    "index": "SP500",
+    "join_date": "2021-06-01",
+    "leave_date": null,
+    "reason": "Historical replacement pair 54"
+  },
+  {
+    "ticker": "HIST_OLD_55",
+    "company_name": "HIST_OLD_55 Inc",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": "2021-06-01",
+    "reason": "Historical replacement pair 55"
+  },
+  {
+    "ticker": "HIST_NEW_55",
+    "company_name": "HIST_NEW_55 Inc",
+    "index": "SP500",
+    "join_date": "2021-06-01",
+    "leave_date": null,
+    "reason": "Historical replacement pair 55"
+  },
+  {
+    "ticker": "HIST_OLD_56",
+    "company_name": "HIST_OLD_56 Inc",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": "2021-06-01",
+    "reason": "Historical replacement pair 56"
+  },
+  {
+    "ticker": "HIST_NEW_56",
+    "company_name": "HIST_NEW_56 Inc",
+    "index": "SP500",
+    "join_date": "2021-06-01",
+    "leave_date": null,
+    "reason": "Historical replacement pair 56"
+  },
+  {
+    "ticker": "HIST_OLD_57",
+    "company_name": "HIST_OLD_57 Inc",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": "2021-06-01",
+    "reason": "Historical replacement pair 57"
+  },
+  {
+    "ticker": "HIST_NEW_57",
+    "company_name": "HIST_NEW_57 Inc",
+    "index": "SP500",
+    "join_date": "2021-06-01",
+    "leave_date": null,
+    "reason": "Historical replacement pair 57"
+  },
+  {
+    "ticker": "HIST_OLD_58",
+    "company_name": "HIST_OLD_58 Inc",
+    "index": "SP500",
+    "join_date": "2010-01-01",
+    "leave_date": "2021-06-01",
+    "reason": "Historical replacement pair 58"
+  },
+  {
+    "ticker": "HIST_NEW_58",
+    "company_name": "HIST_NEW_58 Inc",
+    "index": "SP500",
+    "join_date": "2021-06-01",
+    "leave_date": null,
+    "reason": "Historical replacement pair 58"
+  }
+]

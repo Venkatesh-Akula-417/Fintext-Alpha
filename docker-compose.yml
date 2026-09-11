@@ -1,0 +1,187 @@
+version: "3.8"
+
+services:
+  # ── Time-Series Database: QuestDB (Hot Storage Path) ──────────────────────
+  questdb:
+    image: questdb/questdb:latest
+    container_name: fintext-questdb
+    restart: unless-stopped
+    ports:
+      - "9000:9000" # HTTP REST API & Web Console
+      - "9009:9009" # Influx Line Protocol (ILP) TCP
+      - "8812:8812" # PostgreSQL Wire Protocol (pgwire)
+    environment:
+      - QDB_LOG_W_STDOUT_LEVEL=INFO
+    volumes:
+      - questdb_data:/var/lib/questdb
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/status"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+  # ── Event Streaming Bus: Redpanda / Kafka ─────────────────────────────────
+  kafka:
+    image: docker.redpanda.com/redpandadata/redpanda:latest
+    container_name: fintext-kafka
+    restart: unless-stopped
+    command:
+      - redpanda start
+      - --smp 1
+      - --memory 512M
+      - --overprovisioned
+      - --kafka-addr internal://0.0.0.0:9092,external://0.0.0.0:19092
+      - --advertise-kafka-addr internal://kafka:9092,external://localhost:19092
+    ports:
+      - "19092:19092" # External clients
+      - "9644:9644"   # Admin API & Healthcheck
+    volumes:
+      - redpanda_data:/var/lib/redpanda/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9644/v1/status/ready"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+  # ── Ingestion Daemon: Native Rust & ONNX Inference ─────────────────────────
+  fintext-ingestion:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: ingestion
+    container_name: fintext-ingestion-engine
+    restart: unless-stopped
+    depends_on:
+      questdb:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+    environment:
+      - QUESTDB_URL=http://questdb:9000
+      - KAFKA_BOOTSTRAP_SERVERS=kafka:9092
+      - KAFKA_TOPIC=sentiment-events
+      - KAFKA_TOPIC_REALTIME=sentiment-updates
+      - RUST_LOG=info
+    volumes:
+      - ./config:/app/config:ro
+      - ./data/stream:/app/data/stream
+
+  # ── HTTP API Gateway: Native Axum Server ───────────────────────────────────
+  fintext-api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: api
+    container_name: fintext-api-gateway
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    depends_on:
+      questdb:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+    environment:
+      - QUESTDB_URL=http://questdb:9000
+      - KAFKA_BOOTSTRAP_SERVERS=kafka:9092
+      - KAFKA_TOPIC_REALTIME=sentiment-updates
+      - PORT=8000
+      - RUST_LOG=info
+    volumes:
+      - ./config:/app/config:ro
+
+  # ── Spillover Engine: Cross-Asset Lead-Lag Quant Analytics ─────────────────
+  fintext-spillover:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: spillover
+    container_name: fintext-spillover-engine
+    restart: unless-stopped
+    depends_on:
+      questdb:
+        condition: service_healthy
+    environment:
+      - QUESTDB_URL=http://questdb:9000
+      - SPILLOVER_INTERVAL_SECS=3600
+      - SPILLOVER_LOOKBACK_DAYS=30
+      - SPILLOVER_MIN_HOURS=10
+      - SPILLOVER_CORR_THRESHOLD=0.3
+      - RUST_LOG=info
+    volumes:
+      - ./config:/app/config:ro
+
+  # ── Dead Letter Queue Auto-Reprocessing Worker ────────────────────────────
+  fintext-dead-letter:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: dead_letter_worker
+    container_name: fintext-dead-letter-worker
+    restart: unless-stopped
+    depends_on:
+      kafka:
+        condition: service_healthy
+      questdb:
+        condition: service_healthy
+    environment:
+      - KAFKA_BOOTSTRAP_SERVERS=kafka:9092
+      - KAFKA_DLQ_TOPIC=sentiment-dlq
+      - KAFKA_REPROCESS_TOPIC=sentiment-updates
+      - S3_QUARANTINE_BUCKET=fintext-dlq-quarantine
+      - LOCAL_QUARANTINE_DIR=/app/data/quarantine/
+      - DLQ_MAX_RETRIES=5
+      - DLQ_INITIAL_BACKOFF_MS=100
+      - DLQ_MAX_BACKOFF_MS=5000
+      - DLQ_MOCK_MODE=false
+      - RUST_LOG=info
+    volumes:
+      - ./data/quarantine:/app/data/quarantine
+
+  # ── AI Latency & Performance Anomaly Detector ─────────────────────────────
+  fintext-anomaly-detector:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: anomaly_detector
+    container_name: fintext-anomaly-detector
+    restart: unless-stopped
+    environment:
+      - PROMETHEUS_URL=http://prometheus:9090
+      - PROMETHEUS_QUERY=sum(rate(http_request_duration_seconds_sum[5m])) / sum(rate(http_request_duration_seconds_count[5m]))
+      - ANOMALY_THRESHOLD_ZSCORE=3.0
+      - ANOMALY_WINDOW_SIZE=30
+      - CHECK_INTERVAL_SECS=60
+      - WEBHOOK_URL=
+      - RUST_LOG=info
+
+  # ── Time-Series & Relational Store: PostgreSQL 16 + TimescaleDB ──────────
+  postgres:
+    image: timescale/timescaledb:latest-pg16
+    container_name: fintext-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: fintext
+      POSTGRES_PASSWORD: fintext
+      POSTGRES_DB: fintext_metadata
+      TIMESCALEDB_TELEMETRY: "off"
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./config/timescale/init.sql:/docker-entrypoint-initdb.d/01-init.sql:ro
+      - ./config/pit_reference_schema.sql:/docker-entrypoint-initdb.d/02-pit_reference.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U fintext -d fintext_metadata"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+volumes:
+  questdb_data:
+    driver: local
+  redpanda_data:
+    driver: local
+  postgres_data:
+    driver: local

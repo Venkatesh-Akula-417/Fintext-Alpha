@@ -1,0 +1,74 @@
+# ══════════════════════════════════════════════════════════════════════════════
+# FinText-Alpha-Vectorizer — Automated Velero Backup Schedules
+# ══════════════════════════════════════════════════════════════════════════════
+# Provides periodic CSI volume snapshotting and S3 backups with strict TTLs.
+# ══════════════════════════════════════════════════════════════════════════════
+
+# ── 1. QuestDB Hot Time-Series Storage Backup (Every 6 Hours, 30 Days Retention)
+apiVersion: velero.io/v1
+kind: Schedule
+metadata:
+  name: questdb-backup
+  namespace: velero
+  labels:
+    app.kubernetes.io/name: questdb
+    app.kubernetes.io/part-of: fintext-alpha-vectorizer
+    app.kubernetes.io/component: hot-storage-backup
+spec:
+  schedule: "0 */6 * * *"
+  template:
+    ttl: 720h0m0s # 30 Days Retention
+    includedNamespaces:
+      - default
+    labelSelector:
+      matchLabels:
+        app.kubernetes.io/name: questdb
+    snapshotVolumes: true
+    defaultVolumesToFsBackup: false
+
+---
+# ── 2. Kafka / Redpanda Streaming Event Bus Backup (Daily, 7 Days Retention) ──
+apiVersion: velero.io/v1
+kind: Schedule
+metadata:
+  name: kafka-backup
+  namespace: velero
+  labels:
+    app.kubernetes.io/name: kafka
+    app.kubernetes.io/part-of: fintext-alpha-vectorizer
+    app.kubernetes.io/component: message-broker-backup
+spec:
+  schedule: "0 0 * * *"
+  template:
+    ttl: 168h0m0s # 7 Days Retention
+    includedNamespaces:
+      - default
+    labelSelector:
+      matchLabels:
+        app.kubernetes.io/name: kafka
+    snapshotVolumes: true
+    defaultVolumesToFsBackup: false
+
+
+---
+# ── 5. Full Stateful Cluster Snapshot (Daily at 02:00 UTC, 30 Days Retention) ──
+apiVersion: velero.io/v1
+kind: Schedule
+metadata:
+  name: full-stateful-cluster-backup
+  namespace: velero
+  labels:
+    app.kubernetes.io/name: stateful-cluster
+    app.kubernetes.io/part-of: fintext-alpha-vectorizer
+    app.kubernetes.io/component: full-cluster-backup
+spec:
+  schedule: "0 2 * * *"
+  template:
+    ttl: 720h0m0s # 30 Days Retention
+    includedNamespaces:
+      - default
+    labelSelector:
+      matchLabels:
+        app.kubernetes.io/part-of: fintext-alpha-vectorizer
+    snapshotVolumes: true
+    defaultVolumesToFsBackup: false

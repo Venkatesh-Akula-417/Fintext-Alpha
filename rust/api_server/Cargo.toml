@@ -1,0 +1,60 @@
+[package]
+name = "fintext_api_server"
+version = "0.1.0"
+edition = "2021"
+description = "Ultra-Low-Latency Axum HTTP API Gateway for FinText-Alpha-Vectorizer"
+authors = ["FinText Alpha Engineering Team"]
+
+[lib]
+name = "fintext_api_server"
+path = "src/lib.rs"
+
+[[bin]]
+name = "fintext_api"
+path = "src/main.rs"
+
+[dependencies]
+axum = { version = "0.7", features = ["ws", "multipart"] }
+hound = "3.5"
+tokio = { version = "1.36", features = ["full"] }
+reqwest = { version = "0.11", default-features = false, features = ["json", "rustls-tls"] }
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+tower = { version = "0.4", features = ["timeout", "util"] }
+tower-http = { version = "0.5", features = ["trace", "timeout"] }
+chrono = { version = "0.4", features = ["serde"] }
+once_cell = "1.19"
+rdkafka = { version = "0.36", features = ["tokio", "cmake-build"] }
+futures-util = "0.3"
+tokio-stream = "0.1"
+jsonwebtoken = "9.3"
+dashmap = "5.5"
+bytes = "1.0"
+sqlx = { version = "0.7", default-features = false, features = ["runtime-tokio", "postgres", "chrono", "uuid", "macros"] }
+uuid = { version = "1.7", features = ["v4", "serde"] }
+utoipa = { version = "4.2", features = ["axum_extras", "chrono", "uuid"] }
+utoipa-swagger-ui = { version = "7.1", features = ["axum"] }
+hmac = "0.12"
+sha2 = "0.10"
+hex = "0.4"
+argon2 = "0.5"
+rand = "0.8"
+fintext_spillover_engine = { path = "../spillover_engine" }
+arrow = "53"
+parquet = { version = "53", features = ["arrow"] }
+ipnet = { version = "2.9", features = ["serde"] }
+csv = "1.3"
+rmp-serde = "1.1"
+
+# Secrets Management Abstraction Layer (AWS Secrets Manager)
+aws-sdk-secretsmanager = { version = "1.40", default-features = false, features = ["rustls", "rt-tokio"] }
+aws-config = { version = "=1.5.0", default-features = false, features = ["rustls", "behavior-version-latest"] }
+
+# Object Storage Archive (S3 / MinIO) for PIT Certificate Cryptographic Proofs
+aws-sdk-s3 = { version = "=1.38.0", default-features = false, features = ["rustls", "rt-tokio"] }
+
+[dev-dependencies]
+http-body-util = "0.1"
+tower = { version = "0.4", features = ["util"] }

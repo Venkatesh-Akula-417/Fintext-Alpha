@@ -1,0 +1,62 @@
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: fintext-api-vs
+  namespace: default
+  labels:
+    app.kubernetes.io/name: fintext-api
+    app.kubernetes.io/part-of: fintext-alpha-vectorizer
+    app.kubernetes.io/component: api-mesh-routing
+spec:
+  hosts:
+    - "fintext-api"
+    - "fintext-api.default.svc.cluster.local"
+  gateways:
+    - mesh
+  http:
+    - name: "api-routes"
+      match:
+        - uri:
+            prefix: "/"
+      route:
+        - destination:
+            host: fintext-api
+            port:
+              number: 8000
+          weight: 100
+      timeout: 10s
+      retries:
+        attempts: 3
+        perTryTimeout: 2s
+        retryOn: "5xx,connect-failure,refused-stream,gateway-error"
+
+---
+apiVersion: networking.istio.io/v1beta1
+kind: DestinationRule
+metadata:
+  name: fintext-api-dr
+  namespace: default
+  labels:
+    app.kubernetes.io/name: fintext-api
+    app.kubernetes.io/part-of: fintext-alpha-vectorizer
+    app.kubernetes.io/component: api-circuit-breaker
+spec:
+  host: fintext-api
+  trafficPolicy:
+    loadBalancer:
+      simple: LEAST_REQUEST
+    connectionPool:
+      tcp:
+        maxConnections: 1000
+        connectTimeout: 500ms
+      http:
+        http1MaxPendingRequests: 100
+        http2MaxRequests: 1000
+        maxRequestsPerConnection: 100
+        maxRetries: 3
+    outlierDetection:
+      # Circuit breaker: eject backend instance on repeated 5xx errors
+      consecutive5xxErrors: 5
+      interval: 30s
+      baseEjectionTime: 60s
+      maxEjectionPercent: 50

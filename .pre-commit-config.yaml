@@ -1,0 +1,38 @@
+# ═══════════════════════════════════════════════════════════════════════════════
+# FinText Alpha Vectorizer — Pre-Commit Hook Configuration
+# ═══════════════════════════════════════════════════════════════════════════════
+#
+# Install:  pip install pre-commit && pre-commit install
+# Test:     pre-commit run --all-files
+# Update:   pre-commit autoupdate
+#
+# See docs/pre_commit_secret_scanning.md for full documentation.
+# ═══════════════════════════════════════════════════════════════════════════════
+
+repos:
+  # ─── Standard Code Hygiene Hooks ──────────────────────────────────────────
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.6.0
+    hooks:
+      # Block private key files (*.pem, id_rsa, etc.) from being committed
+      - id: detect-private-key
+
+      # Prevent direct commits to protected branches
+      - id: no-commit-to-branch
+        args: ["--branch", "main", "--branch", "develop"]
+
+      # Validate YAML syntax across all .yaml/.yml files
+      - id: check-yaml
+        args: ["--allow-multiple-documents"]
+
+      # Ensure files end with a single newline
+      - id: end-of-file-fixer
+
+      # Remove trailing whitespace
+      - id: trailing-whitespace
+
+  # ─── Secret Detection — Gitleaks ──────────────────────────────────────────
+  - repo: https://github.com/gitleaks/gitleaks
+    rev: v8.18.4
+    hooks:
+      - id: gitleaks

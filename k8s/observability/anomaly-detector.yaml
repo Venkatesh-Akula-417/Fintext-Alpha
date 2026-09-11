@@ -1,0 +1,51 @@
+# ══════════════════════════════════════════════════════════════════════════════
+# FinText-Alpha-Vectorizer — AI Latency & Performance Anomaly Detection Daemon
+# ══════════════════════════════════════════════════════════════════════════════
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: fintext-anomaly-detector
+  namespace: default
+  labels:
+    app.kubernetes.io/name: fintext-anomaly-detector
+    app.kubernetes.io/part-of: fintext-alpha-vectorizer
+    app.kubernetes.io/component: ai-ops-remediation
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: fintext-anomaly-detector
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: fintext-anomaly-detector
+        app.kubernetes.io/part-of: fintext-alpha-vectorizer
+        app.kubernetes.io/component: ai-ops-remediation
+    spec:
+      containers:
+        - name: anomaly-detector
+          image: ghcr.io/fintext-alpha/fintext_anomaly_detector:latest
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: PROMETHEUS_URL
+              value: "http://prometheus:9090"
+            - name: PROMETHEUS_QUERY
+              value: "sum(rate(http_request_duration_seconds_sum[5m])) / sum(rate(http_request_duration_seconds_count[5m]))"
+            - name: ANOMALY_THRESHOLD_ZSCORE
+              value: "3.0"
+            - name: ANOMALY_WINDOW_SIZE
+              value: "30"
+            - name: CHECK_INTERVAL_SECS
+              value: "30"
+            - name: WEBHOOK_URL
+              value: "http://alertmanager:9093/api/v1/alerts"
+            - name: RUST_LOG
+              value: "info"
+          resources:
+            requests:
+              cpu: "50m"
+              memory: "64Mi"
+            limits:
+              cpu: "250m"
+              memory: "256Mi"

@@ -1,0 +1,86 @@
+[
+  {
+    "ticker": "AAPL",
+    "status": "active"
+  },
+  {
+    "ticker": "NVDA",
+    "status": "active"
+  },
+  {
+    "ticker": "MSFT",
+    "status": "active"
+  },
+  {
+    "ticker": "TSLA",
+    "status": "active"
+  },
+  {
+    "ticker": "AMZN",
+    "status": "active"
+  },
+  {
+    "ticker": "META",
+    "status": "active"
+  },
+  {
+    "ticker": "GOOGL",
+    "status": "active"
+  },
+  {
+    "ticker": "AMD",
+    "status": "active"
+  },
+  {
+    "ticker": "INTC",
+    "status": "active"
+  },
+  {
+    "ticker": "JPM",
+    "status": "active"
+  },
+  {
+    "ticker": "BAC",
+    "status": "active"
+  },
+  {
+    "ticker": "V",
+    "status": "active"
+  },
+  {
+    "ticker": "WMT",
+    "status": "active"
+  },
+  {
+    "ticker": "XOM",
+    "status": "active"
+  },
+  {
+    "ticker": "JNJ",
+    "status": "active"
+  },
+  {
+    "ticker": "TWTR",
+    "status": "delisted",
+    "delisting_date": "2022-10-28T00:00:00Z",
+    "successor_ticker": "X"
+  },
+  {
+    "ticker": "FB",
+    "status": "acquired",
+    "delisting_date": "2022-06-09T00:00:00Z",
+    "successor_ticker": "META"
+  },
+  {
+    "ticker": "FIT",
+    "status": "acquired",
+    "delisting_date": "2021-01-14T00:00:00Z",
+    "successor_ticker": "GOOGL"
+  },
+  {
+    "ticker": "SCTY",
+    "status": "acquired",
+    "delisting_date": "2016-11-21T00:00:00Z",
+    "successor_ticker": "TSLA"
+  }
+]

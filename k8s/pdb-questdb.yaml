@@ -1,0 +1,15 @@
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: questdb-pdb
+  namespace: default
+  labels:
+    app.kubernetes.io/name: questdb
+    app.kubernetes.io/part-of: fintext-alpha-vectorizer
+    app.kubernetes.io/component: hot-storage
+spec:
+  # Protect QuestDB primary time-series database node from involuntary termination
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: questdb

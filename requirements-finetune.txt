@@ -1,0 +1,12 @@
+# ══════════════════════════════════════════════════════════════════════════════
+# FinText-Alpha-Vectorizer — FinBERT Domain Fine-Tuning & Quantization Requirements
+# ══════════════════════════════════════════════════════════════════════════════
+# Pinned versions for reproducible PyTorch fine-tuning and ONNX INT8 export.
+
+torch>=2.0.0
+transformers>=4.30.0
+onnx>=1.14.0
+onnxruntime>=1.15.0
+numpy>=1.24.0
+requests>=2.31.0
+tqdm>=4.65.0

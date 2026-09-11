@@ -1,0 +1,134 @@
+# ══════════════════════════════════════════════════════════════════════════════
+# FinText-Alpha-Vectorizer — Production Prometheus Alerting Rules ConfigMap
+# ══════════════════════════════════════════════════════════════════════════════
+# Contains 9 institutional alerting rules for 95%+ zero-touch site reliability.
+# Grouped into: API Latency & Errors, Ingestion Lag, Infrastructure Saturation, Backups.
+# ══════════════════════════════════════════════════════════════════════════════
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: prometheus-alerts
+  namespace: default
+  labels:
+    app.kubernetes.io/name: prometheus-alerts
+    app.kubernetes.io/part-of: fintext-alpha-vectorizer
+    app.kubernetes.io/component: monitoring-alerts
+data:
+  alerts.yml: |
+    groups:
+      # ── 1. API Gateway & SLA Latency Alerts ────────────────────────────────
+      - name: fintext_api_sla_alerts
+        rules:
+          - alert: APIP95LatencyHigh
+            expr: histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket[5m])) by (le)) > 0.5
+            for: 2m
+            labels:
+              severity: critical
+              service: fintext-api
+              tier: gateway
+            annotations:
+              summary: "FinText API P95 latency breached 500ms SLA"
+              description: "API p95 latency is {{ $value | humanizeDuration }} (threshold > 500ms) over a 5m sliding window on pod {{ $labels.pod }}."
+              runbook_url: "https://docs.fintext.internal/ops/runbooks/api-high-latency"
+
+          - alert: APIServerErrorRateHigh
+            expr: sum(rate(http_requests_total{status=~"5.."}[5m])) / sum(rate(http_requests_total[5m])) > 0.01
+            for: 2m
+            labels:
+              severity: critical
+              service: fintext-api
+              tier: gateway
+            annotations:
+              summary: "FinText API 5xx server error rate exceeded 1%"
+              description: "API 5xx error rate reached {{ $value | humanizePercentage }} (threshold > 1%) across endpoints."
+              runbook_url: "https://docs.fintext.internal/ops/runbooks/api-5xx-error-rate"
+
+      # ── 2. Data Ingestion & Message Broker Lag Alerts ─────────────────────
+      - name: fintext_ingestion_pipeline_alerts
+        rules:
+          - alert: QuestDBIngestionLagHigh
+            expr: delta(questdb_ingested_total[5m]) < 100
+            for: 5m
+            labels:
+              severity: critical
+              service: questdb
+              tier: hot-storage
+            annotations:
+              summary: "QuestDB ingestion throughput stalled (< 100 rows / 5m)"
+              description: "QuestDB hot storage has only ingested {{ $value }} records in the last 5 minutes during active trading hours."
+              runbook_url: "https://docs.fintext.internal/ops/runbooks/questdb-ingestion-stalled"
+
+          - alert: KafkaRealtimeConsumerLagHigh
+            expr: kafka_realtime_consumer_lag > 10000
+            for: 3m
+            labels:
+              severity: warning
+              service: kafka-realtime
+              tier: messaging
+            annotations:
+              summary: "Kafka real-time consumer pending messages > 10,000"
+              description: "Kafka real-time consumer group {{ $labels.consumer }} backlog has reached {{ $value }} pending messages."
+              runbook_url: "https://docs.fintext.internal/ops/runbooks/kafka-consumer-lag"
+
+          - alert: KafkaConsumerLagHigh
+            expr: kafka_consumer_lag > 100000
+            for: 3m
+            labels:
+              severity: warning
+              service: kafka
+              tier: event-bus
+            annotations:
+              summary: "Kafka consumer offset lag > 100,000 messages"
+              description: "Kafka consumer group {{ $labels.group }} on topic {{ $labels.topic }} is lagging by {{ $value }} offsets."
+              runbook_url: "https://docs.fintext.internal/ops/runbooks/kafka-consumer-lag"
+
+      # ── 3. Kubernetes Infrastructure & Saturation Alerts ─────────────────
+      - name: fintext_infrastructure_saturation_alerts
+        rules:
+          - alert: PodRestartFrequent
+            expr: rate(kube_pod_container_status_restarts_total[15m]) > 0
+            for: 5m
+            labels:
+              severity: warning
+              tier: infrastructure
+            annotations:
+              summary: "Kubernetes pod restarting frequently (CrashLoopBackOff risk)"
+              description: "Container {{ $labels.container }} in pod {{ $labels.pod }} restarted {{ $value | printf \"%.2f\" }} times per second over 15m."
+              runbook_url: "https://docs.fintext.internal/ops/runbooks/pod-crashloop"
+
+          - alert: DiskSpaceLow
+            expr: disk_used_percent > 80
+            for: 5m
+            labels:
+              severity: critical
+              tier: storage
+            annotations:
+              summary: "Persistent volume disk utilization exceeded 80%"
+              description: "Disk usage on mount {{ $labels.mountpoint }} (pod {{ $labels.pod }}) reached {{ $value }}%."
+              runbook_url: "https://docs.fintext.internal/ops/runbooks/disk-space-low"
+
+          - alert: MemoryPressureHigh
+            expr: container_memory_usage_bytes / container_spec_memory_limit_bytes > 0.9
+            for: 3m
+            labels:
+              severity: critical
+              tier: infrastructure
+            annotations:
+              summary: "Container memory usage exceeded 90% of cgroup limit (OOM risk)"
+              description: "Container {{ $labels.container }} in pod {{ $labels.pod }} memory is at {{ $value | humanizePercentage }} of limit."
+              runbook_url: "https://docs.fintext.internal/ops/runbooks/container-memory-pressure"
+
+      # ── 4. Database Backup & Governance Alerts ────────────────────────────
+      - name: fintext_backup_governance_alerts
+        rules:
+          - alert: DatabaseBackupFailed
+            expr: backup_status{status="failed"} == 1
+            for: 2m
+            labels:
+              severity: critical
+              tier: backups
+            annotations:
+              summary: "Automated database backup job failed"
+              description: "Scheduled backup CronJob {{ $labels.job_name }} for component {{ $labels.component }} failed to upload snapshot."
+              runbook_url: "https://docs.fintext.internal/ops/runbooks/database-backup-failure"

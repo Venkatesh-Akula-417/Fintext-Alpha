@@ -1,0 +1,122 @@
+name: FinText Alpha Vectorizer CI/CD Pipeline
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  RUST_LOG: "info"
+  PYTHONUNBUFFERED: "1"
+  QUESTDB_MOCK_FALLBACK: "1"
+  POLYGON_MOCK_FALLBACK: "1"
+  POLYGON_MOCK_MODE: "1"
+  WHISPER_MOCK_FALLBACK: "1"
+  NATS_MOCK_MODE: "1"
+  JWT_SECRET: "super_secret_ci_jwt_key_32_bytes_len!!"
+  ADMIN_TOKEN: "fintext-admin-dev-secret-token"
+  RATE_LIMIT_REQUESTS: "100000"
+  RATE_LIMIT_WINDOW_SECONDS: "60"
+  PORT: "8000"
+  HOST: "127.0.0.1"
+  DATABASE_URL: "postgres://fintext:fintext@localhost:5432/fintext_metadata"
+
+jobs:
+  ci-windows:
+    name: Windows CI — Rust Workspace & Python Master Test Suite
+    runs-on: windows-latest
+    timeout-minutes: 35
+
+    steps:
+      - name: Checkout Source Code
+        uses: actions/checkout@v4
+
+      - name: Set up Rust Toolchain (Pinned 1.80.1)
+        uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: 1.80.1
+          components: rustfmt, clippy
+
+
+      - name: Cache Cargo Dependencies
+        uses: Swatinem/rust-cache@v2
+        with:
+          work-dir: rust
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+
+      - name: Install Python Dependencies & Build Environment
+        shell: powershell
+        run: |
+          python -m venv venv
+          .\venv\Scripts\Activate.ps1
+          python -m pip install --upgrade pip setuptools wheel
+          if (Test-Path requirements.txt) {
+            pip install -r requirements.txt
+          }
+          pip install pytest pytest-asyncio httpx pydantic python-dotenv requests websockets pyyaml clang
+          if (Test-Path python_sdk/pyproject.toml) {
+            pip install -e python_sdk
+          }
+
+      - name: Configure LIBCLANG_PATH for Native Bindgen
+        shell: powershell
+        run: |
+          $clangPath = "$((Get-Item .\venv\Lib\site-packages\clang\native).FullName)"
+          if (Test-Path "$clangPath\libclang.dll") {
+            Write-Host "Configuring LIBCLANG_PATH to: $clangPath"
+            echo "LIBCLANG_PATH=$clangPath" >> $env:GITHUB_ENV
+          } else {
+            Write-Host "Warning: libclang.dll not found in venv, searching system..."
+            $sysClang = Get-ChildItem -Path "C:\Program Files" -Filter "libclang.dll" -Recurse -ErrorAction SilentlyContinue | Select-Object -First 1
+            if ($sysClang) {
+              $dir = $sysClang.DirectoryName
+              Write-Host "Found system libclang at: $dir"
+              echo "LIBCLANG_PATH=$dir" >> $env:GITHUB_ENV
+            }
+          }
+
+      - name: Check Rust Code Formatting
+        run: cargo fmt --all --check --manifest-path rust/Cargo.toml
+
+      - name: Run Rust Clippy Linter
+        run: cargo clippy --workspace --manifest-path rust/Cargo.toml --all-targets
+
+      - name: Run Native Rust Workspace Tests
+        run: cargo test --workspace --manifest-path rust/Cargo.toml
+
+      - name: Build Release Binaries
+        run: cargo build --release --manifest-path rust/Cargo.toml
+
+      - name: Run Python SDK Test Suite
+        shell: powershell
+        run: |
+          .\venv\Scripts\pytest python_sdk/tests -v
+
+      - name: Execute Master Test Suite Orchestrator (67+ Suites)
+        shell: powershell
+        run: |
+          .\venv\Scripts\python.exe scripts/run_all_tests.py
+
+      - name: Upload Test Logs & Artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ci-test-artifacts
+          path: |
+            logs/
+            scripts/*.json
+          retention-days: 7
+          if-no-files-found: ignore

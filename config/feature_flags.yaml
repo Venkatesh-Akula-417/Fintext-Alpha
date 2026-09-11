@@ -1,0 +1,80 @@
+# ══════════════════════════════════════════════════════════════════════════════
+# FinText-Alpha-Vectorizer — Feature Flag Governance Matrix
+# ══════════════════════════════════════════════════════════════════════════════
+# Controls active microservices, quantitative alpha models, and streaming sinks.
+# ══════════════════════════════════════════════════════════════════════════════
+version: "2.0.0-institutional"
+
+features:
+  # ── Ingestion Data Sources (Licensing & Redistribution Compliance) ──
+  sources:
+    sec_edgar:
+      enabled: true
+      description: "Public SEC EDGAR 8-K, 10-Q, 10-K filings (Safe for commercial redistribution)."
+    finnhub:
+      enabled: true
+      description: "Finnhub real-time financial news (Internal quantitative analytics use; commercial license required for redistribution)."
+    polygon:
+      enabled: true
+      description: "Polygon.io real-time options trades (Internal microstructure analytics; commercial license required for redistribution)."
+
+  # ── Core Production Engines (100% Native Rust) ──
+  core:
+    sec_edgar_fetcher:
+      enabled: true
+      description: "Real-time SEC EDGAR 8-K, 10-Q, 10-K regulatory filing ingestion."
+    onnx_finbert_sentiment:
+      enabled: true
+      description: "Native in-process ONNX Runtime FinBERT INT8 sentiment classification with MiniLM fallback."
+    onnx_ner_pipeline:
+      enabled: true
+      description: "Native in-process ONNX Runtime Named Entity Recognition (ORG, LOC, MISC)."
+    whisper_asr_transcription:
+      enabled: true
+      description: "Native Whisper.cpp Automatic Speech Recognition for earnings call audio."
+    acoustic_dsp_features:
+      enabled: true
+      description: "Normalized autocorrelation F0 pitch, RMS energy, pause ratio, and speech rate extraction."
+    supply_chain_gnn:
+      enabled: true
+      description: "2-layer symmetric normalized Laplacian Graph Convolutional Network shock propagation."
+    polygon_options_microstructure:
+      enabled: true
+      description: "Real-time options trade ingestion via Polygon.io REST API."
+    vpin_order_toxicity:
+      enabled: true
+      description: "Volume-Synchronized Probability of Informed Trading (VPIN) bucketing engine."
+    dealer_gamma_exposure_gex:
+      enabled: true
+      description: "Black-Scholes analytical dollar Gamma Exposure (GEX) calculation."
+    cross_asset_spillover_engine:
+      enabled: true
+      description: "Multi-lag Pearson cross-correlation scan for lead-lag risk propagation."
+    axum_api_gateway:
+      enabled: true
+      description: "Sub-millisecond Axum HTTP REST and WebSocket streaming gateway."
+    point_in_time_backtest:
+      enabled: true
+      description: "Bi-temporal ASOF point-in-time quantitative backtesting engine."
+
+  # ── Streaming & Storage Sinks ──
+  sinks:
+    questdb_ilp_sink:
+      enabled: true
+      description: "High-throughput Influx Line Protocol (ILP) time-series hot storage."
+    kafka_realtime_sink:
+      enabled: true
+      description: "Sub-millisecond real-time event distribution for trading desks via Kafka/Redpanda."
+    kafka_producer_sink:
+      enabled: true
+      description: "Persistent event streaming to Redpanda/Kafka topics."
+    jsonl_stream_sink:
+      enabled: true
+      description: "Local file stream buffer fallback (data/stream/processed_signals.jsonl)."
+
+  # ── Enterprise & Monetization Tier Features ──
+  enterprise:
+    fix_protocol_bridge:
+      enabled: true
+      description: "Enterprise FIX 4.4 protocol bridge and order execution engine (POST /fix/order, GET /fix/orders, POST /fix/cancel)."
+

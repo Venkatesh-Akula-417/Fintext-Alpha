@@ -1,0 +1,58 @@
+{
+  "TSMC": {
+    "related": ["AAPL", "NVDA", "AMD"],
+    "relation": "supplier"
+  },
+  "TSM": {
+    "related": ["AAPL", "NVDA", "AMD"],
+    "relation": "supplier"
+  },
+  "AAPL": {
+    "related": ["TSM", "QCOM", "AVGO"],
+    "relation": "customer"
+  },
+  "NVDA": {
+    "related": ["TSM", "AMD", "MSFT"],
+    "relation": "customer"
+  },
+  "AMD": {
+    "related": ["NVDA", "INTC", "TSM"],
+    "relation": "competitor"
+  },
+  "INTC": {
+    "related": ["AMD", "NVDA", "TSM"],
+    "relation": "competitor"
+  },
+  "MSFT": {
+    "related": ["AAPL", "GOOGL", "AMZN"],
+    "relation": "competitor"
+  },
+  "GOOGL": {
+    "related": ["META", "MSFT", "SNAP"],
+    "relation": "competitor"
+  },
+  "META": {
+    "related": ["GOOGL", "SNAP", "PINS"],
+    "relation": "competitor"
+  },
+  "AMZN": {
+    "related": ["SHOP", "WMT", "TGT"],
+    "relation": "competitor"
+  },
+  "TSLA": {
+    "related": ["RIVN", "LCID", "F"],
+    "relation": "competitor"
+  },
+  "XOM": {
+    "related": ["CVX", "OXY", "COP"],
+    "relation": "competitor"
+  },
+  "CVX": {
+    "related": ["XOM", "OXY", "COP"],
+    "relation": "competitor"
+  },
+  "JPM": {
+    "related": ["BAC", "C", "WFC"],
+    "relation": "competitor"
+  }
+}

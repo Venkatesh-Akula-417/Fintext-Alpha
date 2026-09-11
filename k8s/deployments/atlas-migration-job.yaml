@@ -1,0 +1,115 @@
+# ══════════════════════════════════════════════════════════════════════════════
+# FinText-Alpha-Vectorizer — Atlas Declarative Schema Migration Job
+# ══════════════════════════════════════════════════════════════════════════════
+# Applies declarative migrations ensuring zero-downtime expand-contract integrity.
+# ══════════════════════════════════════════════════════════════════════════════
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: atlas-migration-config
+  namespace: default
+  labels:
+    app.kubernetes.io/name: atlas-migration
+    app.kubernetes.io/part-of: fintext-alpha-vectorizer
+data:
+  atlas.hcl: |
+    variable "db_url" {
+      type    = string
+      default = "postgres://fintext_admin:FinTextSecureMetaPassword2026!@postgres-meta:5432/fintext_metadata?sslmode=disable"
+    }
+
+    env "kubernetes" {
+      url = var.db_url
+      migration {
+        dir = "file:///migrations"
+      }
+      format {
+        migrate {
+          diff = "{{ sql . \"  \" }}"
+        }
+      }
+    }
+
+  20260827000000_expand_feature_store.sql: |
+    -- Create AI Model & Feature Store Registry
+    CREATE TABLE IF NOT EXISTS model_registry (
+        model_name VARCHAR(64) PRIMARY KEY,
+        version VARCHAR(32) NOT NULL,
+        weights_sha256 VARCHAR(64) NOT NULL,
+        onnx_optimized BOOLEAN DEFAULT TRUE,
+        inference_latency_p99_ms DOUBLE PRECISION DEFAULT 0.0,
+        deployed_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_signals_ticker_ts ON signals(ticker, timestamp DESC);
+
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: atlas-db-migration
+  namespace: default
+  labels:
+    app.kubernetes.io/name: atlas-migration
+    app.kubernetes.io/part-of: fintext-alpha-vectorizer
+    app.kubernetes.io/component: database-migration
+spec:
+  backoffLimit: 2
+  activeDeadlineSeconds: 300
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: atlas-migration
+        app.kubernetes.io/part-of: fintext-alpha-vectorizer
+    spec:
+      restartPolicy: OnFailure
+      containers:
+        - name: atlas
+          image: arigaio/atlas:latest
+          imagePullPolicy: IfNotPresent
+          command:
+            - "/bin/sh"
+            - "-c"
+            - |
+              atlas migrate apply \
+                --url "postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres-meta:5432/fintext_metadata?sslmode=disable" \
+                --dir "file:///migrations"
+          env:
+            - name: POSTGRES_USER
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-meta-secret
+                  key: POSTGRES_USER
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-meta-secret
+                  key: POSTGRES_PASSWORD
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "128Mi"
+            limits:
+              cpu: "500m"
+              memory: "512Mi"
+          volumeMounts:
+            - name: config
+              mountPath: /atlas.hcl
+              subPath: atlas.hcl
+            - name: migrations
+              mountPath: /migrations/20260827000000_expand_feature_store.sql
+              subPath: 20260827000000_expand_feature_store.sql
+      volumes:
+        - name: config
+          configMap:
+            name: atlas-migration-config
+            items:
+              - key: atlas.hcl
+                path: atlas.hcl
+        - name: migrations
+          configMap:
+            name: atlas-migration-config
+            items:
+              - key: 20260827000000_expand_feature_store.sql
+                path: 20260827000000_expand_feature_store.sql

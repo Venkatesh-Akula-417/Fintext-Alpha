@@ -1,0 +1,138 @@
+[
+  {
+    "entity_id": "PERM_META",
+    "entity_name": "Meta Platforms Inc (formerly Facebook)",
+    "cik": "0001326801",
+    "figi": "BBG000MM2P62",
+    "isin": "US30303M1027",
+    "mappings": [
+      {
+        "ticker": "FB",
+        "start_iso": "2012-05-18T00:00:00Z",
+        "end_iso": "2022-06-09T00:00:00Z"
+      },
+      {
+        "ticker": "META",
+        "start_iso": "2022-06-09T00:00:00Z",
+        "end_iso": "9999-12-31T23:59:59Z"
+      }
+    ]
+  },
+  {
+    "entity_id": "PERM_GOOGL",
+    "entity_name": "Alphabet Inc (formerly Google)",
+    "cik": "0001652044",
+    "figi": "BBG009S39JX6",
+    "isin": "US02079K3059",
+    "mappings": [
+      {
+        "ticker": "GOOG",
+        "start_iso": "2004-08-19T00:00:00Z",
+        "end_iso": "2014-04-03T00:00:00Z"
+      },
+      {
+        "ticker": "GOOGL",
+        "start_iso": "2014-04-03T00:00:00Z",
+        "end_iso": "9999-12-31T23:59:59Z"
+      }
+    ]
+  },
+  {
+    "entity_id": "PERM_TWTR",
+    "entity_name": "Twitter Inc (Acquired/Delisted)",
+    "cik": "0001418091",
+    "figi": "BBG000BHBD96",
+    "isin": "US90184L1026",
+    "mappings": [
+      {
+        "ticker": "TWTR",
+        "start_iso": "2013-11-07T00:00:00Z",
+        "end_iso": "2022-10-28T00:00:00Z"
+      }
+    ]
+  },
+  {
+    "entity_id": "PERM_AAPL",
+    "entity_name": "Apple Inc.",
+    "cik": "0000320193",
+    "figi": "BBG000B9XRY4",
+    "isin": "US0378331005",
+    "mappings": [
+      {
+        "ticker": "AAPL",
+        "start_iso": "1980-12-12T00:00:00Z",
+        "end_iso": "9999-12-31T23:59:59Z"
+      }
+    ]
+  },
+  {
+    "entity_id": "PERM_TSLA",
+    "entity_name": "Tesla Inc.",
+    "cik": "0001318605",
+    "figi": "BBG000N9MNX3",
+    "isin": "US88160R1014",
+    "mappings": [
+      {
+        "ticker": "TSLA",
+        "start_iso": "2010-06-29T00:00:00Z",
+        "end_iso": "9999-12-31T23:59:59Z"
+      }
+    ]
+  },
+  {
+    "entity_id": "PERM_MSFT",
+    "entity_name": "Microsoft Corporation",
+    "cik": "0000789019",
+    "figi": "BBG000BPH459",
+    "isin": "US5949181045",
+    "mappings": [
+      {
+        "ticker": "MSFT",
+        "start_iso": "1986-03-13T00:00:00Z",
+        "end_iso": "9999-12-31T23:59:59Z"
+      }
+    ]
+  },
+  {
+    "entity_id": "PERM_NVDA",
+    "entity_name": "NVIDIA Corporation",
+    "cik": "0001045810",
+    "figi": "BBG000BBJQV0",
+    "isin": "US67066G1040",
+    "mappings": [
+      {
+        "ticker": "NVDA",
+        "start_iso": "1999-01-22T00:00:00Z",
+        "end_iso": "9999-12-31T23:59:59Z"
+      }
+    ]
+  },
+  {
+    "entity_id": "PERM_TESORO",
+    "entity_name": "Tesoro Petroleum Corporation",
+    "cik": "0000501047",
+    "figi": "BBG000C1Z4V2",
+    "isin": "US8816091016",
+    "mappings": [
+      {
+        "ticker": "TSO",
+        "start_iso": "1990-01-01T00:00:00Z",
+        "end_iso": "2017-06-01T00:00:00Z"
+      }
+    ]
+  },
+  {
+    "entity_id": "PERM_SINGING",
+    "entity_name": "The Singing Machine Company",
+    "cik": "0000923601",
+    "figi": "BBG000BKS0M7",
+    "isin": "US8293571063",
+    "mappings": [
+      {
+        "ticker": "TSO",
+        "start_iso": "2020-01-01T00:00:00Z",
+        "end_iso": "9999-12-31T23:59:59Z"
+      }
+    ]
+  }
+]

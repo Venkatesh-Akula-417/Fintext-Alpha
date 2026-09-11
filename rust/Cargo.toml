@@ -1,0 +1,22 @@
+# Last Verified: 2026-09-10 (Suite #96) — 10 Workspace Crates (Rust 1.80+ / 1.80.1)
+[workspace]
+members = [
+    "html_sanitizer",
+    "ticker_extractor",
+    "spam_detector",
+    "event_classifier",
+    "sidecar",
+    "ingestion_engine",
+    "api_server",
+    "spillover_engine",
+    "dead_letter_worker",
+    "observability_anomaly",
+]
+resolver = "2"
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.80"
+authors = ["FinText Alpha Engineering Team"]
+

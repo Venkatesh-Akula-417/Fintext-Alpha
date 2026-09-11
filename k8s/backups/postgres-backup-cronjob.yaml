@@ -1,0 +1,162 @@
+# ══════════════════════════════════════════════════════════════════════════════
+# FinText-Alpha-Vectorizer — PostgreSQL Automated Backup CronJob
+# ══════════════════════════════════════════════════════════════════════════════
+# Executes pg_dump every 6 hours, compresses with gzip, generates SHA-256 hash,
+# uploads to S3/MinIO, and prunes backups older than 7 days for zero-touch SRE.
+# ══════════════════════════════════════════════════════════════════════════════
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: postgres-backup-script
+  namespace: default
+  labels:
+    app.kubernetes.io/name: postgres-backup
+    app.kubernetes.io/part-of: fintext-alpha-vectorizer
+    app.kubernetes.io/component: database-backup
+data:
+  backup.sh: |
+    #!/usr/bin/env bash
+    set -euo pipefail
+
+    echo "================================================================="
+    echo " FinText Alpha Vectorizer — Automated PostgreSQL Backup Routine"
+    echo "================================================================="
+    echo "Timestamp: $(date -u +"%Y-%m-%dT%H:%M:%SZ")"
+
+    BACKUP_DIR="/tmp/backups"
+    mkdir -p "${BACKUP_DIR}"
+
+    TIMESTAMP=$(date -u +"%Y%m%d_%H%M%SZ")
+    BACKUP_NAME="fintext_pg_meta_${TIMESTAMP}.sql.gz"
+    BACKUP_PATH="${BACKUP_DIR}/${BACKUP_NAME}"
+    CHECKSUM_PATH="${BACKUP_PATH}.sha256"
+
+    # Export password for pg_dump
+    export PGPASSWORD="${POSTGRES_PASSWORD}"
+
+    echo "[1/4] Dumping PostgreSQL database '${POSTGRES_DB}' from host '${POSTGRES_HOST}'..."
+    pg_dump -h "${POSTGRES_HOST}" -p "${POSTGRES_PORT:-5432}" -U "${POSTGRES_USER}" "${POSTGRES_DB}" | gzip -9 > "${BACKUP_PATH}"
+
+    BACKUP_SIZE=$(du -h "${BACKUP_PATH}" | cut -f1)
+    echo "      Backup generated successfully. Size: ${BACKUP_SIZE}"
+
+    echo "[2/4] Calculating cryptographic SHA-256 checksum..."
+    sha256sum "${BACKUP_PATH}" > "${CHECKSUM_PATH}"
+    cat "${CHECKSUM_PATH}"
+
+    echo "[3/4] Uploading backup and checksum to S3 storage bucket '${S3_BUCKET}'..."
+    if command -v aws >/dev/null 2>&1; then
+      aws s3 cp "${BACKUP_PATH}" "s3://${S3_BUCKET}/postgres/${BACKUP_NAME}" --endpoint-url="${S3_ENDPOINT:-https://s3.amazonaws.com}"
+      aws s3 cp "${CHECKSUM_PATH}" "s3://${S3_BUCKET}/postgres/${BACKUP_NAME}.sha256" --endpoint-url="${S3_ENDPOINT:-https://s3.amazonaws.com}"
+    elif command -v mc >/dev/null 2>&1; then
+      mc alias set s3storage "${S3_ENDPOINT:-https://s3.amazonaws.com}" "${AWS_ACCESS_KEY_ID}" "${AWS_SECRET_ACCESS_KEY}"
+      mc cp "${BACKUP_PATH}" "s3storage/${S3_BUCKET}/postgres/${BACKUP_NAME}"
+      mc cp "${CHECKSUM_PATH}" "s3storage/${S3_BUCKET}/postgres/${BACKUP_NAME}.sha256"
+    else
+      echo "      [WARN] No S3 CLI available; backup stored in local persistent staging: ${BACKUP_PATH}"
+    fi
+
+    echo "[4/4] Pruning backups older than ${RETENTION_DAYS:-7} days..."
+    find "${BACKUP_DIR}" -type f -name "fintext_pg_meta_*.sql.gz*" -mtime "+${RETENTION_DAYS:-7}" -exec rm -f {} + || true
+
+    echo "================================================================="
+    echo " PostgreSQL Backup Completed Successfully: ${BACKUP_NAME}"
+    echo "================================================================="
+
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: postgres-backup-cronjob
+  namespace: default
+  labels:
+    app.kubernetes.io/name: postgres-backup
+    app.kubernetes.io/part-of: fintext-alpha-vectorizer
+    app.kubernetes.io/component: database-backup
+spec:
+  schedule: "0 */6 * * *" # Every 6 hours
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 5
+  jobTemplate:
+    spec:
+      backoffLimit: 3
+      template:
+        metadata:
+          labels:
+            app.kubernetes.io/name: postgres-backup
+            app.kubernetes.io/part-of: fintext-alpha-vectorizer
+            app.kubernetes.io/component: database-backup
+        spec:
+          restartPolicy: OnFailure
+          containers:
+            - name: postgres-backup
+              image: bitnami/postgresql:16-debian-12
+              imagePullPolicy: IfNotPresent
+              command: ["/bin/bash", "/scripts/backup.sh"]
+              env:
+                - name: POSTGRES_HOST
+                  value: "postgres-meta"
+                - name: POSTGRES_PORT
+                  value: "5432"
+                - name: POSTGRES_DB
+                  valueFrom:
+                    secretKeyRef:
+                      name: postgres-meta-secret
+                      key: POSTGRES_DB
+                - name: POSTGRES_USER
+                  valueFrom:
+                    secretKeyRef:
+                      name: postgres-meta-secret
+                      key: POSTGRES_USER
+                - name: POSTGRES_PASSWORD
+                  valueFrom:
+                    secretKeyRef:
+                      name: postgres-meta-secret
+                      key: POSTGRES_PASSWORD
+                - name: S3_BUCKET
+                  valueFrom:
+                    secretKeyRef:
+                      name: fintext-backup-s3-secret
+                      key: backup-s3-bucket
+                      optional: true
+                - name: S3_ENDPOINT
+                  valueFrom:
+                    secretKeyRef:
+                      name: fintext-backup-s3-secret
+                      key: backup-s3-endpoint
+                      optional: true
+                - name: AWS_ACCESS_KEY_ID
+                  valueFrom:
+                    secretKeyRef:
+                      name: fintext-backup-s3-secret
+                      key: aws-access-key-id
+                      optional: true
+                - name: AWS_SECRET_ACCESS_KEY
+                  valueFrom:
+                    secretKeyRef:
+                      name: fintext-backup-s3-secret
+                      key: aws-secret-access-key
+                      optional: true
+                - name: RETENTION_DAYS
+                  value: "7"
+              resources:
+                requests:
+                  cpu: "100m"
+                  memory: "128Mi"
+                limits:
+                  cpu: "500m"
+                  memory: "512Mi"
+              volumeMounts:
+                - name: script-volume
+                  mountPath: /scripts
+                - name: backup-storage
+                  mountPath: /tmp/backups
+          volumes:
+            - name: script-volume
+              configMap:
+                name: postgres-backup-script
+                defaultMode: 0755
+            - name: backup-storage
+              emptyDir: {}

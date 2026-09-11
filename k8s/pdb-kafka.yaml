@@ -1,0 +1,15 @@
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: kafka-pdb
+  namespace: default
+  labels:
+    app.kubernetes.io/name: kafka
+    app.kubernetes.io/part-of: fintext-alpha-vectorizer
+    app.kubernetes.io/component: message-broker
+spec:
+  # Preserve minimum broker replica availability for streaming ingestion partition leaders
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: kafka

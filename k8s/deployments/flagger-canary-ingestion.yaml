@@ -1,0 +1,40 @@
+# ══════════════════════════════════════════════════════════════════════════════
+# FinText-Alpha-Vectorizer — Flagger Canary Release for Ingestion Engine
+# ══════════════════════════════════════════════════════════════════════════════
+
+apiVersion: flagger.app/v1beta1
+kind: Canary
+metadata:
+  name: fintext-ingestion
+  namespace: default
+  labels:
+    app.kubernetes.io/name: fintext-ingestion
+    app.kubernetes.io/part-of: fintext-alpha-vectorizer
+    app.kubernetes.io/component: progressive-delivery
+spec:
+  provider: istio
+  targetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: fintext-ingestion
+  progressDeadlineSeconds: 600
+  service:
+    port: 9091
+    targetPort: 9091
+  analysis:
+    interval: 45s
+    threshold: 3
+    maxWeight: 50
+    stepWeight: 20
+    metrics:
+      - name: request-success-rate
+        thresholdRange:
+          min: 99
+        interval: 1m
+      - name: "cpu-utilization-limit"
+        templateRef:
+          name: cpu-usage
+          namespace: default
+        thresholdRange:
+          max: 85
+        interval: 1m

@@ -1,0 +1,42 @@
+# ═══════════════════════════════════════════════════════════════════════════════
+# Docker Ignore Rules — FinText Alpha Vectorizer (Native Rust)
+# ═══════════════════════════════════════════════════════════════════════════════
+
+# Rust build artifacts
+rust/target/
+target/
+
+# Legacy and scratch directories
+legacy/
+scratch/
+backups/
+
+# Virtual environments & dependencies
+.venv/
+venv/
+ENV/
+env/
+__pycache__/
+*.py[cod]
+
+# Data & database directories
+data/questdb/
+data/db/
+*.duckdb
+*.duckdb.wal
+
+# Logs & temp files
+logs/
+*.log
+*.tmp
+.DS_Store
+
+# Version control & IDE
+.git/
+.gitignore
+.gitattributes
+.idea/
+.vscode/
+.gemini/
+*.swp
+*.swo

@@ -1,0 +1,23 @@
+[package]
+name = "fintext_spillover_engine"
+version = "0.1.0"
+edition = "2021"
+description = "Cross-Asset Sentiment Lead-Lag & Spillover Analytics Engine for FinText-Alpha-Vectorizer"
+authors = ["FinText Alpha Engineering Team"]
+
+[lib]
+name = "fintext_spillover_engine"
+path = "src/lib.rs"
+
+[[bin]]
+name = "fintext_spillover"
+path = "src/main.rs"
+
+[dependencies]
+tokio = { version = "1.36", features = ["full"] }
+reqwest = { version = "0.11", default-features = false, features = ["json", "rustls-tls"] }
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+chrono = { version = "0.4", features = ["serde"] }
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }

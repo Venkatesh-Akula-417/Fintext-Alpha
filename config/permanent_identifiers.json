@@ -1,0 +1,90 @@
+[
+  {
+    "ticker": "AAPL",
+    "figi": "BBG000B9XRY4",
+    "cusip": "037833100",
+    "isin": "US0378331005",
+    "effective_date": "1980-12-12T00:00:00Z",
+    "end_date": null
+  },
+  {
+    "ticker": "MSFT",
+    "figi": "BBG000BPH459",
+    "cusip": "594918104",
+    "isin": "US5949181045",
+    "effective_date": "1986-03-13T00:00:00Z",
+    "end_date": null
+  },
+  {
+    "ticker": "NVDA",
+    "figi": "BBG000BBJQV0",
+    "cusip": "67066G104",
+    "isin": "US67066G1040",
+    "effective_date": "1999-01-22T00:00:00Z",
+    "end_date": null
+  },
+  {
+    "ticker": "TSLA",
+    "figi": "BBG000N9MNX3",
+    "cusip": "88160R101",
+    "isin": "US88160R1014",
+    "effective_date": "2010-06-29T00:00:00Z",
+    "end_date": null
+  },
+  {
+    "ticker": "AMZN",
+    "figi": "BBG000BVPV84",
+    "cusip": "023135106",
+    "isin": "US0231351067",
+    "effective_date": "1997-05-15T00:00:00Z",
+    "end_date": null
+  },
+  {
+    "ticker": "META",
+    "figi": "BBG000MM2P62",
+    "cusip": "30303M102",
+    "isin": "US30303M1027",
+    "effective_date": "2022-06-09T00:00:00Z",
+    "end_date": null
+  },
+  {
+    "ticker": "FB",
+    "figi": "BBG000MM2P62",
+    "cusip": "30303M102",
+    "isin": "US30303M1027",
+    "effective_date": "2012-05-18T00:00:00Z",
+    "end_date": "2022-06-08T23:59:59Z"
+  },
+  {
+    "ticker": "GOOGL",
+    "figi": "BBG009S39JX6",
+    "cusip": "02079K305",
+    "isin": "US02079K3059",
+    "effective_date": "2014-04-02T00:00:00Z",
+    "end_date": null
+  },
+  {
+    "ticker": "AMD",
+    "figi": "BBG000BBQCY0",
+    "cusip": "007903107",
+    "isin": "US0079031078",
+    "effective_date": "1972-09-01T00:00:00Z",
+    "end_date": null
+  },
+  {
+    "ticker": "INTC",
+    "figi": "BBG000C12848",
+    "cusip": "458140100",
+    "isin": "US4581401001",
+    "effective_date": "1971-10-13T00:00:00Z",
+    "end_date": null
+  },
+  {
+    "ticker": "JPM",
+    "figi": "BBG000GZQJ27",
+    "cusip": "46625H100",
+    "isin": "US46625H1005",
+    "effective_date": "1969-03-05T00:00:00Z",
+    "end_date": null
+  }
+]

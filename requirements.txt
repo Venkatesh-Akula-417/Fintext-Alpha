@@ -1,0 +1,16 @@
+# ══════════════════════════════════════════════════════════════════════════════
+# FinText-Alpha-Vectorizer — Optional Integration Testing Dependencies
+# ══════════════════════════════════════════════════════════════════════════════
+# NOTE: Production is 100% native Rust & QuestDB. Python is NOT required at runtime.
+# These dependencies are only used for optional external test suite orchestration.
+
+pytest>=8.0.0
+requests>=2.31.0
+websockets>=12.0.0
+pyyaml>=6.0.0
+
+# Optional Model Export & ONNX Quantization Dependencies
+torch>=2.0.0
+transformers>=4.30.0
+onnx>=1.14.0
+onnxruntime>=1.15.0

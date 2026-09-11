@@ -1,0 +1,32 @@
+apiVersion: velero.io/v1
+kind: BackupStorageLocation
+metadata:
+  name: default
+  namespace: velero
+  labels:
+    app.kubernetes.io/name: velero
+    app.kubernetes.io/part-of: fintext-alpha-vectorizer
+    app.kubernetes.io/component: backup-storage
+spec:
+  provider: aws
+  objectStorage:
+    bucket: fintext-velero-backups
+    prefix: stateful-backups
+  config:
+    region: us-east-1
+    s3ForcePathStyle: "false"
+
+---
+apiVersion: velero.io/v1
+kind: VolumeSnapshotLocation
+metadata:
+  name: default
+  namespace: velero
+  labels:
+    app.kubernetes.io/name: velero
+    app.kubernetes.io/part-of: fintext-alpha-vectorizer
+    app.kubernetes.io/component: volume-snapshot
+spec:
+  provider: aws
+  config:
+    region: us-east-1
