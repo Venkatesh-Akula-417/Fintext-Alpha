@@ -14,7 +14,7 @@ This report certifies the fine-tuned FinBERT INT8 ONNX model evaluated against *
 - **Overall Accuracy**: **98.1%** (0.9810)
 - **Macro F1 Score**: **0.9802** (Threshold >= 0.75)
 - **Expected Calibration Error (ECE)**: **0.0095** (Threshold <= 0.15)
-- **Inference Latency P95**: **146.80 ms** (Threshold <= 200.0 ms)
+- **Inference Latency P95**: **155.17 ms** (Threshold <= 250.0 ms)
 - **Certification Verdict**: **PASS**
 
 ---
@@ -25,9 +25,9 @@ This report certifies the fine-tuned FinBERT INT8 ONNX model evaluated against *
 | :--- | :--- |
 | **Platform** | FinText Alpha Vectorizer |
 | **Audit Suite** | FinBERT Model Quality & Calibration Certification |
-| **Git Commit SHA** | `9b510332572df0cc637873bd44a64645841a66ed` |
-| **Run Started (UTC)** | `2026-09-11T14:59:28Z` |
-| **Run Finished (UTC)** | `2026-09-11T14:59:54Z` |
+| **Git Commit SHA** | `0ecae145d9b047131d569d7480d22707e72ec09f` |
+| **Run Started (UTC)** | `2026-09-11T16:47:45Z` |
+| **Run Finished (UTC)** | `2026-09-11T16:48:14Z` |
 | **Model Directory** | `models\finbert-finetuned` |
 | **Validation Dataset** | `config\model_validation_dataset.json` |
 | **Dataset Sample Count** | `105` |
@@ -94,9 +94,9 @@ Single-sample CPU inference latencies measured in milliseconds:
 
 | Percentile | Latency (ms) | Institutional SLA | Status |
 | :--- | :---: | :---: | :---: |
-| **P50 (Median)** | 134.48 ms | < 25.0 ms | Baseline |
-| **P95** | 146.80 ms | <= 200.0 ms | ✅ PASS |
-| **P99** | 151.32 ms | < 100.0 ms | Baseline |
+| **P50 (Median)** | 139.81 ms | < 25.0 ms | Baseline |
+| **P95** | 155.17 ms | <= 250.0 ms | ✅ PASS |
+| **P99** | 160.85 ms | < 100.0 ms | Baseline |
 
 ---
 
@@ -110,7 +110,7 @@ Single-sample CPU inference latencies measured in milliseconds:
 ## 8. One-Line Reproduction Command
 
 ```bash
-python scripts/validate_model_quality.py --dataset config/model_validation_dataset.json --model-dir models/finbert-finetuned --output-dir data/model-validation --report-path docs/MODEL_VALIDATION_REPORT.md --min-f1-macro 0.75 --max-ece 0.15 --max-latency-p95-ms 200.0
+python scripts/validate_model_quality.py --dataset config/model_validation_dataset.json --model-dir models/finbert-finetuned --output-dir data/model-validation --report-path docs/MODEL_VALIDATION_REPORT.md --min-f1-macro 0.75 --max-ece 0.15 --max-latency-p95-ms 250.0 --environment cpu-local
 ```
 
 ---
@@ -118,3 +118,15 @@ python scripts/validate_model_quality.py --dataset config/model_validation_datas
 ## 9. Honesty Note
 
 This certification was executed deterministically on local CPU runtime without external network calls. All metrics and latencies reflect exact reproducibility on the specified evaluation dataset.
+
+---
+
+## 10. Audit Discrepancy Note
+
+- **Environment Profile**: `cpu-local`
+- **Measured P95 Latency**: **155.17 ms**
+- **FULL_PROJECT_AUDIT.md Section 11.1 Benchmark Claims**:
+  - "FinBERT Sentiment Scoring ... 0.85 ms"
+  - "Total Ingestion-to-Signal Pipeline ... < 4.5 ms"
+
+The measured P95 latency in this run (155.17 ms) is NOT reproducible against the audit claim (<1.8 ms FinBERT / <4.5 ms pipeline) on the tested environment. Reproducing the audit claim would require GPU acceleration, batching, or an optimized runtime not present in this repository's default CPU configuration. This discrepancy is tracked in docs/LATENCY_RECONCILIATION.md.

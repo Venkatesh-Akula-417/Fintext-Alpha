@@ -1,6 +1,6 @@
 # FinText Alpha Vectorizer — Point-in-Time (PIT) Correctness Certification Report
 
-> **Overall Status**: ⚠️ LOGIC-VALIDATED ONLY (SQLite Fallback — PostgreSQL Certification PENDING)  
+> **Overall Status**: ✅ CERTIFIED PASS (PostgreSQL 16 Storage Layer Verified)  
 > **Audit Level**: Tier-1 Institutional Quantitative SLA  
 > **Evaluation Scope**: SCD Type 2 Temporal Isolation, Symbol Lineage, Restatements, Delistings, Stock Splits, Index Rebalances, and Negative Control Sensitivity.  
 
@@ -8,7 +8,7 @@
 
 ## 1. Executive Summary
 
-This validation test harness was executed against **SQLite in-memory (FALLBACK — not production stack, sqlite 3.50.4)** as a local logic fallback because PostgreSQL 16 + TimescaleDB was unavailable on this host (Docker not installed, no local postgres service). While all 8 positive Point-in-Time temporal invariants and the negative control sensitivity proof pass algorithmically, **production storage-layer certification on PostgreSQL 16 + TimescaleDB is PENDING and MUST NOT be claimed from this run**.
+This validation test harness was executed against **PostgreSQL 16.15 + TimescaleDB 2.30.0** on target `localhost:5432/fintext_metadata`. Point-in-Time correctness and zero look-ahead bias have been verified directly against the production relational storage stack. At any historical query point $T$, the platform exposes exclusively the data state observable at $T$, with future revisions, restatements, delayed ingestions, and subsequent index changes completely hidden.
 
 ### Key Audit Results
 - **Positive As-Of Scenarios (S1–S8)**: 8 / 8 PASSED (100% compliance)
@@ -21,25 +21,24 @@ This validation test harness was executed against **SQLite in-memory (FALLBACK �
 
 | Metric | Value |
 | :--- | :--- |
-| **Validation Database Engine** | SQLite in-memory (FALLBACK — not production stack, sqlite 3.50.4) |
-| **Git Commit SHA** | `9b510332572df0cc637873bd44a64645841a66ed` |
-| **Run Started (UTC)** | `2026-09-11T13:09:14Z` |
-| **Run Finished (UTC)** | `2026-09-11T13:09:14Z` |
-| **Database Target** | `in-memory-sqlite` |
+| **Validation Database Engine** | PostgreSQL 16.15 + TimescaleDB 2.30.0 |
+| **Git Commit SHA** | `0ecae145d9b047131d569d7480d22707e72ec09f` |
+| **Run Started (UTC)** | `2026-09-12T06:43:29Z` |
+| **Run Finished (UTC)** | `2026-09-12T06:43:30Z` |
+| **Database Target** | `localhost:5432/fintext_metadata` |
 | **Test Schema Isolation** | `fintext_pit_validation_test` (ephemeral & isolated) |
 
 ### Validation Environment
 | Parameter | Setting |
 | :--- | :--- |
-| **Engine Profile** | SQLite in-memory (FALLBACK — not production stack, sqlite 3.50.4) |
-| **Host Target** | `in-memory-sqlite` |
-| **Execution Timestamp** | `2026-09-11T13:09:14Z` |
-| **Storage Certification Status** | PENDING (Production PostgreSQL 16 + TimescaleDB required) |
+| **Engine Profile** | PostgreSQL 16.15 + TimescaleDB 2.30.0 |
+| **Host Target** | `localhost:5432/fintext_metadata` |
+| **Execution Timestamp** | `2026-09-12T06:43:29Z` |
+| **Storage Certification Status** | CERTIFIED (Production PostgreSQL 16) |
 
 ### One-Line Reproduction Command
 ```bash
-python scripts/validate_pit_correctness.py --database-url "sqlite://:memory:" --output-dir data/pit-validation --report-path docs/PIT_VALIDATION_REPORT.md
-# (FALLBACK ONLY — NOT A CERTIFICATION RUN)
+python scripts/validate_pit_correctness.py --database-url "postgres://fintext:fintext@localhost:5432/fintext_metadata" --output-dir data/pit-validation --report-path docs/PIT_VALIDATION_REPORT.md
 ```
 
 ---
@@ -82,9 +81,9 @@ python scripts/validate_pit_correctness.py --database-url "sqlite://:memory:" --
     "revision_number": 1,
     "sentiment_score": 0.85,
     "sentiment_label": "POSITIVE",
-    "valid_from": "2025-06-15T10:00:00Z",
-    "valid_to": "2025-06-15T14:00:00Z",
-    "is_current": 0
+    "valid_from": "2025-06-15T10:00:00+00:00",
+    "valid_to": "2025-06-15T14:00:00+00:00",
+    "is_current": false
   },
   "invariant": "At T1=12:00, only rev1 (valid [10:00, 14:00)) is returned. rev2 (valid >= 14:00) is excluded."
 }
@@ -110,9 +109,9 @@ python scripts/validate_pit_correctness.py --database-url "sqlite://:memory:" --
     "revision_number": 2,
     "sentiment_score": 0.45,
     "sentiment_label": "NEUTRAL",
-    "valid_from": "2025-06-15T14:00:00Z",
+    "valid_from": "2025-06-15T14:00:00+00:00",
     "valid_to": null,
-    "is_current": 1
+    "is_current": true
   },
   "invariant": "At T2=15:00, rev2 is active (is_current=True, valid_to=NULL). rev1 expired at 14:00."
 }
@@ -236,7 +235,7 @@ python scripts/validate_pit_correctness.py --database-url "sqlite://:memory:" --
   "expected_revision": 1,
   "actual_revision": 2,
   "lookahead_bias_detected": true,
-  "defect_description": "Look-ahead defect caught: Naive query at T1=12:00:00Z returned revision 2 (valid_from=2025-06-15T14:00:00Z) instead of historical revision 1.",
+  "defect_description": "Look-ahead defect caught: Naive query at T1=12:00:00Z returned revision 2 (valid_from=2025-06-15 14:00:00+00:00) instead of historical revision 1.",
   "sensitivity_proof": "Proves that omitting bi-temporal intervals leaks future revisions."
 }
 ```
@@ -282,4 +281,4 @@ To incorporate this Point-in-Time correctness validation into GitHub Actions or 
 
 ## 7. Institutional Certification Sign-Off
 
-LOGIC-VALIDATED ONLY on SQLite fallback. Certification on PostgreSQL 16 + TimescaleDB is PENDING and MUST NOT be claimed until the harness is re-run against the production stack.
+Certified on PostgreSQL 16 + TimescaleDB: zero look-ahead bias verified at the storage layer.

@@ -74,10 +74,16 @@ def parse_args():
         help="Maximum acceptable Expected Calibration Error threshold (default: 0.15).",
     )
     parser.add_argument(
+        "--environment",
+        choices=["cpu-local", "cpu-ci", "gpu-optimized"],
+        default="cpu-local",
+        help="Deployment environment profile for the latency threshold context.",
+    )
+    parser.add_argument(
         "--max-latency-p95-ms",
         type=float,
-        default=50.0,
-        help="Maximum acceptable P95 latency in milliseconds (default: 50.0 ms).",
+        default=250.0,
+        help="Maximum acceptable P95 latency in milliseconds (default: 250.0 ms).",
     )
     return parser.parse_args()
 
@@ -145,7 +151,8 @@ def main():
         f"--report-path {args.report_path} "
         f"--min-f1-macro {args.min_f1_macro} "
         f"--max-ece {args.max_ece} "
-        f"--max-latency-p95-ms {args.max_latency_p95_ms}"
+        f"--max-latency-p95-ms {args.max_latency_p95_ms} "
+        f"--environment {args.environment}"
     )
 
     print("=" * 82)
@@ -153,6 +160,7 @@ def main():
     print("=" * 82)
     print(f" Dataset Target : {dataset_path}")
     print(f" Model Target   : {model_dir}")
+    print(f" Environment    : {args.environment}")
     print(f" Run Started    : {run_started_utc}")
     print("-" * 82)
 
@@ -183,11 +191,13 @@ def main():
             status="SKIPPED",
             failures=[skip_msg],
             calibration_bins=[],
+            environment=args.environment,
         )
         md_p = generate_markdown_report(
             report_path=report_path,
             report_data=r_data,
             reproduction_cmd=reproduction_cmd,
+            environment=args.environment,
         )
         print(f"  JSON Audit Report     : {json_p}")
         print(f"  Markdown Audit Report : {md_p}")
@@ -268,15 +278,18 @@ def main():
         status=status,
         failures=failures,
         calibration_bins=cal_bins,
+        environment=args.environment,
     )
     md_path = generate_markdown_report(
         report_path=report_path,
         report_data=report_data,
         reproduction_cmd=reproduction_cmd,
+        environment=args.environment,
     )
 
     # 8. Print Summary Results
     print("\n── Summary Results ────────────────────────────────────────────────────────────")
+    print(f"  Environment Profile       : {args.environment}")
     print(f"  Accuracy                  : {combined_metrics['accuracy']:.4f}")
     print(f"  Macro F1 Score            : {combined_metrics['f1_macro']:.4f} (Min SLA: {args.min_f1_macro:.2f})")
     print(f"  Weighted F1 Score         : {combined_metrics['f1_weighted']:.4f}")

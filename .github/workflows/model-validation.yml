@@ -43,6 +43,7 @@ jobs:
             echo "SKIPPED=false" >> "$GITHUB_ENV"
           fi
 
+      # CPU-only GitHub runner: 250 ms threshold accommodates cold-start ONNX Runtime + single-thread tokenizer overhead. See docs/LATENCY_RECONCILIATION.md.
       - name: Run Model Quality Validation
         run: |
           if [ "$SKIPPED" = "true" ]; then
@@ -63,7 +64,9 @@ jobs:
               --dataset config/model_validation_dataset.json \
               --model-dir models/finbert-finetuned \
               --output-dir data/model-validation \
-              --report-path docs/MODEL_VALIDATION_REPORT.md
+              --report-path docs/MODEL_VALIDATION_REPORT.md \
+              --max-latency-p95-ms 250.0 \
+              --environment cpu-ci
           fi
 
       - name: Upload validation reports

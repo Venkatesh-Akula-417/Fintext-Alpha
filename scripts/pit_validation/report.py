@@ -6,12 +6,28 @@ Produces:
   2. Institutional Markdown report: docs/PIT_VALIDATION_REPORT.md
 """
 
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 import json
 import os
 from pathlib import Path
 import subprocess
 from typing import Any, Dict, List, Optional, Tuple
+
+
+def _json_default_encoder(obj):
+    """
+    JSON serialization fallback for non-native types returned by psycopg.
+
+    PostgreSQL TIMESTAMPTZ and DATE columns are returned as
+    datetime.datetime and datetime.date objects respectively. These are
+    converted to ISO 8601 strings so that the JSON report remains
+    deterministic and portable across SQLite (str) and PostgreSQL (datetime).
+    """
+    if isinstance(obj, (datetime, date)):
+        return obj.isoformat()
+    raise TypeError(
+        f"Object of type {type(obj).__name__} is not JSON serializable"
+    )
 
 
 def get_git_commit_sha() -> str:
@@ -75,7 +91,7 @@ def generate_json_report(
     }
 
     with open(report_path, "w", encoding="utf-8") as f:
-        json.dump(report_data, f, indent=2, sort_keys=False)
+        json.dump(report_data, f, indent=2, sort_keys=False, default=_json_default_encoder)
 
     return report_path, report_data
 
@@ -207,7 +223,7 @@ def generate_markdown_report(
             f"- **Expected Row Count**: `{s['expected_row_count']}` | **Actual Row Count**: `{s['actual_row_count']}`",
             "- **Evidence Details**:",
             "```json",
-            json.dumps(s["evidence"], indent=2),
+            json.dumps(s["evidence"], indent=2, default=_json_default_encoder),
             "```",
         ])
         if s["id"] == "S7":

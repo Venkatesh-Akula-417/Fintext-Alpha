@@ -10,6 +10,11 @@ import subprocess
 from typing import Any, Dict, List, Optional, Tuple
 
 
+# Audit claim reference constants from FULL_PROJECT_AUDIT.md Section 11.1
+AUDIT_CLAIM_FINBERT_LATENCY = "0.85 ms"
+AUDIT_CLAIM_PIPELINE_LATENCY = "< 4.5 ms"
+
+
 def get_git_commit_sha() -> str:
     """Retrieve the current Git commit SHA, or 'UNKNOWN' upon error."""
     try:
@@ -38,7 +43,9 @@ def generate_json_report(
     status: str,
     failures: List[str],
     calibration_bins: Optional[List[Dict[str, Any]]] = None,
+    environment: str = "cpu-local",
 ) -> Tuple[Path, Dict[str, Any]]:
+
     """
     Generate timestamped JSON validation report in output_dir.
     Returns: (report_path, report_data)
@@ -60,6 +67,7 @@ def generate_json_report(
         "model_dir": str(model_dir),
         "dataset_path": str(dataset_path),
         "dataset_size": dataset_size,
+        "environment": environment,
         "metrics": metrics,
         "thresholds": thresholds,
         "calibration_bins": calibration_bins or [],
@@ -77,6 +85,7 @@ def generate_markdown_report(
     report_path: Path,
     report_data: Dict[str, Any],
     reproduction_cmd: str,
+    environment: str = "cpu-local",
 ) -> Path:
     """
     Generate institutional Markdown report conforming to specification.
@@ -90,6 +99,7 @@ def generate_markdown_report(
     failures = report_data.get("failures", [])
     cm = metrics.get("confusion_matrix", [[0, 0, 0], [0, 0, 0], [0, 0, 0]])
     cal_bins = report_data.get("calibration_bins", [])
+    env_display = report_data.get("environment", environment)
 
     lines: List[str] = [
         "# FinText Alpha Vectorizer — FinBERT Model Quality & Calibration Certification Report",
@@ -281,6 +291,23 @@ def generate_markdown_report(
             "This certification was executed deterministically on local CPU runtime without external network calls. "
             "All metrics and latencies reflect exact reproducibility on the specified evaluation dataset."
         )
+
+    # Section 10: Audit Discrepancy Note
+    p95_ms = metrics.get("latency_p95_ms", 0.0)
+    lines.extend([
+        "",
+        "---",
+        "",
+        "## 10. Audit Discrepancy Note",
+        "",
+        f"- **Environment Profile**: `{env_display}`",
+        f"- **Measured P95 Latency**: **{p95_ms:.2f} ms**",
+        "- **FULL_PROJECT_AUDIT.md Section 11.1 Benchmark Claims**:",
+        f'  - "FinBERT Sentiment Scoring ... {AUDIT_CLAIM_FINBERT_LATENCY}"',
+        f'  - "Total Ingestion-to-Signal Pipeline ... {AUDIT_CLAIM_PIPELINE_LATENCY}"',
+        "",
+        f"The measured P95 latency in this run ({p95_ms:.2f} ms) is NOT reproducible against the audit claim (<1.8 ms FinBERT / <4.5 ms pipeline) on the tested environment. Reproducing the audit claim would require GPU acceleration, batching, or an optimized runtime not present in this repository's default CPU configuration. This discrepancy is tracked in docs/LATENCY_RECONCILIATION.md.",
+    ])
 
     lines.append("")
 
