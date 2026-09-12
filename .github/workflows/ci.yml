@@ -36,7 +36,7 @@ jobs:
   ci-windows:
     name: Windows CI — Rust Workspace & Python Master Test Suite
     runs-on: windows-latest
-    timeout-minutes: 35
+    timeout-minutes: 60
 
     steps:
       - name: Checkout Source Code
@@ -98,7 +98,8 @@ jobs:
         run: cargo test --workspace --manifest-path rust/Cargo.toml
 
       - name: Build Release Binaries
-        run: cargo build --release --manifest-path rust/Cargo.toml
+        # --jobs 2 caps parallel compilation to avoid memory pressure on 2-core GitHub Windows runners.
+        run: cargo build --release --jobs 2 --manifest-path rust/Cargo.toml
 
       - name: Run Python SDK Test Suite
         shell: powershell
