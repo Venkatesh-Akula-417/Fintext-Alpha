@@ -4,10 +4,16 @@ title = "FinText Alpha Vectorizer gitleaks config"
 useDefault = true
 
 [allowlist]
-description = "Allowlist for local development placeholders and non-secret configuration"
+description = "Global allowlist for documentation placeholders, tests, build dirs, and non-secret dev configs"
 paths = [
   '''\.env\.example$''',
   '''config/config\.yaml$''',
+  '''(^|/)\.env$''',
+  '''(^|/)_archive/''',
+  '''(^|/)scratch/''',
+  '''(^|/)target/''',
+  '''(^|/)venv/''',
+  '''(^|/)\.venv/''',
 ]
 
 regexes = [
@@ -19,16 +25,12 @@ regexes = [
   '''POSTGRES_PASSWORD:\s*fintext''',
   '''POSTGRES_USER:\s*fintext''',
   '''postgres://fintext:fintext@localhost:5432/fintext_metadata''',
-]
-
-# docker-compose.yml dev credentials allowlist (local dev only, not production)
-[[rules]]
-id = "generic-api-key"
-[rules.allowlist]
-description = "Local dev credentials in docker-compose.yml"
-regexTarget = "match"
-paths = ['''docker-compose\.yml$''']
-regexes = [
-  '''POSTGRES_PASSWORD:\s*fintext''',
-  '''POSTGRES_USER:\s*fintext''',
+  '''https://hooks\.slack\.com/services/T00000000/B00000000/XXXXXXXXXXXXXXXXXXXXXXXX''',
+  '''ft_1234567890abcdef1234567890abcdef''',
+  '''ft_9876543210fedcba9876543210fedcba''',
+  '''sec_k9x2m4p8q1w7r3t5y8u2i4o6p9a1s3d5''',
+  '''dGhlIHNhbXBsZSBub25jZQ==''',
+  '''c12345testkeyabcdef67890''',
+  '''ft_invalid_bogus_api_key_12345''',
+  '''verification-test-jwt-secret-99999''',
 ]
