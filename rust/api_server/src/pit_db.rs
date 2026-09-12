@@ -79,7 +79,8 @@ impl PitDatabaseConfig {
 
         // 2. Environment variable overrides (highest precedence)
         if let Ok(val) = env::var("PIT_DB_ENABLED") {
-            cfg.enabled = val == "1" || val.eq_ignore_ascii_case("true") || val.eq_ignore_ascii_case("yes");
+            cfg.enabled =
+                val == "1" || val.eq_ignore_ascii_case("true") || val.eq_ignore_ascii_case("yes");
         }
         if let Ok(val) = env::var("PIT_DB_URL").or_else(|_| env::var("DATABASE_URL")) {
             if !val.trim().is_empty() {
@@ -87,7 +88,8 @@ impl PitDatabaseConfig {
             }
         }
         if let Ok(val) = env::var("PIT_DB_FALLBACK_TO_JSON") {
-            cfg.fallback_to_json = val == "1" || val.eq_ignore_ascii_case("true") || val.eq_ignore_ascii_case("yes");
+            cfg.fallback_to_json =
+                val == "1" || val.eq_ignore_ascii_case("true") || val.eq_ignore_ascii_case("yes");
         }
         if let Ok(val) = env::var("PIT_DB_MAX_CONNECTIONS") {
             if let Ok(mc) = val.trim().parse::<u32>() {
@@ -119,13 +121,23 @@ impl PitDatabaseConfig {
                 continue;
             }
             if in_block {
-                if !line.starts_with("  ") && !line.starts_with('\t') && trimmed.contains(':') && !trimmed.starts_with('-') {
+                if !line.starts_with("  ")
+                    && !line.starts_with('\t')
+                    && trimmed.contains(':')
+                    && !trimmed.starts_with('-')
+                {
                     break;
                 }
                 let parts: Vec<&str> = trimmed.splitn(2, ':').collect();
                 if parts.len() == 2 {
                     let key = parts[0].trim();
-                    let val = parts[1].split('#').next().unwrap_or("").trim().trim_matches('"').trim_matches('\'');
+                    let val = parts[1]
+                        .split('#')
+                        .next()
+                        .unwrap_or("")
+                        .trim()
+                        .trim_matches('"')
+                        .trim_matches('\'');
                     match key {
                         "enabled" => {
                             self.enabled = val == "true" || val == "1" || val == "yes";
@@ -452,14 +464,17 @@ impl PitDatabaseStore {
             let start_date: NaiveDate = row.try_get("start_date")?;
             let end_date: NaiveDate = row.try_get("end_date")?;
 
-            let entry = entity_map.entry(entity_id.clone()).or_insert_with(|| TickerHistoryEntity {
-                entity_id,
-                entity_name,
-                cik,
-                figi,
-                isin,
-                mappings: Vec::new(),
-            });
+            let entry =
+                entity_map
+                    .entry(entity_id.clone())
+                    .or_insert_with(|| TickerHistoryEntity {
+                        entity_id,
+                        entity_name,
+                        cik,
+                        figi,
+                        isin,
+                        mappings: Vec::new(),
+                    });
 
             entry.mappings.push(TickerIntervalMapping {
                 ticker,
@@ -649,7 +664,10 @@ impl PitDatabaseStore {
     }
 
     /// Reconstruct an in-memory `PITDataSnapshot` from PostgreSQL tables.
-    pub async fn load_snapshot(&self, as_of: Option<DateTime<Utc>>) -> Result<PITDataSnapshot, sqlx::Error> {
+    pub async fn load_snapshot(
+        &self,
+        as_of: Option<DateTime<Utc>>,
+    ) -> Result<PITDataSnapshot, sqlx::Error> {
         let mut snapshot = PITDataSnapshot::empty();
         snapshot.enabled = true;
 
@@ -663,14 +681,16 @@ impl PitDatabaseStore {
                 let end = NaiveDate::parse_from_str(&m.end_iso[..10], "%Y-%m-%d")
                     .unwrap_or_else(|_| NaiveDate::from_ymd_opt(9999, 12, 31).unwrap());
 
-                snapshot.ticker_intervals.entry(t.clone()).or_default().push(
-                    ParsedTickerInterval {
+                snapshot
+                    .ticker_intervals
+                    .entry(t.clone())
+                    .or_default()
+                    .push(ParsedTickerInterval {
                         entity_id: entity.entity_id.clone(),
                         ticker: t.clone(),
                         start_date: start,
                         end_date: end,
-                    },
-                );
+                    });
 
                 snapshot
                     .entity_mappings
@@ -678,7 +698,9 @@ impl PitDatabaseStore {
                     .or_default()
                     .push((t.clone(), start, end));
 
-                snapshot.ticker_to_entity.insert(t, entity.entity_id.clone());
+                snapshot
+                    .ticker_to_entity
+                    .insert(t, entity.entity_id.clone());
             }
         }
 
@@ -686,7 +708,9 @@ impl PitDatabaseStore {
         let delisted = self.load_delisted_securities(as_of).await?;
         for sec in delisted {
             let t = sec.ticker.trim().to_uppercase();
-            if let Ok(delist_date) = NaiveDate::parse_from_str(&sec.delisting_date_iso[..10], "%Y-%m-%d") {
+            if let Ok(delist_date) =
+                NaiveDate::parse_from_str(&sec.delisting_date_iso[..10], "%Y-%m-%d")
+            {
                 snapshot.delisted_tickers.insert(t.clone(), delist_date);
             }
             snapshot.delisted_details.insert(t, sec);
@@ -696,7 +720,11 @@ impl PitDatabaseStore {
         let actions = self.load_corporate_actions(as_of).await?;
         for action in actions {
             let t = action.ticker.trim().to_uppercase();
-            snapshot.corporate_actions.entry(t).or_default().push(action);
+            snapshot
+                .corporate_actions
+                .entry(t)
+                .or_default()
+                .push(action);
         }
 
         // 4. S&P 500 Index Membership
@@ -727,13 +755,19 @@ impl PitDatabaseStore {
     }
 
     /// Point-in-time bi-temporal as-of query for a specific ticker symbol.
-    pub async fn query_as_of(&self, ticker: &str, as_of: DateTime<Utc>) -> Result<PitAsOfResult, sqlx::Error> {
+    pub async fn query_as_of(
+        &self,
+        ticker: &str,
+        as_of: DateTime<Utc>,
+    ) -> Result<PitAsOfResult, sqlx::Error> {
         let t = ticker.trim().to_uppercase();
         let as_of_date = as_of.date_naive();
 
         // 1. Check delisting as of timestamp
         let delisted_secs = self.load_delisted_securities(Some(as_of)).await?;
-        let delisted = delisted_secs.into_iter().find(|d| d.ticker.eq_ignore_ascii_case(&t));
+        let delisted = delisted_secs
+            .into_iter()
+            .find(|d| d.ticker.eq_ignore_ascii_case(&t));
         let is_delisted = if let Some(ref d) = delisted {
             if let Ok(dd) = NaiveDate::parse_from_str(&d.delisting_date_iso[..10], "%Y-%m-%d") {
                 as_of_date >= dd
@@ -759,7 +793,8 @@ impl PitDatabaseStore {
             if entity_id.is_some() {
                 // Find active symbol on as_of_date
                 for m in &e.mappings {
-                    let s = NaiveDate::parse_from_str(&m.start_iso[..10], "%Y-%m-%d").unwrap_or_default();
+                    let s = NaiveDate::parse_from_str(&m.start_iso[..10], "%Y-%m-%d")
+                        .unwrap_or_default();
                     let end = NaiveDate::parse_from_str(&m.end_iso[..10], "%Y-%m-%d")
                         .unwrap_or_else(|_| NaiveDate::from_ymd_opt(9999, 12, 31).unwrap());
                     if s <= as_of_date && as_of_date <= end {
@@ -801,7 +836,8 @@ impl PitDatabaseStore {
             ticker: t.clone(),
             as_of,
             is_valid,
-            effective_symbol: effective_symbol.or_else(|| if !is_delisted { Some(t) } else { None }),
+            effective_symbol: effective_symbol
+                .or_else(|| if !is_delisted { Some(t) } else { None }),
             entity_id,
             delisted,
             corporate_actions: corp_actions,
@@ -960,7 +996,10 @@ mod tests {
 
         assert!(cfg.enabled);
         assert!(!cfg.fallback_to_json);
-        assert_eq!(cfg.url, "postgres://custom_user:custom_pass@dbhost:5433/custom_meta");
+        assert_eq!(
+            cfg.url,
+            "postgres://custom_user:custom_pass@dbhost:5433/custom_meta"
+        );
         assert_eq!(cfg.max_connections, 25);
         assert_eq!(cfg.timeout_ms, 5000);
     }
@@ -968,7 +1007,10 @@ mod tests {
     #[test]
     fn test_pit_database_config_env_overrides() {
         env::set_var("PIT_DB_ENABLED", "true");
-        env::set_var("PIT_DB_URL", "postgres://env_user:env_pass@envhost:5432/env_db");
+        env::set_var(
+            "PIT_DB_URL",
+            "postgres://env_user:env_pass@envhost:5432/env_db",
+        );
         env::set_var("PIT_DB_FALLBACK_TO_JSON", "false");
         env::set_var("PIT_DB_MAX_CONNECTIONS", "50");
         env::set_var("PIT_DB_TIMEOUT_MS", "8000");

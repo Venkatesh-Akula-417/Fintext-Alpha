@@ -34,8 +34,8 @@ pub struct FinnhubWsConfig {
 
 impl Default for FinnhubWsConfig {
     fn default() -> Self {
-        let ws_url = env::var("FINNHUB_WS_URL")
-            .unwrap_or_else(|_| "wss://ws.finnhub.io".to_string());
+        let ws_url =
+            env::var("FINNHUB_WS_URL").unwrap_or_else(|_| "wss://ws.finnhub.io".to_string());
         let api_key = env::var("FINNHUB_API_KEY").unwrap_or_default();
         let tickers_str = env::var("FINNHUB_TRACKED_TICKERS")
             .unwrap_or_else(|_| "AAPL,MSFT,NVDA,GOOGL,AMZN,META,TSLA,SPY".to_string());
@@ -161,7 +161,10 @@ impl FinnhubWsClient {
     pub fn from_env() -> Result<Self, String> {
         let config = FinnhubWsConfig::default();
         if crate::is_production_mode() {
-            if config.api_key.trim().is_empty() || config.api_key == "mock_key" || config.api_key.starts_with("mock") {
+            if config.api_key.trim().is_empty()
+                || config.api_key == "mock_key"
+                || config.api_key.starts_with("mock")
+            {
                 return Err("Real Finnhub API key is required in production mode.".to_string());
             }
         } else if config.api_key.trim().is_empty() && !config.mock_mode {
@@ -364,14 +367,18 @@ mod tests {
             "type": "news"
         }"#;
 
-        let ws_msg: FinnhubWsMessage = serde_json::from_str(sample_json).expect("Failed to deserialize Finnhub WS message");
+        let ws_msg: FinnhubWsMessage =
+            serde_json::from_str(sample_json).expect("Failed to deserialize Finnhub WS message");
         assert_eq!(ws_msg.msg_type, "news");
         assert_eq!(ws_msg.data.as_ref().unwrap().len(), 1);
 
         let docs = ws_msg.into_raw_documents();
         assert_eq!(docs.len(), 1);
         assert_eq!(docs[0].id, "finnhub-ws-998877");
-        assert_eq!(docs[0].title, "Apple Reports Record Quarterly Revenue and AI Growth");
+        assert_eq!(
+            docs[0].title,
+            "Apple Reports Record Quarterly Revenue and AI Growth"
+        );
         assert_eq!(docs[0].source, "Finnhub-Reuters");
         assert_eq!(docs[0].url, "https://reuters.com/apple-q4-results");
         assert!(!docs[0].ingested_utc.is_empty());

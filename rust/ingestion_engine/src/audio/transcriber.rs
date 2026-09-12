@@ -125,7 +125,8 @@ pub fn decode_audio_file(path: &Path) -> Result<(Vec<f32>, u32), String> {
 
 /// Asynchronously transcribes pre-decoded audio samples using the global Whisper engine.
 pub async fn transcribe_samples_async(samples: Vec<f32>) -> Result<String, String> {
-    if !crate::is_production_mode() && std::env::var("WHISPER_MOCK_FALLBACK").as_deref() == Ok("1") {
+    if !crate::is_production_mode() && std::env::var("WHISPER_MOCK_FALLBACK").as_deref() == Ok("1")
+    {
         return Ok("Apple Inc. reported record quarterly revenue of $94.9 billion, up 6 percent year over year. Earnings per diluted share were $1.64. Operating cash flow reached $26.8 billion.".to_string());
     }
 
@@ -149,7 +150,8 @@ pub async fn transcribe_samples_async(samples: Vec<f32>) -> Result<String, Strin
 /// Convenience async function to transcribe audio using the globally initialized Whisper engine.
 pub async fn transcribe_audio(wav_file_path: &Path) -> Result<String, String> {
     // Fast-path mock mode for deterministic offline testing without requiring large GGML model downloads
-    if !crate::is_production_mode() && std::env::var("WHISPER_MOCK_FALLBACK").as_deref() == Ok("1") {
+    if !crate::is_production_mode() && std::env::var("WHISPER_MOCK_FALLBACK").as_deref() == Ok("1")
+    {
         info!(
             "[Whisper ASR Mock] Transcribing WAV file at {:?} (mock mode enabled)",
             wav_file_path

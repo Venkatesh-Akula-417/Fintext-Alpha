@@ -112,8 +112,15 @@ pub async fn get_sentiment_handler(
     // Fast-path mock mode for isolated unit/integration tests without running Docker
     if crate::state::is_questdb_mock_fallback_enabled() {
         // Check if ticker has SCD2 revisions registered in state
-        if !state.scd2_registry.get_revisions_for_ticker(&ticker).is_empty() {
-            if let Some(record) = state.scd2_registry.query_as_of(&ticker, params.as_of_utc.as_deref()) {
+        if !state
+            .scd2_registry
+            .get_revisions_for_ticker(&ticker)
+            .is_empty()
+        {
+            if let Some(record) = state
+                .scd2_registry
+                .query_as_of(&ticker, params.as_of_utc.as_deref())
+            {
                 let sentiment_label = if record.sentiment_score > 0.15 {
                     "BULLISH".to_string()
                 } else if record.sentiment_score < -0.15 {
@@ -139,7 +146,8 @@ pub async fn get_sentiment_handler(
                     probabilities,
                     signal_available_ts_us: Utc::now().timestamp_micros() as u64,
                     data_quality_score: record.data_quality_score,
-                    message: "Point-in-time sentiment signal retrieved (SCD2 revision history)".to_string(),
+                    message: "Point-in-time sentiment signal retrieved (SCD2 revision history)"
+                        .to_string(),
                     model_version: record.model_version.or(model_version),
                     pipeline_version: record.pipeline_version.or(pipeline_version),
                     data_provenance: record.data_provenance.or(data_provenance),
@@ -356,10 +364,16 @@ async fn fetch_timescaledb_sentiment(
                 .query_sentiment_as_of(ticker, as_of_dt.with_timezone(&Utc), 1)
                 .await
         } else {
-            state.timescaledb_client.query_latest_sentiment(ticker, 1).await
+            state
+                .timescaledb_client
+                .query_latest_sentiment(ticker, 1)
+                .await
         }
     } else {
-        state.timescaledb_client.query_latest_sentiment(ticker, 1).await
+        state
+            .timescaledb_client
+            .query_latest_sentiment(ticker, 1)
+            .await
     };
 
     if let Ok(records) = ts_records_res {

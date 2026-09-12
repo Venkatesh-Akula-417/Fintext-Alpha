@@ -122,7 +122,10 @@ pub async fn get_sentiment_history_handler(
                     StatusCode::BAD_REQUEST,
                     Json(AuthErrorResponse {
                         error: "Bad Request".to_string(),
-                        message: format!("Invalid as_of_utc format '{}', expected RFC3339", as_of_str),
+                        message: format!(
+                            "Invalid as_of_utc format '{}', expected RFC3339",
+                            as_of_str
+                        ),
                     }),
                 )
                     .into_response();
@@ -342,7 +345,9 @@ pub async fn get_sentiment_history_handler(
             if let Ok(as_of_dt) = chrono::DateTime::parse_from_rfc3339(as_of_str.trim()) {
                 let as_of_utc = as_of_dt.with_timezone(&chrono::Utc);
                 total_records.retain(|r| {
-                    let from_ok = r.valid_from.as_deref()
+                    let from_ok = r
+                        .valid_from
+                        .as_deref()
                         .and_then(|s| chrono::DateTime::parse_from_rfc3339(s).ok())
                         .map(|dt| dt <= as_of_utc)
                         .unwrap_or(true);

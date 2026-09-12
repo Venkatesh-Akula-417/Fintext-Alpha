@@ -210,7 +210,10 @@ pub async fn get_batch_sentiment_handler(
         let com_dt = now;
 
         for (idx, ticker) in active_tickers.iter().enumerate() {
-            if let Some(record) = state.scd2_registry.query_as_of(ticker, params.as_of_utc.as_deref()) {
+            if let Some(record) = state
+                .scd2_registry
+                .query_as_of(ticker, params.as_of_utc.as_deref())
+            {
                 let sentiment_label = if record.sentiment_score > 0.15 {
                     "BULLISH".to_string()
                 } else if record.sentiment_score < -0.15 {
@@ -236,9 +239,15 @@ pub async fn get_batch_sentiment_handler(
                     signal_available_ts_us: Utc::now().timestamp_micros() as u64,
                     data_quality_score: record.data_quality_score,
                     message: "Point-in-time sentiment signal retrieved (SCD2)".to_string(),
-                    model_version: record.model_version.or_else(|| Some(state.get_model_version())),
-                    pipeline_version: record.pipeline_version.or_else(|| Some(state.get_pipeline_version())),
-                    data_provenance: record.data_provenance.or_else(|| Some(state.get_data_provenance())),
+                    model_version: record
+                        .model_version
+                        .or_else(|| Some(state.get_model_version())),
+                    pipeline_version: record
+                        .pipeline_version
+                        .or_else(|| Some(state.get_pipeline_version())),
+                    data_provenance: record
+                        .data_provenance
+                        .or_else(|| Some(state.get_data_provenance())),
                     language: record.language,
                     published_utc: Some(record.published_utc),
                     ingested_utc: record.ingested_utc,

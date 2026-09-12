@@ -104,7 +104,11 @@ impl RawArchiveConfig {
                         in_raw_archive = true;
                         continue;
                     }
-                    if in_raw_archive && !line.starts_with(' ') && !line.starts_with('\t') && !trimmed.is_empty() {
+                    if in_raw_archive
+                        && !line.starts_with(' ')
+                        && !line.starts_with('\t')
+                        && !trimmed.is_empty()
+                    {
                         in_raw_archive = false;
                     }
                     if in_raw_archive {
@@ -196,7 +200,8 @@ impl RawArchiveConfig {
         }
 
         // Environment overrides
-        if let Ok(val) = env::var("RAW_ARCHIVE_ENABLED").or_else(|_| env::var("ENABLE_RAW_ARCHIVE")) {
+        if let Ok(val) = env::var("RAW_ARCHIVE_ENABLED").or_else(|_| env::var("ENABLE_RAW_ARCHIVE"))
+        {
             cfg.enabled = val == "1" || val.to_lowercase() == "true";
         }
         if let Ok(val) = env::var("RAW_ARCHIVE_PROVIDER") {
@@ -224,12 +229,16 @@ impl RawArchiveConfig {
                 cfg.endpoint = Some(val.trim().to_string());
             }
         }
-        if let Ok(val) = env::var("RAW_ARCHIVE_ACCESS_KEY").or_else(|_| env::var("AWS_ACCESS_KEY_ID")) {
+        if let Ok(val) =
+            env::var("RAW_ARCHIVE_ACCESS_KEY").or_else(|_| env::var("AWS_ACCESS_KEY_ID"))
+        {
             if !val.trim().is_empty() {
                 cfg.access_key = Some(val.trim().to_string());
             }
         }
-        if let Ok(val) = env::var("RAW_ARCHIVE_SECRET_KEY").or_else(|_| env::var("AWS_SECRET_ACCESS_KEY")) {
+        if let Ok(val) =
+            env::var("RAW_ARCHIVE_SECRET_KEY").or_else(|_| env::var("AWS_SECRET_ACCESS_KEY"))
+        {
             if !val.trim().is_empty() {
                 cfg.secret_key = Some(val.trim().to_string());
             }
@@ -275,10 +284,12 @@ impl RawArchiveConfig {
 
     /// Construct S3/MinIO BucketLifecycleConfiguration according to configured retention days.
     /// Returns None if both transition and expiration rules are disabled (<= 0).
-    pub fn build_lifecycle_configuration(&self) -> Option<aws_sdk_s3::types::BucketLifecycleConfiguration> {
+    pub fn build_lifecycle_configuration(
+        &self,
+    ) -> Option<aws_sdk_s3::types::BucketLifecycleConfiguration> {
         use aws_sdk_s3::types::{
-            BucketLifecycleConfiguration, ExpirationStatus, LifecycleExpiration,
-            LifecycleRule, LifecycleRuleFilter, Transition, TransitionStorageClass,
+            BucketLifecycleConfiguration, ExpirationStatus, LifecycleExpiration, LifecycleRule,
+            LifecycleRuleFilter, Transition, TransitionStorageClass,
         };
 
         if self.lifecycle_transition_days <= 0 && self.lifecycle_expiration_days <= 0 {
@@ -515,31 +526,32 @@ pub struct ArchiveUploader {
 impl ArchiveUploader {
     /// Create a new ArchiveUploader from configuration.
     pub async fn new(config: RawArchiveConfig) -> Self {
-        let s3_client = if (config.provider == "s3" || config.provider == "minio") && !config.mock_mode {
-            let region = aws_sdk_s3::config::Region::new(config.region.clone());
-            let mut conf_builder = aws_sdk_s3::config::Builder::new()
-                .region(region)
-                .behavior_version(aws_sdk_s3::config::BehaviorVersion::latest());
+        let s3_client =
+            if (config.provider == "s3" || config.provider == "minio") && !config.mock_mode {
+                let region = aws_sdk_s3::config::Region::new(config.region.clone());
+                let mut conf_builder = aws_sdk_s3::config::Builder::new()
+                    .region(region)
+                    .behavior_version(aws_sdk_s3::config::BehaviorVersion::latest());
 
-            if let (Some(ref ak), Some(ref sk)) = (&config.access_key, &config.secret_key) {
-                let creds = aws_sdk_s3::config::Credentials::new(
-                    ak.clone(),
-                    sk.clone(),
-                    None,
-                    None,
-                    "static_archive_credentials",
-                );
-                conf_builder = conf_builder.credentials_provider(creds);
-            }
+                if let (Some(ref ak), Some(ref sk)) = (&config.access_key, &config.secret_key) {
+                    let creds = aws_sdk_s3::config::Credentials::new(
+                        ak.clone(),
+                        sk.clone(),
+                        None,
+                        None,
+                        "static_archive_credentials",
+                    );
+                    conf_builder = conf_builder.credentials_provider(creds);
+                }
 
-            if let Some(ref ep) = config.endpoint {
-                conf_builder = conf_builder.endpoint_url(ep).force_path_style(true);
-            }
+                if let Some(ref ep) = config.endpoint {
+                    conf_builder = conf_builder.endpoint_url(ep).force_path_style(true);
+                }
 
-            Some(aws_sdk_s3::Client::from_conf(conf_builder.build()))
-        } else {
-            None
-        };
+                Some(aws_sdk_s3::Client::from_conf(conf_builder.build()))
+            } else {
+                None
+            };
 
         let uploader = Self { config, s3_client };
         let _ = uploader.apply_lifecycle_policy().await;
@@ -595,7 +607,11 @@ impl ArchiveUploader {
 
     /// Upload a locally staged Parquet file to S3/MinIO.
     /// In local/mock mode, this logs and returns the local file URI immediately.
-    pub async fn upload_file(&self, local_file_path: &Path, s3_key: &str) -> Result<String, String> {
+    pub async fn upload_file(
+        &self,
+        local_file_path: &Path,
+        s3_key: &str,
+    ) -> Result<String, String> {
         if self.config.provider == "local" || self.config.mock_mode {
             if self.config.verify_upload {
                 if !local_file_path.exists() {
@@ -619,18 +635,19 @@ impl ArchiveUploader {
         }
 
         if let Some(ref client) = self.s3_client {
-            let byte_stream = match aws_sdk_s3::primitives::ByteStream::from_path(local_file_path).await {
-                Ok(bs) => bs,
-                Err(e) => {
-                    let err = format!(
-                        "Failed to read parquet file for upload '{}': {}",
-                        local_file_path.display(),
-                        e
-                    );
-                    error!("[Raw Archive] {}", err);
-                    return Err(err);
-                }
-            };
+            let byte_stream =
+                match aws_sdk_s3::primitives::ByteStream::from_path(local_file_path).await {
+                    Ok(bs) => bs,
+                    Err(e) => {
+                        let err = format!(
+                            "Failed to read parquet file for upload '{}': {}",
+                            local_file_path.display(),
+                            e
+                        );
+                        error!("[Raw Archive] {}", err);
+                        return Err(err);
+                    }
+                };
 
             let send_future = client
                 .put_object()
@@ -748,7 +765,8 @@ pub fn spawn_raw_archiver_worker(
 
         let uploader = Arc::new(ArchiveUploader::new(config.clone()).await);
         let mut buffer: Vec<RawArchiveRecord> = Vec::with_capacity(config.batch_size);
-        let mut interval = tokio::time::interval(Duration::from_secs(config.flush_interval_secs.max(1)));
+        let mut interval =
+            tokio::time::interval(Duration::from_secs(config.flush_interval_secs.max(1)));
         interval.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Delay);
 
         loop {
@@ -803,7 +821,8 @@ async fn flush_buffer(
 
     // Offload synchronous Parquet encoding to blocking thread pool
     let write_res = tokio::task::spawn_blocking(move || {
-        let dest = RawArchiveWriter::generate_partitioned_path(&local_path_base, first_ts.as_deref());
+        let dest =
+            RawArchiveWriter::generate_partitioned_path(&local_path_base, first_ts.as_deref());
         RawArchiveWriter::write_parquet_file(&records, &dest)
     })
     .await;
@@ -829,16 +848,24 @@ async fn flush_buffer(
                 dt.year(),
                 dt.month(),
                 dt.day(),
-                path.file_name().and_then(|n| n.to_str()).unwrap_or("raw.parquet")
+                path.file_name()
+                    .and_then(|n| n.to_str())
+                    .unwrap_or("raw.parquet")
             );
 
             let _ = uploader.upload_file(&path, &s3_key).await;
         }
         Ok(Err(e)) => {
-            error!("[Raw Archive] Failed to write Parquet file ({} records lost): {}", count, e);
+            error!(
+                "[Raw Archive] Failed to write Parquet file ({} records lost): {}",
+                count, e
+            );
         }
         Err(join_err) => {
-            error!("[Raw Archive] Blocking worker join error during flush: {}", join_err);
+            error!(
+                "[Raw Archive] Blocking worker join error during flush: {}",
+                join_err
+            );
         }
     }
 }
@@ -895,7 +922,8 @@ mod tests {
                 ticker: "AAPL".to_string(),
                 source: "sec_edgar".to_string(),
                 title: "Apple Q3 Services Report".to_string(),
-                raw_content: "<html><body>Apple reports record Q3 gross margin.</body></html>".to_string(),
+                raw_content: "<html><body>Apple reports record Q3 gross margin.</body></html>"
+                    .to_string(),
                 ingested_utc: "2026-09-06T10:00:01Z".to_string(),
                 db_commit_utc: Some("2026-09-06T10:00:02Z".to_string()),
                 data_quality_score: Some(0.95),
@@ -1020,7 +1048,10 @@ mod tests {
         let transitions = r1.transitions();
         assert_eq!(transitions.len(), 1);
         assert_eq!(transitions[0].days(), Some(30));
-        assert_eq!(transitions[0].storage_class(), Some(&TransitionStorageClass::Glacier));
+        assert_eq!(
+            transitions[0].storage_class(),
+            Some(&TransitionStorageClass::Glacier)
+        );
 
         // Rule 2: Expiration
         let r2 = &rules[1];
@@ -1035,14 +1066,18 @@ mod tests {
         let mut cfg = RawArchiveConfig::default();
         cfg.lifecycle_transition_days = 0;
         cfg.lifecycle_expiration_days = 365;
-        let lc1 = cfg.build_lifecycle_configuration().expect("Expected 1 rule");
+        let lc1 = cfg
+            .build_lifecycle_configuration()
+            .expect("Expected 1 rule");
         assert_eq!(lc1.rules().len(), 1);
         assert_eq!(lc1.rules()[0].id(), Some("raw-archive-expiration"));
 
         // Transition enabled, expiration disabled (<= 0)
         cfg.lifecycle_transition_days = 60;
         cfg.lifecycle_expiration_days = -1;
-        let lc2 = cfg.build_lifecycle_configuration().expect("Expected 1 rule");
+        let lc2 = cfg
+            .build_lifecycle_configuration()
+            .expect("Expected 1 rule");
         assert_eq!(lc2.rules().len(), 1);
         assert_eq!(lc2.rules()[0].id(), Some("raw-archive-glacier-transition"));
 
@@ -1071,7 +1106,9 @@ mod tests {
         assert!(ok_res.is_ok());
 
         // Missing file fails verification
-        let err_res = uploader.upload_file(&missing_file, "raw/missing.parquet").await;
+        let err_res = uploader
+            .upload_file(&missing_file, "raw/missing.parquet")
+            .await;
         assert!(err_res.is_err());
         assert!(err_res.unwrap_err().contains("local file"));
 
@@ -1113,8 +1150,8 @@ mod tests {
     #[test]
     fn test_s3_lifecycle_types() {
         use aws_sdk_s3::types::{
-            BucketLifecycleConfiguration, ExpirationStatus, LifecycleExpiration,
-            LifecycleRule, LifecycleRuleFilter, Transition, TransitionStorageClass,
+            BucketLifecycleConfiguration, ExpirationStatus, LifecycleExpiration, LifecycleRule,
+            LifecycleRuleFilter, Transition, TransitionStorageClass,
         };
 
         let transition = Transition::builder()
@@ -1122,9 +1159,7 @@ mod tests {
             .storage_class(TransitionStorageClass::Glacier)
             .build();
 
-        let expiration = LifecycleExpiration::builder()
-            .days(3650)
-            .build();
+        let expiration = LifecycleExpiration::builder().days(3650).build();
 
         let rule = LifecycleRule::builder()
             .id("raw-archive-lifecycle-rule")

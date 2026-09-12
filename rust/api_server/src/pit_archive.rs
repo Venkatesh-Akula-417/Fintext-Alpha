@@ -94,7 +94,13 @@ impl PitCertArchiveConfig {
                     if in_section {
                         if let Some((k, v)) = trimmed.split_once(':') {
                             let key = k.trim().trim_start_matches('-').trim();
-                            let val = v.split('#').next().unwrap_or("").trim().trim_matches('"').trim_matches('\'');
+                            let val = v
+                                .split('#')
+                                .next()
+                                .unwrap_or("")
+                                .trim()
+                                .trim_matches('"')
+                                .trim_matches('\'');
                             match key {
                                 "enabled" => {
                                     if val == "true" || val == "1" {
@@ -231,10 +237,22 @@ pub fn build_canonical_preimage(
     policies: &PITCertificatePolicies,
 ) -> String {
     let mut root = BTreeMap::new();
-    root.insert("audit_end_date".to_string(), Value::String(audit_end_date.to_string()));
-    root.insert("audit_start_date".to_string(), Value::String(audit_start_date.to_string()));
-    root.insert("dataset_version".to_string(), Value::String(dataset_version.to_string()));
-    root.insert("overall_result".to_string(), Value::String(overall_result.to_string()));
+    root.insert(
+        "audit_end_date".to_string(),
+        Value::String(audit_end_date.to_string()),
+    );
+    root.insert(
+        "audit_start_date".to_string(),
+        Value::String(audit_start_date.to_string()),
+    );
+    root.insert(
+        "dataset_version".to_string(),
+        Value::String(dataset_version.to_string()),
+    );
+    root.insert(
+        "overall_result".to_string(),
+        Value::String(overall_result.to_string()),
+    );
 
     // Serialize policies to canonical JSON
     if let Ok(policies_val) = serde_json::to_value(policies) {
@@ -338,27 +356,46 @@ impl PitCertArchiver {
 
         // 1. Write locally (always staged locally for audit trail and atomicity)
         let local_dir = PathBuf::from(&self.config.local_path);
-        tokio::fs::create_dir_all(&local_dir)
-            .await
-            .map_err(|e| format!("Failed to create local archive directory '{}': {}", local_dir.display(), e))?;
+        tokio::fs::create_dir_all(&local_dir).await.map_err(|e| {
+            format!(
+                "Failed to create local archive directory '{}': {}",
+                local_dir.display(),
+                e
+            )
+        })?;
 
         let target_file = local_dir.join(&filename);
         let temp_file = local_dir.join(format!("{}.tmp.{}", filename, file_uuid));
 
         tokio::fs::write(&temp_file, canonical_json.as_bytes())
             .await
-            .map_err(|e| format!("Failed to write temporary archive file '{}': {}", temp_file.display(), e))?;
+            .map_err(|e| {
+                format!(
+                    "Failed to write temporary archive file '{}': {}",
+                    temp_file.display(),
+                    e
+                )
+            })?;
 
         tokio::fs::rename(&temp_file, &target_file)
             .await
-            .map_err(|e| format!("Failed to rename archive file to '{}': {}", target_file.display(), e))?;
+            .map_err(|e| {
+                format!(
+                    "Failed to rename archive file to '{}': {}",
+                    target_file.display(),
+                    e
+                )
+            })?;
 
         // 2. If provider is S3 or MinIO, upload to remote bucket
-        if (self.config.provider == "s3" || self.config.provider == "minio") && self.s3_client.is_some() {
+        if (self.config.provider == "s3" || self.config.provider == "minio")
+            && self.s3_client.is_some()
+        {
             let s3_client = self.s3_client.as_ref().unwrap();
             let s3_key = format!("{}/{}", self.config.prefix.trim_matches('/'), filename);
 
-            let byte_stream = aws_sdk_s3::primitives::ByteStream::from(canonical_json.as_bytes().to_vec());
+            let byte_stream =
+                aws_sdk_s3::primitives::ByteStream::from(canonical_json.as_bytes().to_vec());
 
             let put_future = s3_client
                 .put_object()
@@ -382,7 +419,11 @@ impl PitCertArchiver {
                         e,
                         target_file.display()
                     );
-                    let local_key = format!("{}/{}", self.config.local_path.trim_end_matches('/'), filename);
+                    let local_key = format!(
+                        "{}/{}",
+                        self.config.local_path.trim_end_matches('/'),
+                        filename
+                    );
                     Ok((local_key, timestamp))
                 }
                 Err(_) => {
@@ -390,13 +431,21 @@ impl PitCertArchiver {
                         "[PIT Archive] S3 upload timed out. Retained local file at '{}'",
                         target_file.display()
                     );
-                    let local_key = format!("{}/{}", self.config.local_path.trim_end_matches('/'), filename);
+                    let local_key = format!(
+                        "{}/{}",
+                        self.config.local_path.trim_end_matches('/'),
+                        filename
+                    );
                     Ok((local_key, timestamp))
                 }
             }
         } else {
             // Local provider
-            let object_key = format!("{}/{}", self.config.local_path.trim_end_matches('/'), filename);
+            let object_key = format!(
+                "{}/{}",
+                self.config.local_path.trim_end_matches('/'),
+                filename
+            );
             info!(
                 "[PIT Archive] Archived cryptographic proof locally at '{}'",
                 object_key
@@ -522,7 +571,10 @@ mod tests {
             &policies,
         );
 
-        assert_eq!(json1, json2, "Canonical preimage must be 100% deterministic");
+        assert_eq!(
+            json1, json2,
+            "Canonical preimage must be 100% deterministic"
+        );
 
         let sig1 = compute_canonical_signature(&json1);
         let sig2 = compute_canonical_signature(&json2);
@@ -563,7 +615,13 @@ mod tests {
         let expected_signature = compute_canonical_signature(&canonical_json);
 
         let (object_key, timestamp) = archiver
-            .archive_proof(&canonical_json, "2.1.0", "AAPL,MSFT", "2025-06-01", "2025-08-31")
+            .archive_proof(
+                &canonical_json,
+                "2.1.0",
+                "AAPL,MSFT",
+                "2025-06-01",
+                "2025-08-31",
+            )
             .await
             .expect("Local archive write must succeed");
 
@@ -573,7 +631,9 @@ mod tests {
         assert!(!timestamp.is_empty());
 
         // Verify the file exists on disk
-        let file_bytes = tokio::fs::read(&object_key).await.expect("Archived file must exist");
+        let file_bytes = tokio::fs::read(&object_key)
+            .await
+            .expect("Archived file must exist");
         assert_eq!(
             String::from_utf8(file_bytes.clone()).unwrap(),
             canonical_json,

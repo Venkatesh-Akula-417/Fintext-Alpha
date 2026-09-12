@@ -32,7 +32,8 @@ impl BackfillArgs {
         let mut end_date = None;
         let mut ticker = None;
         let mut batch_size = 1000;
-        let mut questdb_url = env::var("QUESTDB_URL").unwrap_or_else(|_| "http://127.0.0.1:9000".to_string());
+        let mut questdb_url =
+            env::var("QUESTDB_URL").unwrap_or_else(|_| "http://127.0.0.1:9000".to_string());
         let mut timescale_url = env::var("TIMESCALE_DB_URL").ok();
         let mut mock_mode = env::var("MOCK_MODE").as_deref() == Ok("1")
             || env::var("TIMESCALE_MOCK_FALLBACK").as_deref() == Ok("1")
@@ -108,7 +109,8 @@ impl BackfillArgs {
 }
 
 fn print_help() {
-    println!(r#"
+    println!(
+        r#"
 FinText-Alpha-Vectorizer — TimescaleDB Historical Sentiment Backfill Utility (Phase 2)
 
 USAGE:
@@ -124,7 +126,8 @@ OPTIONS:
     --timescale-url <URL>  PostgreSQL/TimescaleDB connection URL
     --mock                 Execute against synthetic mock dataset for testing/CI
     -h, --help             Display this help message
-"#);
+"#
+    );
 }
 
 /// Fetch a batch of records from QuestDB `/exec` endpoint using keyset pagination.
@@ -209,11 +212,86 @@ async fn fetch_questdb_batch(
 /// Generate a synthetic mock dataset for offline and automated CI verification.
 fn get_mock_questdb_dataset(args: &BackfillArgs) -> Vec<Value> {
     let mock_rows = vec![
-        serde_json::json!(["AAPL", "sec_edgar", 0.85, "BULLISH", 0.90, 0.02, 0.08, "Apple Reports Record Q3 Services Revenue", "Services gross margin reached 74%", 0.18, 2500.0, 1787668200000_i64, 1787668201000_i64, "2026-09-01T10:00:00.000000Z"]),
-        serde_json::json!(["NVDA", "finnhub", 0.92, "BULLISH", 0.95, 0.01, 0.04, "NVIDIA Announces Next-Gen Architecture", "Massive data center computing ramp", 0.22, 5400.0, 1787668201000_i64, 1787668202000_i64, "2026-09-02T14:30:00.000000Z"]),
-        serde_json::json!(["MSFT", "polygon", 0.65, "BULLISH", 0.75, 0.05, 0.20, "Microsoft Azure Cloud Growth Stable", "Enterprise AI monetization expanding", 0.12, 1800.0, 1787668202000_i64, 1787668203000_i64, "2026-09-03T09:15:00.000000Z"]),
-        serde_json::json!(["GOOGL", "sec_edgar", -0.45, "BEARISH", 0.10, 0.70, 0.20, "Alphabet Responds to Antitrust Ruling", "Appeals filing lodged in DC Circuit", 0.35, -3100.0, 1787668203000_i64, 1787668204000_i64, "2026-09-04T16:45:00.000000Z"]),
-        serde_json::json!(["TSLA", "finnhub", 0.10, "NEUTRAL", 0.35, 0.30, 0.35, "Tesla Robotaxi Fleet Testing Continues", "Supervised autonomous trials active", 0.40, 120.0, 1787668204000_i64, 1787668205000_i64, "2026-09-05T11:20:00.000000Z"]),
+        serde_json::json!([
+            "AAPL",
+            "sec_edgar",
+            0.85,
+            "BULLISH",
+            0.90,
+            0.02,
+            0.08,
+            "Apple Reports Record Q3 Services Revenue",
+            "Services gross margin reached 74%",
+            0.18,
+            2500.0,
+            1787668200000_i64,
+            1787668201000_i64,
+            "2026-09-01T10:00:00.000000Z"
+        ]),
+        serde_json::json!([
+            "NVDA",
+            "finnhub",
+            0.92,
+            "BULLISH",
+            0.95,
+            0.01,
+            0.04,
+            "NVIDIA Announces Next-Gen Architecture",
+            "Massive data center computing ramp",
+            0.22,
+            5400.0,
+            1787668201000_i64,
+            1787668202000_i64,
+            "2026-09-02T14:30:00.000000Z"
+        ]),
+        serde_json::json!([
+            "MSFT",
+            "polygon",
+            0.65,
+            "BULLISH",
+            0.75,
+            0.05,
+            0.20,
+            "Microsoft Azure Cloud Growth Stable",
+            "Enterprise AI monetization expanding",
+            0.12,
+            1800.0,
+            1787668202000_i64,
+            1787668203000_i64,
+            "2026-09-03T09:15:00.000000Z"
+        ]),
+        serde_json::json!([
+            "GOOGL",
+            "sec_edgar",
+            -0.45,
+            "BEARISH",
+            0.10,
+            0.70,
+            0.20,
+            "Alphabet Responds to Antitrust Ruling",
+            "Appeals filing lodged in DC Circuit",
+            0.35,
+            -3100.0,
+            1787668203000_i64,
+            1787668204000_i64,
+            "2026-09-04T16:45:00.000000Z"
+        ]),
+        serde_json::json!([
+            "TSLA",
+            "finnhub",
+            0.10,
+            "NEUTRAL",
+            0.35,
+            0.30,
+            0.35,
+            "Tesla Robotaxi Fleet Testing Continues",
+            "Supervised autonomous trials active",
+            0.40,
+            120.0,
+            1787668204000_i64,
+            1787668205000_i64,
+            "2026-09-05T11:20:00.000000Z"
+        ]),
     ];
 
     if let Some(ref target_ticker) = args.ticker {
@@ -317,7 +395,14 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     info!("══════════════════════════════════════════════════════════════════════════════");
     info!(" FinText Alpha Vectorizer — TimescaleDB Historical Sentiment Backfill Tool");
     info!("══════════════════════════════════════════════════════════════════════════════");
-    info!(" Execution Mode: {}", if args.dry_run { "DRY-RUN (Simulation Only)" } else { "LIVE WRITES" });
+    info!(
+        " Execution Mode: {}",
+        if args.dry_run {
+            "DRY-RUN (Simulation Only)"
+        } else {
+            "LIVE WRITES"
+        }
+    );
     info!(" Batch Size: {}", args.batch_size);
     info!(" QuestDB Source: {}", args.questdb_url);
     if let Some(ref s) = args.start_date {
@@ -353,7 +438,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     loop {
         batch_index += 1;
-        info!("[Batch #{}] Fetching historical records from QuestDB...", batch_index);
+        info!(
+            "[Batch #{}] Fetching historical records from QuestDB...",
+            batch_index
+        );
 
         let rows = if args.mock_mode {
             if batch_index == 1 {
@@ -362,10 +450,20 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 Vec::new() // End mock pagination on second iteration
             }
         } else {
-            match fetch_questdb_batch(&http_client, &args.questdb_url, last_timestamp.as_deref(), &args).await {
+            match fetch_questdb_batch(
+                &http_client,
+                &args.questdb_url,
+                last_timestamp.as_deref(),
+                &args,
+            )
+            .await
+            {
                 Ok(r) => r,
                 Err(e) => {
-                    warn!("[QuestDB Fetch Warning] {}. Falling back to mock dataset.", e);
+                    warn!(
+                        "[QuestDB Fetch Warning] {}. Falling back to mock dataset.",
+                        e
+                    );
                     if batch_index == 1 {
                         get_mock_questdb_dataset(&args)
                     } else {
@@ -376,7 +474,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         };
 
         if rows.is_empty() {
-            info!("[Batch #{}] No more records returned. Backfill stream complete.", batch_index);
+            info!(
+                "[Batch #{}] No more records returned. Backfill stream complete.",
+                batch_index
+            );
             break;
         }
 
@@ -393,7 +494,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                     last_timestamp = Some(record.published_utc.to_rfc3339());
 
                     // Check for duplicates in TimescaleDB (idempotency)
-                    match sink.record_exists(&record.ticker, record.published_utc, &record.source).await {
+                    match sink
+                        .record_exists(&record.ticker, record.published_utc, &record.source)
+                        .await
+                    {
                         Ok(true) => {
                             total_skipped += 1;
                             batch_skipped += 1;
@@ -409,7 +513,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                                         batch_inserted += 1;
                                     }
                                     Err(e) => {
-                                        error!("[TimescaleDB Insert Error] Record {:?}: {}", record, e);
+                                        error!(
+                                            "[TimescaleDB Insert Error] Record {:?}: {}",
+                                            record, e
+                                        );
                                     }
                                 }
                             }

@@ -13,8 +13,7 @@ use uuid::Uuid;
 use crate::audit_logs::log_audit_event;
 use crate::auth::Claims;
 use crate::models::dlq::{
-    DLQEventsListResponse, DLQEventsQueryParams, PurgeDLQResponse,
-    ReprocessDLQResponse,
+    DLQEventsListResponse, DLQEventsQueryParams, PurgeDLQResponse, ReprocessDLQResponse,
 };
 use crate::state::AppState;
 

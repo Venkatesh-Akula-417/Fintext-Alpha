@@ -211,7 +211,11 @@ pub async fn get_pit_certificate_handler(
     };
 
     let issued_at = Utc::now().to_rfc3339();
-    let certificate_id = format!("PIT-CERT-{}-{}", now.format("%Y%m%d"), &issued_at[11..19].replace(':', ""));
+    let certificate_id = format!(
+        "PIT-CERT-{}-{}",
+        now.format("%Y%m%d"),
+        &issued_at[11..19].replace(':', "")
+    );
 
     let start_str = start_date.format("%Y-%m-%d").to_string();
     let end_str = end_date.format("%Y-%m-%d").to_string();
@@ -353,9 +357,12 @@ async fn run_live_pit_audit_tests(
             if let Ok(val) = resp.json::<serde_json::Value>().await {
                 if let Some(dataset) = val.get("dataset").and_then(|d| d.as_array()) {
                     if let Some(first_row) = dataset.first().and_then(|r| r.as_array()) {
-                        let total = first_row.get(0).and_then(|v| v.as_u64()).unwrap_or(15000) as usize;
-                        let out_of_order = first_row.get(1).and_then(|v| v.as_u64()).unwrap_or(0) as usize;
-                        let commit_err = first_row.get(2).and_then(|v| v.as_u64()).unwrap_or(0) as usize;
+                        let total =
+                            first_row.get(0).and_then(|v| v.as_u64()).unwrap_or(15000) as usize;
+                        let out_of_order =
+                            first_row.get(1).and_then(|v| v.as_u64()).unwrap_or(0) as usize;
+                        let commit_err =
+                            first_row.get(2).and_then(|v| v.as_u64()).unwrap_or(0) as usize;
 
                         let total_valid = total.max(100);
                         let violations = out_of_order + commit_err;
@@ -364,7 +371,11 @@ async fn run_live_pit_audit_tests(
                             signal_availability_ordering: PITTestResult {
                                 violations,
                                 total_checked: total_valid,
-                                status: if violations == 0 { "pass".to_string() } else { "fail".to_string() },
+                                status: if violations == 0 {
+                                    "pass".to_string()
+                                } else {
+                                    "fail".to_string()
+                                },
                             },
                             ticker_rename: PITTestResult {
                                 violations: 0,
@@ -389,7 +400,11 @@ async fn run_live_pit_audit_tests(
                             out_of_order_event: PITTestResult {
                                 violations: out_of_order,
                                 total_checked: total_valid,
-                                status: if out_of_order == 0 { "pass".to_string() } else { "fail".to_string() },
+                                status: if out_of_order == 0 {
+                                    "pass".to_string()
+                                } else {
+                                    "fail".to_string()
+                                },
                             },
                             timestamp_precision: PITTestResult {
                                 violations: 0,

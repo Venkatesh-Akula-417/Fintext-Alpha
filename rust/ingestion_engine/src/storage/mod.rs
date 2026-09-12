@@ -15,4 +15,3 @@ pub use raw_archive::{
 };
 pub use sink::{CompleteSignalRecord, JsonlStreamSink};
 pub use timescaledb::{TimescaleDbConfig, TimescaleDbSink, TimescaleSentimentRecord};
-

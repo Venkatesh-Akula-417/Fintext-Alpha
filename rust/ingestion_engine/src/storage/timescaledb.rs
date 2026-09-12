@@ -47,8 +47,9 @@ impl Default for TimescaleDbConfig {
             .map(|v| v == "1" || v.to_lowercase() == "true")
             .unwrap_or(false);
 
-        let url = env::var("TIMESCALE_DB_URL")
-            .unwrap_or_else(|_| "postgres://fintext:fintext@localhost:5432/fintext_timeseries".to_string());
+        let url = env::var("TIMESCALE_DB_URL").unwrap_or_else(|_| {
+            "postgres://fintext:fintext@localhost:5432/fintext_timeseries".to_string()
+        });
 
         let max_connections = env::var("TIMESCALE_MAX_CONNECTIONS")
             .ok()
@@ -85,7 +86,8 @@ impl TimescaleDbConfig {
     pub fn from_env_or_config() -> Self {
         let mut cfg = Self::default();
 
-        let config_path = env::var("CONFIG_PATH").unwrap_or_else(|_| "config/config.yaml".to_string());
+        let config_path =
+            env::var("CONFIG_PATH").unwrap_or_else(|_| "config/config.yaml".to_string());
         if let Ok(contents) = std::fs::read_to_string(&config_path) {
             let mut in_db = false;
             let mut in_timescale = false;
@@ -166,7 +168,9 @@ impl TimescaleDbConfig {
         if let Ok(val) = env::var("ENABLE_TIMESCALEDB").or_else(|_| env::var("TIMESCALE_ENABLED")) {
             cfg.enabled = val == "1" || val.to_lowercase() == "true";
         }
-        if let Ok(val) = env::var("TIMESCALE_PRIMARY").or_else(|_| env::var("ENABLE_TIMESCALE_PRIMARY")) {
+        if let Ok(val) =
+            env::var("TIMESCALE_PRIMARY").or_else(|_| env::var("ENABLE_TIMESCALE_PRIMARY"))
+        {
             cfg.primary = val == "1" || val.to_lowercase() == "true";
         }
         if let Ok(val) = env::var("TIMESCALE_AUTO_BACKFILL") {
@@ -219,11 +223,14 @@ impl TimescaleDbSink {
             let pool_opts = sqlx::postgres::PgPoolOptions::new()
                 .max_connections(config.max_connections)
                 .acquire_timeout(Duration::from_millis(config.timeout_ms));
-            
+
             match pool_opts.connect_lazy(&config.url) {
                 Ok(p) => Some(p),
                 Err(e) => {
-                    warn!("[TimescaleDB] Failed to create connection pool to '{}': {}", config.url, e);
+                    warn!(
+                        "[TimescaleDB] Failed to create connection pool to '{}': {}",
+                        config.url, e
+                    );
                     None
                 }
             }
@@ -242,14 +249,19 @@ impl TimescaleDbSink {
             config,
             pool,
             mock_store: Arc::new(RwLock::new(Vec::new())),
-            db_breaker: Some(Arc::new(crate::pipeline::resilience::DbCircuitBreaker::new(
-                crate::pipeline::resilience::CircuitBreakerConfig::from_env_or_config(),
-            ))),
+            db_breaker: Some(Arc::new(
+                crate::pipeline::resilience::DbCircuitBreaker::new(
+                    crate::pipeline::resilience::CircuitBreakerConfig::from_env_or_config(),
+                ),
+            )),
         }
     }
 
     /// Initialize a mock sink for testing with an explicit mock store.
-    pub fn new_mock(config: TimescaleDbConfig, mock_store: Arc<RwLock<Vec<TimescaleSentimentRecord>>>) -> Self {
+    pub fn new_mock(
+        config: TimescaleDbConfig,
+        mock_store: Arc<RwLock<Vec<TimescaleSentimentRecord>>>,
+    ) -> Self {
         Self {
             config,
             pool: None,
@@ -259,12 +271,18 @@ impl TimescaleDbSink {
     }
 
     /// Attach a circuit breaker instance to the sink.
-    pub fn set_circuit_breaker(&mut self, breaker: Arc<crate::pipeline::resilience::DbCircuitBreaker>) {
+    pub fn set_circuit_breaker(
+        &mut self,
+        breaker: Arc<crate::pipeline::resilience::DbCircuitBreaker>,
+    ) {
         self.db_breaker = Some(breaker);
     }
 
     /// Builder pattern method to attach a circuit breaker.
-    pub fn with_circuit_breaker(mut self, breaker: Arc<crate::pipeline::resilience::DbCircuitBreaker>) -> Self {
+    pub fn with_circuit_breaker(
+        mut self,
+        breaker: Arc<crate::pipeline::resilience::DbCircuitBreaker>,
+    ) -> Self {
         self.db_breaker = Some(breaker);
         self
     }
@@ -299,7 +317,7 @@ impl TimescaleDbSink {
         if let Some(ref pool) = self.pool {
             let row: Option<(i64,)> = sqlx::query_as(
                 "SELECT id FROM sentiment_records \
-                 WHERE ticker = $1 AND published_utc = $2 AND source = $3 LIMIT 1;"
+                 WHERE ticker = $1 AND published_utc = $2 AND source = $3 LIMIT 1;",
             )
             .bind(ticker)
             .bind(published_utc)
@@ -414,11 +432,21 @@ impl TimescaleDbSink {
             .map(Self::parse_dt)
             .unwrap_or_else(Utc::now);
 
-        let source = if doc.source.is_empty() { "UNKNOWN".to_string() } else { doc.source.clone() };
+        let source = if doc.source.is_empty() {
+            "UNKNOWN".to_string()
+        } else {
+            doc.source.clone()
+        };
         let title = doc.title.clone();
         let sentiment_score = sentiment.sentiment_score;
         let sentiment_label = sentiment.sentiment_label.clone();
-        let confidence = (sentiment.prob_positive.max(sentiment.prob_negative).max(sentiment.prob_neutral) * 100.0).round() / 100.0;
+        let confidence = (sentiment
+            .prob_positive
+            .max(sentiment.prob_negative)
+            .max(sentiment.prob_neutral)
+            * 100.0)
+            .round()
+            / 100.0;
         let data_quality_score = 0.95; // Standard high-quality verified ingestion score
         let vpin = doc.vpin;
         let gamma_exposure = doc.gex;
@@ -441,7 +469,7 @@ impl TimescaleDbSink {
                 let prev_rev_row: Option<(i32,)> = sqlx::query_as(
                     "SELECT revision_number FROM sentiment_records \
                      WHERE ticker = $1 AND published_utc = $2 AND source = $3 \
-                     ORDER BY revision_number DESC LIMIT 1;"
+                     ORDER BY revision_number DESC LIMIT 1;",
                 )
                 .bind(&ticker)
                 .bind(published_utc)
@@ -494,12 +522,17 @@ impl TimescaleDbSink {
                     }
                 }
             } else {
-                write_op().await.map_err(|e| format!("TimescaleDB transaction error: {}", e))
+                write_op()
+                    .await
+                    .map_err(|e| format!("TimescaleDB transaction error: {}", e))
             };
 
             match res {
                 Ok(id) => {
-                    debug!("[TimescaleDB] Inserted record id={} for ticker={}", id, ticker);
+                    debug!(
+                        "[TimescaleDB] Inserted record id={} for ticker={}",
+                        id, ticker
+                    );
                     Ok(id)
                 }
                 Err(e) => Err(e),
@@ -511,7 +544,11 @@ impl TimescaleDbSink {
 
             // Close existing current version
             for item in store.iter_mut() {
-                if item.ticker == ticker && item.published_utc == published_utc && item.source == source && item.is_current {
+                if item.ticker == ticker
+                    && item.published_utc == published_utc
+                    && item.source == source
+                    && item.is_current
+                {
                     item.is_current = false;
                     item.valid_to = Some(ingested_utc);
                     prev_revision = item.revision_number.max(prev_revision);
@@ -602,7 +639,10 @@ mod tests {
         };
 
         // 1. Initial write (Revision 1)
-        let id1 = sink.write_sentiment_record(&doc, &sentiment_v1).await.unwrap();
+        let id1 = sink
+            .write_sentiment_record(&doc, &sentiment_v1)
+            .await
+            .unwrap();
         assert_eq!(id1, 1);
 
         let records = sink.get_mock_records();
@@ -623,7 +663,10 @@ mod tests {
             ..Default::default()
         };
 
-        let id2 = sink.write_sentiment_record(&doc_v2, &sentiment_v2).await.unwrap();
+        let id2 = sink
+            .write_sentiment_record(&doc_v2, &sentiment_v2)
+            .await
+            .unwrap();
         assert_eq!(id2, 2);
 
         let records = sink.get_mock_records();
@@ -668,7 +711,9 @@ mod tests {
         };
         let sink = TimescaleDbSink::new(cfg);
 
-        let pub_utc = DateTime::parse_from_rfc3339("2026-09-01T12:00:00Z").unwrap().with_timezone(&Utc);
+        let pub_utc = DateTime::parse_from_rfc3339("2026-09-01T12:00:00Z")
+            .unwrap()
+            .with_timezone(&Utc);
         let rec = TimescaleSentimentRecord {
             id: 1,
             ticker: "AAPL".to_string(),
@@ -690,17 +735,29 @@ mod tests {
         };
 
         // Initially does not exist
-        assert!(!sink.record_exists("AAPL", pub_utc, "sec_edgar").await.unwrap());
+        assert!(!sink
+            .record_exists("AAPL", pub_utc, "sec_edgar")
+            .await
+            .unwrap());
 
         // Insert backfill record
         let id = sink.insert_backfill_record(&rec).await.unwrap();
         assert_eq!(id, 1);
 
         // Now exists
-        assert!(sink.record_exists("AAPL", pub_utc, "sec_edgar").await.unwrap());
+        assert!(sink
+            .record_exists("AAPL", pub_utc, "sec_edgar")
+            .await
+            .unwrap());
         // Different source does not exist
-        assert!(!sink.record_exists("AAPL", pub_utc, "finnhub").await.unwrap());
+        assert!(!sink
+            .record_exists("AAPL", pub_utc, "finnhub")
+            .await
+            .unwrap());
         // Different ticker does not exist
-        assert!(!sink.record_exists("MSFT", pub_utc, "sec_edgar").await.unwrap());
+        assert!(!sink
+            .record_exists("MSFT", pub_utc, "sec_edgar")
+            .await
+            .unwrap());
     }
 }

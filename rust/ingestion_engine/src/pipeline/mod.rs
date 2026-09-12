@@ -11,4 +11,3 @@ pub use preprocessor::{Preprocessor, ProcessedDocument, RawDocument, SignalLaten
 pub use resilience::{
     CircuitBreakerConfig, DbCircuitBreaker, DbError, STATE_CLOSED, STATE_HALF_OPEN, STATE_OPEN,
 };
-

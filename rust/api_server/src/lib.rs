@@ -60,7 +60,6 @@ pub use resilience::*;
 pub mod cache;
 pub use cache::*;
 
-
 pub use audit_logs::{
     init_audit_logs_table, log_audit_event, AuditExportQuery, AuditLogEntry,
     AuditLogExportResponse, AuditLogRegistry, AuditLogsQuery, AuditLogsResponse,
@@ -91,35 +90,33 @@ pub use handlers::{
     cancel_fix_order_handler, cancel_retraining_job_handler, create_digest_subscription_handler,
     create_retention_policy_handler, create_retraining_job_handler, create_transcript_handler,
     deactivate_sandbox_handler, delete_digest_subscription_handler,
-    delete_retention_policy_handler, delete_transcript_handler,
-    export_audit_logs_handler, export_csv_handler, export_parquet_handler, get_8k_events_handler,
-    get_audit_logs_handler, get_bankruptcy_risk_handler, get_batch_sentiment_handler,
-    get_commodity_sentiment_handler,
+    delete_retention_policy_handler, delete_transcript_handler, export_audit_logs_handler,
+    export_csv_handler, export_parquet_handler, get_8k_events_handler, get_audit_logs_handler,
+    get_bankruptcy_risk_handler, get_batch_sentiment_handler, get_commodity_sentiment_handler,
     get_credit_sentiment_handler, get_crypto_sentiment_handler, get_digest_subscription_handler,
     get_dlq_event_handler, get_earnings_surprise_handler, get_esg_scores_handler,
     get_event_study_handler, get_factor_exposure_handler, get_fx_sentiment_handler,
     get_insider_trading_handler, get_kafka_credentials_handler, get_language_detect_handler,
     get_ma_rumors_handler, get_market_breadth_handler, get_market_regime_handler,
-    get_model_card_handler, get_model_validation_handler, get_news_article_handler, get_options_iv_handler,
-    get_options_microstructure_handler,
-    get_options_vol_surface_handler, get_pit_certificate_handler, get_pit_replay_handler,
-    get_provenance_handler, get_provider_health_handler, get_put_call_ratio_handler,
-    get_regulatory_filings_handler, get_retraining_job_handler, get_return_correlation_handler,
-    get_sandbox_status_handler, get_sector_sentiment_handler, get_sentiment_anomalies_handler,
+    get_model_card_handler, get_model_validation_handler, get_news_article_handler,
+    get_options_iv_handler, get_options_microstructure_handler, get_options_vol_surface_handler,
+    get_pit_certificate_handler, get_pit_replay_handler, get_provenance_handler,
+    get_provider_health_handler, get_put_call_ratio_handler, get_regulatory_filings_handler,
+    get_retraining_job_handler, get_return_correlation_handler, get_sandbox_status_handler,
+    get_sector_sentiment_handler, get_sentiment_anomalies_handler,
     get_sentiment_disagreement_handler, get_sentiment_entities_handler, get_sentiment_feed_handler,
     get_sentiment_handler, get_sentiment_history_handler, get_sentiment_revisions_handler,
-    get_sla_status_handler,
-    get_spillover_matrix_handler, get_spillovers_handler, get_supply_chain_risk_handler,
-    get_symbol_map_handler, get_transcript_handler, get_unusual_options_handler,
-    get_usage_stats_handler, health_check_handler, list_dlq_events_handler,
-    list_fix_orders_handler, list_kafka_topics_handler, list_news_articles_handler,
-    list_retention_policies_handler, list_retraining_jobs_handler, list_transcripts_handler,
-    portfolio_factor_exposure_handler, portfolio_optimize_handler, post_alpha_report_handler,
-    post_anomaly_scan_handler, post_sentiment_revision_handler, post_signal_quality_report_handler,
-    purge_dlq_event_handler, reload_pit_data_handler, reprocess_dlq_event_handler, revoke_kafka_credentials_handler,
-    search::get_search_handler, sector_rotation::get_sector_rotation_handler,
-    sla_latency_handler, submit_fix_order_handler, transcribe_audio_handler,
-    trigger_digest_send_handler, websocket_handler,
+    get_sla_status_handler, get_spillover_matrix_handler, get_spillovers_handler,
+    get_supply_chain_risk_handler, get_symbol_map_handler, get_transcript_handler,
+    get_unusual_options_handler, get_usage_stats_handler, health_check_handler,
+    list_dlq_events_handler, list_fix_orders_handler, list_kafka_topics_handler,
+    list_news_articles_handler, list_retention_policies_handler, list_retraining_jobs_handler,
+    list_transcripts_handler, portfolio_factor_exposure_handler, portfolio_optimize_handler,
+    post_alpha_report_handler, post_anomaly_scan_handler, post_sentiment_revision_handler,
+    post_signal_quality_report_handler, purge_dlq_event_handler, reload_pit_data_handler,
+    reprocess_dlq_event_handler, revoke_kafka_credentials_handler, search::get_search_handler,
+    sector_rotation::get_sector_rotation_handler, sla_latency_handler, submit_fix_order_handler,
+    transcribe_audio_handler, trigger_digest_send_handler, websocket_handler,
 };
 pub use ip_whitelist::{
     add_ip_whitelist_handler, delete_ip_whitelist_handler, get_ip_whitelist_handler,
@@ -142,10 +139,10 @@ pub use models::{
     BacktestRequest, BacktestResponse, BankruptcyComponents, BankruptcyRiskParams,
     BankruptcyRiskResponse, BatchSentimentParams, BatchSentimentResponse, CalibrationPoint,
     ChatAlertSubscription, ChatAlertSubscriptionResponse, ChatAlertsResponse, ClassConfusion,
-    ClassificationMetrics, CommoditySentimentArticle, CommoditySentimentParams, CommoditySentimentResponse,
-    CommoditySentimentSummary, ConfusionMatrix, CreateChatAlertRequest, CreateRetentionPolicyRequest,
-    CreateRetrainingJobRequest, CreateTranscriptRequest, CreditSentimentParams,
-    CreditSentimentResponse, CryptoSentimentArticle, CryptoSentimentParams,
+    ClassificationMetrics, CommoditySentimentArticle, CommoditySentimentParams,
+    CommoditySentimentResponse, CommoditySentimentSummary, ConfusionMatrix, CreateChatAlertRequest,
+    CreateRetentionPolicyRequest, CreateRetrainingJobRequest, CreateTranscriptRequest,
+    CreditSentimentParams, CreditSentimentResponse, CryptoSentimentArticle, CryptoSentimentParams,
     CryptoSentimentResponse, CryptoSentimentSummary, DLQEventDetail, DLQEventItem,
     DLQEventsListResponse, DLQEventsQueryParams, DataProvenanceItem, DataProvenanceResponse,
     DeleteChatAlertResponse, DeleteRetentionPolicyResponse, DeleteTranscriptResponse,
@@ -160,18 +157,17 @@ pub use models::{
     MARumorsParams, MARumorsResponse, MarketBreadthParams, MarketBreadthPoint,
     MarketBreadthResponse, MarketRegimeParams, MarketRegimeResponse, MicrostructureParams,
     MicrostructurePoint, MicrostructureResponse, ModelValidationQuery, ModelValidationResponse,
-    NewsArticleFull, NewsArticleMetadata,
-    NewsArticlesListResponse, OLSStatistics, OptionContract, OptionsIvParams, OptionsIvResponse,
-    OptionsVolSurfaceParams, OptionsVolSurfaceResponse, PITBackfillTestResult,
-    PITCertificateParams, PITCertificatePolicies, PITCertificateResponse, PITCertificateTests,
-    PITDuplicateTestResult, PITReplayConsistency, PITReplayEventItem, PITReplayFilingItem,
-    PITReplayNewsItem, PITReplayParams, PITReplayResponse, PITReplaySentimentItem,
-    PITReplaySummary, PITTestResult, PerClassMetrics, PortfolioConstraints,
+    NewsArticleFull, NewsArticleMetadata, NewsArticlesListResponse, OLSStatistics, OptionContract,
+    OptionsIvParams, OptionsIvResponse, OptionsVolSurfaceParams, OptionsVolSurfaceResponse,
+    PITBackfillTestResult, PITCertificateParams, PITCertificatePolicies, PITCertificateResponse,
+    PITCertificateTests, PITDuplicateTestResult, PITReplayConsistency, PITReplayEventItem,
+    PITReplayFilingItem, PITReplayNewsItem, PITReplayParams, PITReplayResponse,
+    PITReplaySentimentItem, PITReplaySummary, PITTestResult, PerClassMetrics, PortfolioConstraints,
     PortfolioFactorExposureRequest, PortfolioFactorExposureResponse, PortfolioOptimizeRequest,
     PortfolioOptimizeResponse, PortfolioWeight, ProcessingStep, ProviderHealthItem,
-    ProviderHealthQuery, ProviderHealthResponse, PurgeDLQResponse,
-    PutCallRatioParams, PutCallRatioPoint, PutCallRatioResponse, RegimeComponents,
-    RegulatoryFilingItem, RegulatoryFilingsParams, RegulatoryFilingsResponse, ReprocessDLQResponse,
+    ProviderHealthQuery, ProviderHealthResponse, PurgeDLQResponse, PutCallRatioParams,
+    PutCallRatioPoint, PutCallRatioResponse, RegimeComponents, RegulatoryFilingItem,
+    RegulatoryFilingsParams, RegulatoryFilingsResponse, ReprocessDLQResponse,
     RetentionPoliciesResponse, RetentionPolicy, RetrainingJob, RetrainingJobResponse,
     ReturnCorrelationItem, ReturnCorrelationParams, ReturnCorrelationResponse, SLAStatusParams,
     SLAStatusResponse, SandboxStatusResponse, SearchParams, SearchResponse, SearchResultItem,
@@ -182,11 +178,10 @@ pub use models::{
     SentimentHistoryParams, SentimentHistoryResponse, SentimentProbabilities, SentimentQuery,
     SentimentRecord, SentimentResponse, SourceBreakdown, SpilloverItem, SpilloverMatrixItem,
     SpilloverMatrixParams, SpilloverMatrixResponse, SpilloverQuery, SpilloverResponse,
-    SupplyChainRiskItem, SupplyChainRiskParams,
-    SupplyChainRiskResponse, SymbolMapParams, SymbolMapResponse, TranscriptListParams,
-    TranscriptListResponse, TranscriptMetadata, TranscriptResponse, UnusualOptionItem,
-    UnusualOptionsParams, UnusualOptionsResponse, UsageGroupItem, UsageStatsParams,
-    UsageStatsResponse, UsageStatsSummary, VolSurfacePoint,
+    SupplyChainRiskItem, SupplyChainRiskParams, SupplyChainRiskResponse, SymbolMapParams,
+    SymbolMapResponse, TranscriptListParams, TranscriptListResponse, TranscriptMetadata,
+    TranscriptResponse, UnusualOptionItem, UnusualOptionsParams, UnusualOptionsResponse,
+    UsageGroupItem, UsageStatsParams, UsageStatsResponse, UsageStatsSummary, VolSurfacePoint,
     DEFAULT_SANDBOX_MOCK_VERSION,
 };
 pub use news_articles::NewsArticleRegistry;
@@ -223,10 +218,9 @@ pub use retraining::{
 pub use sector::{SectorMap, GLOBAL_SECTOR_MAP};
 pub use state::{
     is_finnhub_mock_fallback_enabled, is_kafka_mock_fallback_enabled,
-    is_polygon_mock_fallback_enabled, is_production_mode,
-    is_questdb_mock_fallback_enabled, is_whisper_mock_fallback_enabled,
-    read_production_mode_from_config, set_production_mode, AppState,
-    DEFAULT_DEV_ADMIN_TOKEN, DEFAULT_DEV_JWT_SECRET, PRODUCTION_MODE_ACTIVE,
+    is_polygon_mock_fallback_enabled, is_production_mode, is_questdb_mock_fallback_enabled,
+    is_whisper_mock_fallback_enabled, read_production_mode_from_config, set_production_mode,
+    AppState, DEFAULT_DEV_ADMIN_TOKEN, DEFAULT_DEV_JWT_SECRET, PRODUCTION_MODE_ACTIVE,
 };
 use std::time::Duration;
 pub use streaming::{KafkaSubscriber, KafkaSubscriberConfig};
@@ -329,7 +323,10 @@ pub fn create_app_with_state(state: AppState) -> Router {
         )
         .route("/backtest", post(backtest_handler))
         .route("/signals/alpha-report", post(post_alpha_report_handler))
-        .route("/signals/quality-report", post(post_signal_quality_report_handler))
+        .route(
+            "/signals/quality-report",
+            post(post_signal_quality_report_handler),
+        )
         .route("/pit/replay", get(get_pit_replay_handler))
         .route("/pit/certificate", get(get_pit_certificate_handler))
         .route("/providers/health", get(get_provider_health_handler))
@@ -497,8 +494,14 @@ pub fn create_app_with_state(state: AppState) -> Router {
 
     let public_routes = Router::new()
         .merge(swagger_router)
-        .route("/v1/swagger-ui", get(|| async { axum::response::Redirect::temporary("/swagger-ui/") }))
-        .route("/v1/swagger-ui/", get(|| async { axum::response::Redirect::temporary("/swagger-ui/") }))
+        .route(
+            "/v1/swagger-ui",
+            get(|| async { axum::response::Redirect::temporary("/swagger-ui/") }),
+        )
+        .route(
+            "/v1/swagger-ui/",
+            get(|| async { axum::response::Redirect::temporary("/swagger-ui/") }),
+        )
         .route("/health", get(health_check_handler))
         .route("/auth/token", post(issue_token_handler))
         .route("/auth/register", post(register_user_handler))
@@ -590,7 +593,10 @@ pub fn public_v1_router(state: AppState) -> Router<AppState> {
             "/signals/quality-report",
             post(post_signal_quality_report_handler),
         )
-        .route("/export/csv", post(export_csv_handler).get(export_csv_handler))
+        .route(
+            "/export/csv",
+            post(export_csv_handler).get(export_csv_handler),
+        )
         // Notifications core endpoints
         .route(
             "/webhooks",
@@ -632,14 +638,12 @@ mod tests {
     use uuid::Uuid;
 
     /// Helper to generate a valid test Bearer token Authorization header with custom role.
-    fn test_auth_header_with_role(user_id: &str, role: &str) -> (header::HeaderName, header::HeaderValue) {
-        let token = generate_jwt(
-            user_id,
-            3600,
-            Some(role),
-            DEFAULT_DEV_JWT_SECRET.as_bytes(),
-        )
-        .expect("Should generate test JWT");
+    fn test_auth_header_with_role(
+        user_id: &str,
+        role: &str,
+    ) -> (header::HeaderName, header::HeaderValue) {
+        let token = generate_jwt(user_id, 3600, Some(role), DEFAULT_DEV_JWT_SECRET.as_bytes())
+            .expect("Should generate test JWT");
 
         (
             header::AUTHORIZATION,
@@ -721,7 +725,10 @@ mod tests {
         let body_str = String::from_utf8(body.to_vec()).unwrap();
         let json_val: serde_json::Value = serde_json::from_str(&body_str).unwrap();
 
-        assert_eq!(json_val["info"]["title"], "FinText-Alpha-Vectorizer Public API");
+        assert_eq!(
+            json_val["info"]["title"],
+            "FinText-Alpha-Vectorizer Public API"
+        );
         assert_eq!(json_val["info"]["version"], "1.0.0");
 
         let paths = json_val["paths"].as_object().expect("Paths must be object");
@@ -803,7 +810,9 @@ mod tests {
 
         let body = response.into_body().collect().await.unwrap().to_bytes();
         let token_resp: serde_json::Value = serde_json::from_slice(&body).unwrap();
-        let token = token_resp["token"].as_str().expect("token should be present");
+        let token = token_resp["token"]
+            .as_str()
+            .expect("token should be present");
 
         // 2. GET /v1/users/me
         let req2 = Request::builder()
@@ -1385,10 +1394,16 @@ mod tests {
             pit_cert_archiver: Arc::new(PitCertArchiver::from_env_or_config()),
             pit_db_store: None,
             timescaledb_primary: false,
-            timescaledb_client: Arc::new(crate::storage::TimescaleDbClient::new(crate::storage::TimescaleDbClientConfig::default())),
-            db_circuit_breaker: Arc::new(crate::resilience::DbCircuitBreaker::new(crate::resilience::CircuitBreakerConfig::default())),
+            timescaledb_client: Arc::new(crate::storage::TimescaleDbClient::new(
+                crate::storage::TimescaleDbClientConfig::default(),
+            )),
+            db_circuit_breaker: Arc::new(crate::resilience::DbCircuitBreaker::new(
+                crate::resilience::CircuitBreakerConfig::default(),
+            )),
             cache_config: crate::cache::CacheConfig::default(),
-            provider_health_store: Arc::new(crate::handlers::provider_health::ProviderHealthStore::default()),
+            provider_health_store: Arc::new(
+                crate::handlers::provider_health::ProviderHealthStore::default(),
+            ),
         };
 
         let app = create_app_with_state(state);
@@ -1478,10 +1493,16 @@ mod tests {
             pit_cert_archiver: Arc::new(PitCertArchiver::from_env_or_config()),
             pit_db_store: None,
             timescaledb_primary: false,
-            timescaledb_client: Arc::new(crate::storage::TimescaleDbClient::new(crate::storage::TimescaleDbClientConfig::default())),
-            db_circuit_breaker: Arc::new(crate::resilience::DbCircuitBreaker::new(crate::resilience::CircuitBreakerConfig::default())),
+            timescaledb_client: Arc::new(crate::storage::TimescaleDbClient::new(
+                crate::storage::TimescaleDbClientConfig::default(),
+            )),
+            db_circuit_breaker: Arc::new(crate::resilience::DbCircuitBreaker::new(
+                crate::resilience::CircuitBreakerConfig::default(),
+            )),
             cache_config: crate::cache::CacheConfig::default(),
-            provider_health_store: Arc::new(crate::handlers::provider_health::ProviderHealthStore::default()),
+            provider_health_store: Arc::new(
+                crate::handlers::provider_health::ProviderHealthStore::default(),
+            ),
         };
 
         let app = create_app_with_state(state);
@@ -1572,10 +1593,16 @@ mod tests {
             pit_cert_archiver: Arc::new(PitCertArchiver::from_env_or_config()),
             pit_db_store: None,
             timescaledb_primary: false,
-            timescaledb_client: Arc::new(crate::storage::TimescaleDbClient::new(crate::storage::TimescaleDbClientConfig::default())),
-            db_circuit_breaker: Arc::new(crate::resilience::DbCircuitBreaker::new(crate::resilience::CircuitBreakerConfig::default())),
+            timescaledb_client: Arc::new(crate::storage::TimescaleDbClient::new(
+                crate::storage::TimescaleDbClientConfig::default(),
+            )),
+            db_circuit_breaker: Arc::new(crate::resilience::DbCircuitBreaker::new(
+                crate::resilience::CircuitBreakerConfig::default(),
+            )),
             cache_config: crate::cache::CacheConfig::default(),
-            provider_health_store: Arc::new(crate::handlers::provider_health::ProviderHealthStore::default()),
+            provider_health_store: Arc::new(
+                crate::handlers::provider_health::ProviderHealthStore::default(),
+            ),
         };
 
         let app = create_app_with_state(state);
@@ -1650,10 +1677,16 @@ mod tests {
             pit_cert_archiver: Arc::new(PitCertArchiver::from_env_or_config()),
             pit_db_store: None,
             timescaledb_primary: false,
-            timescaledb_client: Arc::new(crate::storage::TimescaleDbClient::new(crate::storage::TimescaleDbClientConfig::default())),
-            db_circuit_breaker: Arc::new(crate::resilience::DbCircuitBreaker::new(crate::resilience::CircuitBreakerConfig::default())),
+            timescaledb_client: Arc::new(crate::storage::TimescaleDbClient::new(
+                crate::storage::TimescaleDbClientConfig::default(),
+            )),
+            db_circuit_breaker: Arc::new(crate::resilience::DbCircuitBreaker::new(
+                crate::resilience::CircuitBreakerConfig::default(),
+            )),
             cache_config: crate::cache::CacheConfig::default(),
-            provider_health_store: Arc::new(crate::handlers::provider_health::ProviderHealthStore::default()),
+            provider_health_store: Arc::new(
+                crate::handlers::provider_health::ProviderHealthStore::default(),
+            ),
         };
 
         let app = create_app_with_state(state);
@@ -1754,10 +1787,16 @@ mod tests {
             pit_cert_archiver: Arc::new(PitCertArchiver::from_env_or_config()),
             pit_db_store: None,
             timescaledb_primary: false,
-            timescaledb_client: Arc::new(crate::storage::TimescaleDbClient::new(crate::storage::TimescaleDbClientConfig::default())),
-            db_circuit_breaker: Arc::new(crate::resilience::DbCircuitBreaker::new(crate::resilience::CircuitBreakerConfig::default())),
+            timescaledb_client: Arc::new(crate::storage::TimescaleDbClient::new(
+                crate::storage::TimescaleDbClientConfig::default(),
+            )),
+            db_circuit_breaker: Arc::new(crate::resilience::DbCircuitBreaker::new(
+                crate::resilience::CircuitBreakerConfig::default(),
+            )),
             cache_config: crate::cache::CacheConfig::default(),
-            provider_health_store: Arc::new(crate::handlers::provider_health::ProviderHealthStore::default()),
+            provider_health_store: Arc::new(
+                crate::handlers::provider_health::ProviderHealthStore::default(),
+            ),
         };
 
         let app = create_app_with_state(state);
@@ -1839,10 +1878,16 @@ mod tests {
             pit_cert_archiver: Arc::new(PitCertArchiver::from_env_or_config()),
             pit_db_store: None,
             timescaledb_primary: false,
-            timescaledb_client: Arc::new(crate::storage::TimescaleDbClient::new(crate::storage::TimescaleDbClientConfig::default())),
-            db_circuit_breaker: Arc::new(crate::resilience::DbCircuitBreaker::new(crate::resilience::CircuitBreakerConfig::default())),
+            timescaledb_client: Arc::new(crate::storage::TimescaleDbClient::new(
+                crate::storage::TimescaleDbClientConfig::default(),
+            )),
+            db_circuit_breaker: Arc::new(crate::resilience::DbCircuitBreaker::new(
+                crate::resilience::CircuitBreakerConfig::default(),
+            )),
             cache_config: crate::cache::CacheConfig::default(),
-            provider_health_store: Arc::new(crate::handlers::provider_health::ProviderHealthStore::default()),
+            provider_health_store: Arc::new(
+                crate::handlers::provider_health::ProviderHealthStore::default(),
+            ),
         };
 
         let _app = create_app_with_state(state);
@@ -4209,10 +4254,17 @@ mod tests {
         let json_p2: SentimentFeedResponse = serde_json::from_slice(&body2).unwrap();
         assert!(!json_p2.records.is_empty());
 
-        let p1_titles: std::collections::HashSet<_> = json_p1.records.iter().map(|r| &r.title).collect();
+        let p1_titles: std::collections::HashSet<_> =
+            json_p1.records.iter().map(|r| &r.title).collect();
         for r in &json_p2.records {
-            assert!(!p1_titles.contains(&r.title), "Page 2 should not overlap with Page 1");
-            assert!(r.published_utc < cur, "Page 2 records must be earlier than cursor");
+            assert!(
+                !p1_titles.contains(&r.title),
+                "Page 2 should not overlap with Page 1"
+            );
+            assert!(
+                r.published_utc < cur,
+                "Page 2 records must be earlier than cursor"
+            );
         }
     }
 
@@ -4249,7 +4301,10 @@ mod tests {
         let json_p2: SentimentFeedResponse = serde_json::from_slice(&body2).unwrap();
         assert!(!json_p2.records.is_empty());
         for r in &json_p2.records {
-            assert!(r.published_utc > cur, "Page 2 records must be later than cursor");
+            assert!(
+                r.published_utc > cur,
+                "Page 2 records must be later than cursor"
+            );
         }
     }
 
@@ -7803,7 +7858,10 @@ mod tests {
         let body_bytes = resp.into_body().collect().await.unwrap().to_bytes();
         let err_json: serde_json::Value = serde_json::from_slice(&body_bytes).unwrap();
         assert_eq!(err_json["error"], "Forbidden");
-        assert!(err_json["message"].as_str().unwrap().contains("enterprise-only"));
+        assert!(err_json["message"]
+            .as_str()
+            .unwrap()
+            .contains("enterprise-only"));
 
         // Verify GET /fix/orders returns 403
         let req_list = Request::builder()
@@ -8715,7 +8773,10 @@ mod tests {
         );
         assert!(card.model_name.contains("FinBERT") || card.model_name.contains("MiniLM"));
         assert!(card.architecture == "bert" || card.architecture == "transformer_encoder");
-        assert!(card.base_model == "ProsusAI/finbert" || card.base_model == "sentence-transformers/all-MiniLM-L6-v2");
+        assert!(
+            card.base_model == "ProsusAI/finbert"
+                || card.base_model == "sentence-transformers/all-MiniLM-L6-v2"
+        );
         assert_eq!(card.precision, "FP16");
         assert_eq!(card.quantization, "INT8_dynamic");
         assert!(card.sequence_length == 512 || card.sequence_length == 32);
@@ -8724,7 +8785,10 @@ mod tests {
         assert_eq!(card.hardware_requirements.cpu, "8 vCPU");
         assert_eq!(card.hardware_requirements.memory_gb, 4);
         assert!(!card.version_history.is_empty());
-        assert!(card.licensing.model_license == "apache_2.0" || card.licensing.model_license == "internal_proprietary");
+        assert!(
+            card.licensing.model_license == "apache_2.0"
+                || card.licensing.model_license == "internal_proprietary"
+        );
     }
 
     #[tokio::test]
@@ -8779,25 +8843,51 @@ mod tests {
         let m = &report.metrics;
         assert!(m.annualized_volatility > 0.0, "Volatility must be positive");
         assert!(m.max_drawdown >= 0.0, "Max drawdown must be non-negative");
-        assert!(m.win_rate >= 0.0 && m.win_rate <= 100.0, "Win rate must be 0-100%");
+        assert!(
+            m.win_rate >= 0.0 && m.win_rate <= 100.0,
+            "Win rate must be 0-100%"
+        );
         assert!(m.total_trades > 0, "Must have at least one trade");
-        assert!(m.avg_holding_period_days > 0.0, "Avg holding period must be positive");
+        assert!(
+            m.avg_holding_period_days > 0.0,
+            "Avg holding period must be positive"
+        );
         assert_eq!(m.benchmark_ticker, "SPY");
 
         // alpha = total_return - benchmark_total_return (within floating point tolerance)
         let expected_alpha = m.total_return - m.benchmark_total_return;
-        assert!((m.alpha - expected_alpha).abs() < 1e-6, "Alpha mismatch: {} vs {}", m.alpha, expected_alpha);
+        assert!(
+            (m.alpha - expected_alpha).abs() < 1e-6,
+            "Alpha mismatch: {} vs {}",
+            m.alpha,
+            expected_alpha
+        );
 
         // ── Equity curve structure ──────────────────────────────────────────
-        assert!(!report.equity_curve.is_empty(), "Equity curve must be non-empty");
+        assert!(
+            !report.equity_curve.is_empty(),
+            "Equity curve must be non-empty"
+        );
         let first = &report.equity_curve[0];
         assert_eq!(first.date.len(), 10, "Date format must be YYYY-MM-DD");
-        assert!(first.portfolio_value > 0.0, "Portfolio value must be positive");
-        assert!(first.benchmark_value > 0.0, "Benchmark value must be positive");
-        assert!(first.position >= -1 && first.position <= 1, "Position must be -1, 0, or 1");
+        assert!(
+            first.portfolio_value > 0.0,
+            "Portfolio value must be positive"
+        );
+        assert!(
+            first.benchmark_value > 0.0,
+            "Benchmark value must be positive"
+        );
+        assert!(
+            first.position >= -1 && first.position <= 1,
+            "Position must be -1, 0, or 1"
+        );
 
         // ── Timestamp ───────────────────────────────────────────────────────
-        assert!(!report.generated_at.is_empty(), "generated_at must be non-empty");
+        assert!(
+            !report.generated_at.is_empty(),
+            "generated_at must be non-empty"
+        );
         assert!(!report.message.is_empty(), "message must be non-empty");
     }
 
@@ -9126,7 +9216,10 @@ mod tests {
         let resp: ProviderHealthResponse = serde_json::from_slice(&body).unwrap();
         assert_eq!(resp.providers.len(), 1);
         assert_eq!(resp.providers[0].provider, "finnhub");
-        assert!(resp.providers[0].success_rate_pct >= 0.0 && resp.providers[0].success_rate_pct <= 100.0);
+        assert!(
+            resp.providers[0].success_rate_pct >= 0.0
+                && resp.providers[0].success_rate_pct <= 100.0
+        );
     }
 
     #[tokio::test]
@@ -9212,7 +9305,3 @@ mod tests {
         assert!(resp.expected_calibration_error <= 0.15);
     }
 }
-
-
-
-

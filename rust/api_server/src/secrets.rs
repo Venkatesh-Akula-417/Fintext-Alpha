@@ -92,7 +92,13 @@ impl SecretsConfig {
                     if in_secrets {
                         if let Some((k, v)) = trimmed.split_once(':') {
                             let key = k.trim();
-                            let val = v.split('#').next().unwrap_or("").trim().trim_matches('"').trim_matches('\'');
+                            let val = v
+                                .split('#')
+                                .next()
+                                .unwrap_or("")
+                                .trim()
+                                .trim_matches('"')
+                                .trim_matches('\'');
                             match key {
                                 "provider" => cfg.provider = val.to_string(),
                                 "aws_region" => cfg.aws_region = val.to_string(),
@@ -216,7 +222,9 @@ impl AwsSecretsManagerProvider {
 
         let fetch_operation = async {
             let aws_cfg = aws_config::defaults(aws_config::BehaviorVersion::latest())
-                .region(aws_sdk_secretsmanager::config::Region::new(region_str.clone()))
+                .region(aws_sdk_secretsmanager::config::Region::new(
+                    region_str.clone(),
+                ))
                 .load()
                 .await;
 
@@ -227,16 +235,19 @@ impl AwsSecretsManagerProvider {
                 .secret_id(&arn_str)
                 .send()
                 .await
-                .map_err(|e| format!(
-                    "Failed to retrieve secret from AWS Secrets Manager ({}): {}",
-                    arn_str, e
-                ))?;
+                .map_err(|e| {
+                    format!(
+                        "Failed to retrieve secret from AWS Secrets Manager ({}): {}",
+                        arn_str, e
+                    )
+                })?;
 
             let secret_str = if let Some(ref s) = resp.secret_string() {
                 s.to_string()
             } else if let Some(ref b) = resp.secret_binary() {
-                String::from_utf8(b.as_ref().to_vec())
-                    .map_err(|e| format!("Failed to decode binary secret payload as UTF-8: {}", e))?
+                String::from_utf8(b.as_ref().to_vec()).map_err(|e| {
+                    format!("Failed to decode binary secret payload as UTF-8: {}", e)
+                })?
             } else {
                 return Err("AWS Secrets Manager response contained neither secret_string nor secret_binary".to_string());
             };
@@ -244,15 +255,16 @@ impl AwsSecretsManagerProvider {
             Self::from_json_str(&secret_str, &region_str, &arn_str)
         };
 
-        let provider = match tokio::time::timeout(std::time::Duration::from_secs(3), fetch_operation).await {
-            Ok(res) => res?,
-            Err(_) => {
-                return Err(format!(
+        let provider =
+            match tokio::time::timeout(std::time::Duration::from_secs(3), fetch_operation).await {
+                Ok(res) => res?,
+                Err(_) => {
+                    return Err(format!(
                     "Failed to retrieve secret from AWS Secrets Manager ({}): connection timed out",
                     secret_arn
                 ))
-            }
-        };
+                }
+            };
 
         info!(
             "[AWS Secrets Manager] Successfully loaded {} secrets from '{}'",
@@ -293,7 +305,9 @@ pub struct RequiredSecrets {
 }
 
 /// Initialize the configured SecretsProvider.
-pub async fn init_secrets_provider(cfg: &SecretsConfig) -> Result<Arc<dyn SecretsProvider>, String> {
+pub async fn init_secrets_provider(
+    cfg: &SecretsConfig,
+) -> Result<Arc<dyn SecretsProvider>, String> {
     match cfg.provider.to_lowercase().as_str() {
         "aws_secrets_manager" | "aws" => {
             if cfg.aws_secret_arn.trim().is_empty() {
@@ -301,7 +315,8 @@ pub async fn init_secrets_provider(cfg: &SecretsConfig) -> Result<Arc<dyn Secret
                 error!("[Secrets Manager] {}", err);
                 return Err(err);
             }
-            let provider = AwsSecretsManagerProvider::load(&cfg.aws_region, &cfg.aws_secret_arn).await?;
+            let provider =
+                AwsSecretsManagerProvider::load(&cfg.aws_region, &cfg.aws_secret_arn).await?;
             Ok(Arc::new(provider))
         }
         "env" | "" => {
@@ -352,12 +367,12 @@ pub fn validate_required_secrets(
             database_url,
         })
     } else {
-        let jwt_secret = provider.get("JWT_SECRET").unwrap_or_else(|| {
-            crate::DEFAULT_DEV_JWT_SECRET.to_string()
-        });
-        let admin_token = provider.get("ADMIN_TOKEN").unwrap_or_else(|| {
-            crate::DEFAULT_DEV_ADMIN_TOKEN.to_string()
-        });
+        let jwt_secret = provider
+            .get("JWT_SECRET")
+            .unwrap_or_else(|| crate::DEFAULT_DEV_JWT_SECRET.to_string());
+        let admin_token = provider
+            .get("ADMIN_TOKEN")
+            .unwrap_or_else(|| crate::DEFAULT_DEV_ADMIN_TOKEN.to_string());
         let database_url = provider.get("DATABASE_URL").unwrap_or_else(|| {
             "postgres://fintext:fintext@localhost:5432/fintext_metadata".to_string()
         });
@@ -403,10 +418,7 @@ mod tests {
         assert_eq!(provider.get("TEST_KEY_2"), Some("secret_val_2".to_string()));
         assert_eq!(provider.get("NONEXISTENT_KEY_XYZ"), None);
 
-        assert_eq!(
-            provider.required("TEST_KEY_1").unwrap(),
-            "secret_val_1"
-        );
+        assert_eq!(provider.required("TEST_KEY_1").unwrap(), "secret_val_1");
         assert!(provider.required("NONEXISTENT_KEY_XYZ").is_err());
     }
 

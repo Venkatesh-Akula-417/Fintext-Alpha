@@ -169,7 +169,9 @@ pub mod model_validation;
 pub use model_validation::get_model_validation_handler;
 
 pub mod scd2_revision;
-pub use scd2_revision::{get_sentiment_revisions_handler, post_sentiment_revision_handler, GetRevisionsParams};
+pub use scd2_revision::{
+    get_sentiment_revisions_handler, post_sentiment_revision_handler, GetRevisionsParams,
+};
 
 pub mod admin_pit;
 pub use admin_pit::{reload_pit_data_handler, ReloadPitDataRequest, ReloadPitDataResponse};

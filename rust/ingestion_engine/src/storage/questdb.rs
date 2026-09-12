@@ -367,7 +367,13 @@ impl QuestDbSink {
         );
 
         let mut next_revision = 1;
-        if let Ok(resp) = self.client.get(&exec_url).query(&[("query", &check_sql)]).send().await {
+        if let Ok(resp) = self
+            .client
+            .get(&exec_url)
+            .query(&[("query", &check_sql)])
+            .send()
+            .await
+        {
             if resp.status().is_success() {
                 if let Ok(json) = resp.json::<serde_json::Value>().await {
                     if let Some(dataset) = json.get("dataset").and_then(|d| d.as_array()) {
@@ -383,7 +389,12 @@ impl QuestDbSink {
                                     Self::escape_tag_value(ticker),
                                     Self::escape_tag_value(&doc.source),
                                 );
-                                let _ = self.client.get(&exec_url).query(&[("query", &update_sql)]).send().await;
+                                let _ = self
+                                    .client
+                                    .get(&exec_url)
+                                    .query(&[("query", &update_sql)])
+                                    .send()
+                                    .await;
                             }
                         }
                     }
@@ -409,8 +420,18 @@ impl QuestDbSink {
 
         let exec_url = format!("{}/exec", self.config.url.trim_end_matches('/'));
 
-        for sql in [create_sentiment_news_sql, create_stock_bars_sql, create_latency_sql] {
-            match self.client.get(&exec_url).query(&[("query", sql)]).send().await {
+        for sql in [
+            create_sentiment_news_sql,
+            create_stock_bars_sql,
+            create_latency_sql,
+        ] {
+            match self
+                .client
+                .get(&exec_url)
+                .query(&[("query", sql)])
+                .send()
+                .await
+            {
                 Ok(resp) => {
                     let status = resp.status();
                     if status.is_success() {

@@ -21,8 +21,6 @@ use crate::state::AppState;
         (status = 200, description = "Standardized model card and lineage metadata report", body = ModelCardResponse),
     )
 )]
-pub async fn get_model_card_handler(
-    State(_state): State<AppState>,
-) -> Json<ModelCardResponse> {
+pub async fn get_model_card_handler(State(_state): State<AppState>) -> Json<ModelCardResponse> {
     Json(ModelCardResponse::from_config_or_defaults())
 }

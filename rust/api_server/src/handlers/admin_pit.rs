@@ -63,7 +63,10 @@ pub async fn reload_pit_data_handler(
         let bearer_header = headers
             .get("authorization")
             .and_then(|h| h.to_str().ok())
-            .and_then(|h| h.strip_prefix("Bearer ").or_else(|| h.strip_prefix("bearer ")))
+            .and_then(|h| {
+                h.strip_prefix("Bearer ")
+                    .or_else(|| h.strip_prefix("bearer "))
+            })
             .unwrap_or("")
             .trim();
 

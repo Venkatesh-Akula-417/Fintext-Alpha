@@ -188,9 +188,15 @@ pub async fn post_alpha_report_handler(
     // 6. Ingest Historical Sentiment Data
     let mut ticker_events: HashMap<String, Vec<(f64, i64)>> = HashMap::new();
     if is_mock {
-        info!("Executing alpha report in QuestDB mock mode for tickers: {:?}", tickers);
+        info!(
+            "Executing alpha report in QuestDB mock mode for tickers: {:?}",
+            tickers
+        );
         for t in &tickers {
-            ticker_events.insert(t.clone(), generate_mock_backtest_events(t, start_date, end_date));
+            ticker_events.insert(
+                t.clone(),
+                generate_mock_backtest_events(t, start_date, end_date),
+            );
         }
     } else {
         for t in &tickers {
@@ -224,7 +230,10 @@ pub async fn post_alpha_report_handler(
                             .into_response();
                     }
                     warn!("QuestDB error querying sentiment for ticker '{}': {}. Using mock fallback.", t, err);
-                    ticker_events.insert(t.clone(), generate_mock_backtest_events(t, start_date, end_date));
+                    ticker_events.insert(
+                        t.clone(),
+                        generate_mock_backtest_events(t, start_date, end_date),
+                    );
                 }
             }
         }
@@ -276,7 +285,10 @@ pub async fn post_alpha_report_handler(
     let ticker_prices = if is_mock {
         let mut prices = HashMap::new();
         for t in &all_price_tickers {
-            prices.insert(t.clone(), generate_mock_stock_prices(t, start_date, end_date));
+            prices.insert(
+                t.clone(),
+                generate_mock_stock_prices(t, start_date, end_date),
+            );
         }
         prices
     } else {
@@ -399,7 +411,10 @@ pub fn run_alpha_strategy_simulation(
                 let smoothed = if count > 0 { sum / (count as f64) } else { 0.0 };
                 smoothed_map.insert(date, smoothed);
             } else {
-                let s = raw_scores.and_then(|m| m.get(&date)).copied().unwrap_or(0.0);
+                let s = raw_scores
+                    .and_then(|m| m.get(&date))
+                    .copied()
+                    .unwrap_or(0.0);
                 smoothed_map.insert(date, s);
             }
         }
@@ -745,13 +760,19 @@ mod tests {
 
         let mut ticker_events = HashMap::new();
         for t in &tickers {
-            ticker_events.insert(t.clone(), generate_mock_backtest_events(t, start_date, end_date));
+            ticker_events.insert(
+                t.clone(),
+                generate_mock_backtest_events(t, start_date, end_date),
+            );
         }
         let benchmark_events = generate_mock_backtest_events("SPY", start_date, end_date);
 
         let mut ticker_prices = HashMap::new();
         for t in &["AAPL", "NVDA", "SPY"] {
-            ticker_prices.insert(t.to_string(), generate_mock_stock_prices(t, start_date, end_date));
+            ticker_prices.insert(
+                t.to_string(),
+                generate_mock_stock_prices(t, start_date, end_date),
+            );
         }
 
         let resp = run_alpha_strategy_simulation(

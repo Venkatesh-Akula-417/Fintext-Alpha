@@ -71,7 +71,8 @@ impl DataQualityConfig {
         }
 
         // Attempt reading from config.yaml if present
-        let config_path = std::env::var("CONFIG_PATH").unwrap_or_else(|_| "config/config.yaml".to_string());
+        let config_path =
+            std::env::var("CONFIG_PATH").unwrap_or_else(|_| "config/config.yaml".to_string());
         if let Ok(contents) = std::fs::read_to_string(&config_path) {
             let mut in_dq = false;
             for line in contents.lines() {
@@ -80,7 +81,8 @@ impl DataQualityConfig {
                     in_dq = true;
                     continue;
                 }
-                if in_dq && !line.starts_with(" ") && !line.starts_with("\t") && !trimmed.is_empty() {
+                if in_dq && !line.starts_with(" ") && !line.starts_with("\t") && !trimmed.is_empty()
+                {
                     break;
                 }
                 if in_dq {
@@ -133,15 +135,9 @@ pub enum QualityGateResult {
     /// Document meets all schema, business, duplicate, and source quality criteria.
     Accept,
     /// Document violated business rules, duplicate detection, or source quality threshold.
-    Quarantine {
-        rule: String,
-        reason: String,
-    },
+    Quarantine { rule: String, reason: String },
     /// Document has fundamental schema violations (missing fields, invalid types/dates).
-    Reject {
-        rule: String,
-        reason: String,
-    },
+    Reject { rule: String, reason: String },
 }
 
 /// Telemetry metrics tracked per upstream data source.
@@ -192,7 +188,8 @@ impl SourceMetrics {
         };
 
         // 2. Freshness factor (0.2 weight): 1.0 if < 5m (300k ms), decreasing to 0.5 at 30m (1800k ms)
-        let freshness_factor = if self.total_records == 0 || self.average_freshness_ms <= 300_000.0 {
+        let freshness_factor = if self.total_records == 0 || self.average_freshness_ms <= 300_000.0
+        {
             1.0
         } else if self.average_freshness_ms >= 1_800_000.0 {
             0.5
@@ -235,7 +232,10 @@ impl SourceQualityStore {
     pub fn new() -> Self {
         let mut map = HashMap::new();
         // Canonical reputation factors: SEC=1.0, Polygon=0.9, Finnhub=0.8, mock=0.5
-        map.insert("sec_edgar".to_string(), SourceMetrics::new("sec_edgar", 1.0));
+        map.insert(
+            "sec_edgar".to_string(),
+            SourceMetrics::new("sec_edgar", 1.0),
+        );
         map.insert("sec".to_string(), SourceMetrics::new("sec", 1.0));
         map.insert("polygon".to_string(), SourceMetrics::new("polygon", 0.9));
         map.insert("finnhub".to_string(), SourceMetrics::new("finnhub", 0.8));
@@ -273,7 +273,9 @@ impl SourceQualityStore {
         let norm = source.to_lowercase();
         let mut map = self.metrics.write().unwrap();
         map.entry(norm.clone())
-            .or_insert_with(|| SourceMetrics::new(&norm, Self::default_reliability_for_source(&norm)))
+            .or_insert_with(|| {
+                SourceMetrics::new(&norm, Self::default_reliability_for_source(&norm))
+            })
             .clone()
     }
 
@@ -293,9 +295,9 @@ impl SourceQualityStore {
     ) {
         let norm = source.to_lowercase();
         let mut map = self.metrics.write().unwrap();
-        let entry = map
-            .entry(norm.clone())
-            .or_insert_with(|| SourceMetrics::new(&norm, Self::default_reliability_for_source(&norm)));
+        let entry = map.entry(norm.clone()).or_insert_with(|| {
+            SourceMetrics::new(&norm, Self::default_reliability_for_source(&norm))
+        });
 
         entry.total_records += 1;
         entry.accepted_records += 1;
@@ -311,9 +313,9 @@ impl SourceQualityStore {
     pub fn record_quarantine(&self, source: &str, _reason: &str) {
         let norm = source.to_lowercase();
         let mut map = self.metrics.write().unwrap();
-        let entry = map
-            .entry(norm.clone())
-            .or_insert_with(|| SourceMetrics::new(&norm, Self::default_reliability_for_source(&norm)));
+        let entry = map.entry(norm.clone()).or_insert_with(|| {
+            SourceMetrics::new(&norm, Self::default_reliability_for_source(&norm))
+        });
 
         entry.total_records += 1;
         entry.quarantine_count += 1;
@@ -324,9 +326,9 @@ impl SourceQualityStore {
     pub fn record_rejection(&self, source: &str, _reason: &str) {
         let norm = source.to_lowercase();
         let mut map = self.metrics.write().unwrap();
-        let entry = map
-            .entry(norm.clone())
-            .or_insert_with(|| SourceMetrics::new(&norm, Self::default_reliability_for_source(&norm)));
+        let entry = map.entry(norm.clone()).or_insert_with(|| {
+            SourceMetrics::new(&norm, Self::default_reliability_for_source(&norm))
+        });
 
         entry.total_records += 1;
         entry.rejected_records += 1;
@@ -561,8 +563,12 @@ pub fn quarantine_document(
     let content = serde_json::to_string_pretty(&envelope)
         .map_err(|e| format!("Serialization error for quarantine envelope: {}", e))?;
 
-    std::fs::write(&tmp_path, &content)
-        .map_err(|e| format!("Failed to write temporary quarantine file '{:?}': {}", tmp_path, e))?;
+    std::fs::write(&tmp_path, &content).map_err(|e| {
+        format!(
+            "Failed to write temporary quarantine file '{:?}': {}",
+            tmp_path, e
+        )
+    })?;
 
     std::fs::rename(&tmp_path, &final_path).map_err(|e| {
         format!(
@@ -793,7 +799,8 @@ mod tests {
 
     #[test]
     fn test_atomic_quarantine_storage() {
-        let temp_dir = std::env::temp_dir().join(format!("fintext_quarantine_test_{}", Uuid::new_v4()));
+        let temp_dir =
+            std::env::temp_dir().join(format!("fintext_quarantine_test_{}", Uuid::new_v4()));
         let doc = RawDocument {
             id: "test-quarantine-doc".to_string(),
             title: "Quarantined Report".to_string(),

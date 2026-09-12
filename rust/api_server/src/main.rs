@@ -36,13 +36,34 @@ async fn async_main() -> Result<(), Box<dyn std::error::Error>> {
     if prod_mode {
         info!(" [Production Mode Guard] ACTIVE (PRODUCTION_MODE=true). All synthetic/mock fallbacks DISABLED.");
         let mock_flags = [
-            ("QUESTDB_MOCK_FALLBACK", env::var("QUESTDB_MOCK_FALLBACK").as_deref() == Ok("1")),
-            ("KAFKA_MOCK_FALLBACK", env::var("KAFKA_MOCK_FALLBACK").as_deref() == Ok("1")),
-            ("KAFKA_MOCK_MODE", env::var("KAFKA_MOCK_MODE").as_deref() == Ok("1")),
-            ("POLYGON_MOCK_FALLBACK", env::var("POLYGON_MOCK_FALLBACK").as_deref() == Ok("1")),
-            ("POLYGON_MOCK_MODE", env::var("POLYGON_MOCK_MODE").as_deref() == Ok("1")),
-            ("WHISPER_MOCK_FALLBACK", env::var("WHISPER_MOCK_FALLBACK").as_deref() == Ok("1")),
-            ("FINNHUB_MOCK_MODE", env::var("FINNHUB_MOCK_MODE").as_deref() == Ok("1")),
+            (
+                "QUESTDB_MOCK_FALLBACK",
+                env::var("QUESTDB_MOCK_FALLBACK").as_deref() == Ok("1"),
+            ),
+            (
+                "KAFKA_MOCK_FALLBACK",
+                env::var("KAFKA_MOCK_FALLBACK").as_deref() == Ok("1"),
+            ),
+            (
+                "KAFKA_MOCK_MODE",
+                env::var("KAFKA_MOCK_MODE").as_deref() == Ok("1"),
+            ),
+            (
+                "POLYGON_MOCK_FALLBACK",
+                env::var("POLYGON_MOCK_FALLBACK").as_deref() == Ok("1"),
+            ),
+            (
+                "POLYGON_MOCK_MODE",
+                env::var("POLYGON_MOCK_MODE").as_deref() == Ok("1"),
+            ),
+            (
+                "WHISPER_MOCK_FALLBACK",
+                env::var("WHISPER_MOCK_FALLBACK").as_deref() == Ok("1"),
+            ),
+            (
+                "FINNHUB_MOCK_MODE",
+                env::var("FINNHUB_MOCK_MODE").as_deref() == Ok("1"),
+            ),
         ];
         for (flag, active) in mock_flags {
             if active {
@@ -59,13 +80,20 @@ async fn async_main() -> Result<(), Box<dyn std::error::Error>> {
         "[Secrets Manager] Provider: '{}' (Region: '{}', ARN: '{}')",
         secrets_cfg.provider,
         secrets_cfg.aws_region,
-        if secrets_cfg.aws_secret_arn.is_empty() { "[NONE]" } else { &secrets_cfg.aws_secret_arn }
+        if secrets_cfg.aws_secret_arn.is_empty() {
+            "[NONE]"
+        } else {
+            &secrets_cfg.aws_secret_arn
+        }
     );
 
     let secrets_provider = match fintext_api_server::init_secrets_provider(&secrets_cfg).await {
         Ok(p) => p,
         Err(e) => {
-            tracing::error!("[Secrets Manager] CRITICAL: Failed to initialize secrets provider: {}", e);
+            tracing::error!(
+                "[Secrets Manager] CRITICAL: Failed to initialize secrets provider: {}",
+                e
+            );
             std::process::exit(1);
         }
     };
@@ -77,7 +105,10 @@ async fn async_main() -> Result<(), Box<dyn std::error::Error>> {
     ) {
         Ok(s) => s,
         Err(e) => {
-            tracing::error!("[Secrets Manager] CRITICAL: Required secrets validation failed: {}", e);
+            tracing::error!(
+                "[Secrets Manager] CRITICAL: Required secrets validation failed: {}",
+                e
+            );
             std::process::exit(1);
         }
     };
@@ -352,7 +383,9 @@ async fn async_main() -> Result<(), Box<dyn std::error::Error>> {
         fintext_api_server::storage::TimescaleDbClient::new(timescale_cfg)
             .with_circuit_breaker(db_circuit_breaker.clone()),
     );
-    if timescaledb_client.config().mock_mode || std::env::var("TIMESCALE_MOCK_MODE").as_deref() == Ok("1") {
+    if timescaledb_client.config().mock_mode
+        || std::env::var("TIMESCALE_MOCK_MODE").as_deref() == Ok("1")
+    {
         timescaledb_client.seed_mock_records();
     }
 
@@ -361,17 +394,24 @@ async fn async_main() -> Result<(), Box<dyn std::error::Error>> {
     let (pit_db_store, active_pit_data) = if pit_db_cfg.enabled {
         match fintext_api_server::pit_db::PitDatabaseStore::connect(pit_db_cfg.clone()).await {
             Ok(store) => {
-                info!("[PIT Database] PostgreSQL PIT store connected successfully at {}", pit_db_cfg.url);
+                info!(
+                    "[PIT Database] PostgreSQL PIT store connected successfully at {}",
+                    pit_db_cfg.url
+                );
                 if let Err(e) = store.init_db().await {
                     warn!("[PIT Database] Failed to initialize/verify schema: {}", e);
                 }
                 let data = match store.load_snapshot(None).await {
-                    Ok(snapshot) if !snapshot.ticker_intervals.is_empty() || !snapshot.delisted_tickers.is_empty() => {
+                    Ok(snapshot)
+                        if !snapshot.ticker_intervals.is_empty()
+                            || !snapshot.delisted_tickers.is_empty() =>
+                    {
                         info!(
                             "[PIT Database] Loaded Point-in-Time data directly from PostgreSQL: {} ticker intervals, {} delisted securities",
                             snapshot.ticker_intervals.len(), snapshot.delisted_tickers.len()
                         );
-                        let _ = fintext_api_server::GLOBAL_PIT_DATA.reload_from_snapshot(snapshot.clone());
+                        let _ = fintext_api_server::GLOBAL_PIT_DATA
+                            .reload_from_snapshot(snapshot.clone());
                         Arc::new(fintext_api_server::PITData::from_snapshot(snapshot))
                     }
                     Ok(_) => {
@@ -401,7 +441,10 @@ async fn async_main() -> Result<(), Box<dyn std::error::Error>> {
                     (None, fintext_api_server::GLOBAL_PIT_DATA.clone())
                 } else {
                     error!("[PIT Database] PostgreSQL connection failed and fallback_to_json=false: {}", e);
-                    panic!("Fatal: Database-backed PIT required but PostgreSQL connection failed: {}", e);
+                    panic!(
+                        "Fatal: Database-backed PIT required but PostgreSQL connection failed: {}",
+                        e
+                    );
                 }
             }
         }

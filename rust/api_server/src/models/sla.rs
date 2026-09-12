@@ -165,4 +165,3 @@ pub struct SLALatencyResponse {
     /// ISO-8601 timestamp when this report was generated.
     pub generated_at: DateTime<Utc>,
 }
-

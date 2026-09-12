@@ -117,7 +117,9 @@ impl SentimentOutput {
 
     /// Access the model confidence (maximum class probability).
     pub fn confidence(&self) -> f64 {
-        self.prob_positive.max(self.prob_negative).max(self.prob_neutral)
+        self.prob_positive
+            .max(self.prob_negative)
+            .max(self.prob_neutral)
     }
 }
 
@@ -195,8 +197,12 @@ impl OnnxSentimentPipeline {
         };
 
         info!("Loading tokenizer from: {:?}", actual_tokenizer_path);
-        let mut tokenizer = Tokenizer::from_file(&actual_tokenizer_path)
-            .map_err(|e| format!("Failed to load tokenizer from {:?}: {}", actual_tokenizer_path, e))?;
+        let mut tokenizer = Tokenizer::from_file(&actual_tokenizer_path).map_err(|e| {
+            format!(
+                "Failed to load tokenizer from {:?}: {}",
+                actual_tokenizer_path, e
+            )
+        })?;
 
         // Determine correct pad token id (<pad> for RoBERTa = 1, [PAD] for BERT/MiniLM = 0)
         let pad_token_id: i64 = tokenizer
@@ -211,7 +217,11 @@ impl OnnxSentimentPipeline {
             .and_then(|v| v.parse::<usize>().ok())
         {
             custom_seq
-        } else if model_path.to_string_lossy().to_lowercase().contains("finbert") {
+        } else if model_path
+            .to_string_lossy()
+            .to_lowercase()
+            .contains("finbert")
+        {
             512
         } else if model_path.to_string_lossy().contains("seq32") {
             32
@@ -219,7 +229,10 @@ impl OnnxSentimentPipeline {
             128
         };
 
-        let has_token_type_ids = session.inputs().iter().any(|i| i.name() == "token_type_ids");
+        let has_token_type_ids = session
+            .inputs()
+            .iter()
+            .any(|i| i.name() == "token_type_ids");
 
         // Disable hard tokenizer truncation & padding so the tokenizer encodes the full document cleanly for sliding window chunking
         let _ = tokenizer.with_padding(None);
@@ -249,12 +262,7 @@ impl OnnxSentimentPipeline {
         seq_len: usize,
         has_token_type_ids: bool,
     ) -> Result<(f64, f64, f64, f64, String), String> {
-        pad_to_fixed_len(
-            input_ids_raw,
-            attention_mask_raw,
-            pad_token_id,
-            seq_len,
-        );
+        pad_to_fixed_len(input_ids_raw, attention_mask_raw, pad_token_id, seq_len);
 
         let input_ids_val = Value::from_array(([1, seq_len], input_ids_raw.clone()))
             .map_err(|e| format!("Failed to create input_ids Value: {}", e))?;
@@ -370,7 +378,8 @@ impl OnnxSentimentPipeline {
         // Fast path for short texts (<= seq_len) or if chunking is disabled
         if total_tokens <= self.seq_len || !chunking_enabled {
             let mut input_ids_raw: Vec<i64> = all_ids.into_iter().take(self.seq_len).collect();
-            let mut attention_mask_raw: Vec<i64> = all_mask.into_iter().take(self.seq_len).collect();
+            let mut attention_mask_raw: Vec<i64> =
+                all_mask.into_iter().take(self.seq_len).collect();
 
             let (sentiment_score, prob_positive, prob_negative, prob_neutral, sentiment_label) =
                 Self::run_inference_on_slice(
@@ -750,15 +759,24 @@ pub fn find_finetuned_model_path() -> Option<PathBuf> {
     }
 
     for candidate in candidates {
-        let p = candidate.join("models").join("finbert-finetuned").join("finbert.onnx");
+        let p = candidate
+            .join("models")
+            .join("finbert-finetuned")
+            .join("finbert.onnx");
         if p.exists() {
             return Some(p);
         }
-        let p_static = candidate.join("models").join("finbert-finetuned").join("model_static.onnx");
+        let p_static = candidate
+            .join("models")
+            .join("finbert-finetuned")
+            .join("model_static.onnx");
         if p_static.exists() {
             return Some(p_static);
         }
-        let p_dyn = candidate.join("models").join("finbert-finetuned").join("model.onnx");
+        let p_dyn = candidate
+            .join("models")
+            .join("finbert-finetuned")
+            .join("model.onnx");
         if p_dyn.exists() {
             return Some(p_dyn);
         }
@@ -775,7 +793,11 @@ fn find_finbert_assets() -> Result<(PathBuf, PathBuf), String> {
     ) {
         let mp = PathBuf::from(m);
         let tp = PathBuf::from(t);
-        let tp_file = if tp.is_dir() { tp.join("tokenizer.json") } else { tp };
+        let tp_file = if tp.is_dir() {
+            tp.join("tokenizer.json")
+        } else {
+            tp
+        };
         if mp.exists() && tp_file.exists() {
             return Ok((mp, tp_file));
         }
@@ -964,7 +986,8 @@ pub fn compute_sentiment_onnx(text: &str) -> Result<SentimentOutput, String> {
     if guard.is_none() {
         match find_finbert_assets() {
             Ok((model_path, tokenizer_path)) => {
-                let pipeline = OnnxSentimentPipeline::load_from_paths(&model_path, &tokenizer_path)?;
+                let pipeline =
+                    OnnxSentimentPipeline::load_from_paths(&model_path, &tokenizer_path)?;
                 *guard = Some(pipeline);
             }
             Err(e) => {
@@ -993,8 +1016,18 @@ fn generate_mock_sentiment(text: &str) -> SentimentOutput {
         "bull", "exceed",
     ];
     let neg_words = [
-        "loss", "fall", "drop", "collapse", "decline", "negative", "down", "bankruptcy", "crisis",
-        "halt", "bear", "debt",
+        "loss",
+        "fall",
+        "drop",
+        "collapse",
+        "decline",
+        "negative",
+        "down",
+        "bankruptcy",
+        "crisis",
+        "halt",
+        "bear",
+        "debt",
     ];
 
     let pos_count = pos_words.iter().filter(|&&w| lower.contains(w)).count();
@@ -1164,7 +1197,11 @@ pub mod tests {
         let long_sec_filing = paragraph.repeat(6);
 
         let output = compute_sentiment_onnx(&long_sec_filing);
-        assert!(output.is_ok(), "Failed chunked ONNX inference: {:?}", output);
+        assert!(
+            output.is_ok(),
+            "Failed chunked ONNX inference: {:?}",
+            output
+        );
         let sent = output.unwrap();
 
         info!(
@@ -1172,11 +1209,21 @@ pub mod tests {
             sent.sentiment_score, sent.sentiment_label, sent.chunk_count, sent.chunk_scores
         );
 
-        assert!(sent.chunk_count.is_some(), "chunk_count must be populated for long text");
+        assert!(
+            sent.chunk_count.is_some(),
+            "chunk_count must be populated for long text"
+        );
         let count = sent.chunk_count.unwrap();
-        assert!(count > 1, "Expected multiple chunks for >100 tokens, got {}", count);
+        assert!(
+            count > 1,
+            "Expected multiple chunks for >100 tokens, got {}",
+            count
+        );
 
-        assert!(sent.chunk_scores.is_some(), "chunk_scores array must be populated");
+        assert!(
+            sent.chunk_scores.is_some(),
+            "chunk_scores array must be populated"
+        );
         let scores = sent.chunk_scores.unwrap();
         assert_eq!(scores.len(), count);
 
@@ -1191,9 +1238,15 @@ pub mod tests {
         assert!(sent.prob_neutral >= 0.0 && sent.prob_neutral <= 1.0);
 
         let sum_probs = sent.prob_positive + sent.prob_negative + sent.prob_neutral;
-        assert!((sum_probs - 1.0).abs() < 0.01, "Probabilities should sum to ~1.0");
+        assert!(
+            (sum_probs - 1.0).abs() < 0.01,
+            "Probabilities should sum to ~1.0"
+        );
 
-        assert!(sent.sentiment_score > 0.0, "Positive long text should yield positive aggregate score");
+        assert!(
+            sent.sentiment_score > 0.0,
+            "Positive long text should yield positive aggregate score"
+        );
         assert_eq!(sent.sentiment_label, "POSITIVE");
     }
 
@@ -1206,9 +1259,18 @@ pub mod tests {
         assert!(output.is_ok());
         let sent = output.unwrap();
 
-        assert!(sent.chunk_count.is_none(), "Short text should not have chunk_count set");
-        assert!(sent.chunk_scores.is_none(), "Short text should not have chunk_scores set");
-        assert!(sent.aggregation_method.is_none(), "Short text should not have aggregation_method set");
+        assert!(
+            sent.chunk_count.is_none(),
+            "Short text should not have chunk_count set"
+        );
+        assert!(
+            sent.chunk_scores.is_none(),
+            "Short text should not have chunk_scores set"
+        );
+        assert!(
+            sent.aggregation_method.is_none(),
+            "Short text should not have aggregation_method set"
+        );
     }
 
     #[test]

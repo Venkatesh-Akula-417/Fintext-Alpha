@@ -1,16 +1,16 @@
 use chrono::Utc;
 use fintext_ingestion_engine::{
-    compute_sentiment_onnx, compute_vpin_and_gex_from_polygon, decode_audio_file, extract_features,
-    run_updater_cycle, transcribe_samples_async, CompleteSignalRecord, FinnhubClient, FinnhubWsClient,
-    FinnhubWsConfig, InferenceResponse, JsonlStreamSink, KafkaSink, OptionTrade,
-    PipelineMetrics, PolygonClient, PolygonWsClient, PolygonWsConfig, Preprocessor,
-    QuestDbBufferConfig, QuestDbBufferConsumer, QuestDbBufferProducer, QuestDbConfig, QuestDbSink,
-    RawArchiveConfig, RawArchiveRecord, RawArchiveSender, spawn_raw_archiver_worker,
-    RawDocument, SecEdgarFetcher, SecUpdaterConfig, SentimentOutput, TimescaleDbConfig, TimescaleDbSink,
-    calculate_freshness_ms, count_document_fields, quarantine_document, DataQualityConfig,
-    DataQualityGate, QualityGateResult, SourceQualityStore,
-    create_bounded_ingestion_channel, BackpressureMetrics, IngestionConcurrencyConfig,
-    IngestionSendError, WorkerPool, CircuitBreakerConfig, DbCircuitBreaker,
+    calculate_freshness_ms, compute_sentiment_onnx, compute_vpin_and_gex_from_polygon,
+    count_document_fields, create_bounded_ingestion_channel, decode_audio_file, extract_features,
+    quarantine_document, run_updater_cycle, spawn_raw_archiver_worker, transcribe_samples_async,
+    BackpressureMetrics, CircuitBreakerConfig, CompleteSignalRecord, DataQualityConfig,
+    DataQualityGate, DbCircuitBreaker, FinnhubClient, FinnhubWsClient, FinnhubWsConfig,
+    InferenceResponse, IngestionConcurrencyConfig, IngestionSendError, JsonlStreamSink, KafkaSink,
+    OptionTrade, PipelineMetrics, PolygonClient, PolygonWsClient, PolygonWsConfig, Preprocessor,
+    QualityGateResult, QuestDbBufferConfig, QuestDbBufferConsumer, QuestDbBufferProducer,
+    QuestDbConfig, QuestDbSink, RawArchiveConfig, RawArchiveRecord, RawArchiveSender, RawDocument,
+    SecEdgarFetcher, SecUpdaterConfig, SentimentOutput, SourceQualityStore, TimescaleDbConfig,
+    TimescaleDbSink, WorkerPool,
 };
 use std::path::Path;
 use std::sync::Arc;
@@ -38,15 +38,38 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     info!("═══════════════════════════════════════════════════════════════════════════");
     let prod_mode = fintext_ingestion_engine::is_production_mode();
     if prod_mode {
-        info!(" [PRODUCTION MODE GUARD] ACTIVE: Synthetic fallbacks disabled. Real feeds required.");
+        info!(
+            " [PRODUCTION MODE GUARD] ACTIVE: Synthetic fallbacks disabled. Real feeds required."
+        );
         let mock_flags = [
-            ("QUESTDB_MOCK_FALLBACK", std::env::var("QUESTDB_MOCK_FALLBACK").as_deref() == Ok("1")),
-            ("KAFKA_MOCK_FALLBACK", std::env::var("KAFKA_MOCK_FALLBACK").as_deref() == Ok("1")),
-            ("KAFKA_MOCK_MODE", std::env::var("KAFKA_MOCK_MODE").as_deref() == Ok("1")),
-            ("POLYGON_MOCK_FALLBACK", std::env::var("POLYGON_MOCK_FALLBACK").as_deref() == Ok("1")),
-            ("POLYGON_MOCK_MODE", std::env::var("POLYGON_MOCK_MODE").as_deref() == Ok("1")),
-            ("WHISPER_MOCK_FALLBACK", std::env::var("WHISPER_MOCK_FALLBACK").as_deref() == Ok("1")),
-            ("FINNHUB_MOCK_MODE", std::env::var("FINNHUB_MOCK_MODE").as_deref() == Ok("1")),
+            (
+                "QUESTDB_MOCK_FALLBACK",
+                std::env::var("QUESTDB_MOCK_FALLBACK").as_deref() == Ok("1"),
+            ),
+            (
+                "KAFKA_MOCK_FALLBACK",
+                std::env::var("KAFKA_MOCK_FALLBACK").as_deref() == Ok("1"),
+            ),
+            (
+                "KAFKA_MOCK_MODE",
+                std::env::var("KAFKA_MOCK_MODE").as_deref() == Ok("1"),
+            ),
+            (
+                "POLYGON_MOCK_FALLBACK",
+                std::env::var("POLYGON_MOCK_FALLBACK").as_deref() == Ok("1"),
+            ),
+            (
+                "POLYGON_MOCK_MODE",
+                std::env::var("POLYGON_MOCK_MODE").as_deref() == Ok("1"),
+            ),
+            (
+                "WHISPER_MOCK_FALLBACK",
+                std::env::var("WHISPER_MOCK_FALLBACK").as_deref() == Ok("1"),
+            ),
+            (
+                "FINNHUB_MOCK_MODE",
+                std::env::var("FINNHUB_MOCK_MODE").as_deref() == Ok("1"),
+            ),
         ];
         for (flag, active) in mock_flags {
             if active {
@@ -155,9 +178,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         db_breaker_cfg.half_open_max_probes
     );
     let db_circuit_breaker = Arc::new(DbCircuitBreaker::new(db_breaker_cfg));
-    let timescaledb_sink = Arc::new(
-        TimescaleDbSink::new(timescaledb_cfg).with_circuit_breaker(db_circuit_breaker)
-    );
+    let timescaledb_sink =
+        Arc::new(TimescaleDbSink::new(timescaledb_cfg).with_circuit_breaker(db_circuit_breaker));
     let kafka_sink = Arc::new(KafkaSink::from_env());
     let sink = Arc::new(JsonlStreamSink::new(
         project_root
@@ -472,7 +494,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                     );
                 }
                 Err(e) => {
-                    warn!("[SEC Corporate Actions Updater] Initial cycle notice: {}", e);
+                    warn!(
+                        "[SEC Corporate Actions Updater] Initial cycle notice: {}",
+                        e
+                    );
                 }
             }
 
@@ -499,7 +524,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     };
 
     // 7. Bounded Processing Worker Pool (NLP + Microstructure + ONNX + Sinks)
-    let worker_pool = Arc::new(WorkerPool::new(concurrency_cfg.clone(), backpressure_metrics.clone()));
+    let worker_pool = Arc::new(WorkerPool::new(
+        concurrency_cfg.clone(),
+        backpressure_metrics.clone(),
+    ));
     let rx_raw_shared = Arc::new(tokio::sync::Mutex::new(rx_raw));
     let (shutdown_worker_tx, shutdown_worker_rx) = tokio::sync::watch::channel(false);
 
@@ -549,7 +577,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 };
 
                 // Acquire permit from semaphore with timeout
-                let permit = match tokio::time::timeout(timeout_duration, pool.semaphore().clone().acquire_owned()).await {
+                let permit = match tokio::time::timeout(
+                    timeout_duration,
+                    pool.semaphore().clone().acquire_owned(),
+                )
+                .await
+                {
                     Ok(Ok(p)) => p,
                     Ok(Err(_)) => break, // Semaphore closed
                     Err(_) => {
@@ -594,12 +627,17 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                         bp_metrics.record_processed();
                     }
                     Ok(Err(e)) => {
-                        warn!("[Ingestion Worker #{}] Processing notice for doc '{}': {}", worker_id, doc_id, e);
+                        warn!(
+                            "[Ingestion Worker #{}] Processing notice for doc '{}': {}",
+                            worker_id, doc_id, e
+                        );
                     }
                     Err(_) => {
                         warn!(
                             "[Ingestion Worker #{}] Processing timed out after {}ms for doc '{}'",
-                            worker_id, timeout_duration.as_millis(), doc_id
+                            worker_id,
+                            timeout_duration.as_millis(),
+                            doc_id
                         );
                         bp_metrics.record_timeout();
                     }
@@ -706,11 +744,8 @@ async fn process_single_document(
 
     // Data Quality Gates (SCHEMA_VALIDATION -> BUSINESS_RULES -> DUPLICATE_DETECTION -> SOURCE_QUALITY_THRESHOLD)
     let source_quality_score = quality_store_ref.get_quality_score(&raw_doc.source);
-    let gate_res = preprocessor_ref.evaluate_quality_gates(
-        &raw_doc,
-        quality_gate_ref,
-        source_quality_score,
-    );
+    let gate_res =
+        preprocessor_ref.evaluate_quality_gates(&raw_doc, quality_gate_ref, source_quality_score);
 
     match gate_res {
         QualityGateResult::Reject { rule, reason } => {
@@ -880,7 +915,10 @@ async fn process_single_document(
 
     if is_ts_primary {
         // Primary synchronous write to TimescaleDB
-        match timescaledb_ref.write_sentiment_record(&processed, &sentiment_out).await {
+        match timescaledb_ref
+            .write_sentiment_record(&processed, &sentiment_out)
+            .await
+        {
             Ok(id) => {
                 info!(
                     "[TimescaleDB Primary] Record persisted id={} | Ticker: {:?}",
@@ -920,7 +958,8 @@ async fn process_single_document(
                 Ok(_) => {
                     info!(
                         "[QuestDB WAL Buffer] Buffered event for ticker {:?} -> topic '{}'",
-                        processed.primary_ticker, questdb_buf_producer_ref.config().topic
+                        processed.primary_ticker,
+                        questdb_buf_producer_ref.config().topic
                     );
                 }
                 Err(buf_err) => {
@@ -950,7 +989,10 @@ async fn process_single_document(
 
         // Secondary Dual-write to TimescaleDB (if enabled, non-blocking resilience)
         if timescaledb_ref.is_enabled() {
-            match timescaledb_ref.write_sentiment_record(&processed, &sentiment_out).await {
+            match timescaledb_ref
+                .write_sentiment_record(&processed, &sentiment_out)
+                .await
+            {
                 Ok(id) => {
                     info!(
                         "[TimescaleDB Dual-Write] Record persisted id={} | Ticker: {:?}",

@@ -1,0 +1,82 @@
+name: Model Drift Monitor
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+  schedule:
+    - cron: '0 6 * * 1'  # Monday 06:00 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: model-drift-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  drift-monitor:
+    name: Model Drift & Calibration Monitoring
+    runs-on: ubuntu-latest
+    continue-on-error: true  # informational for first release; tighten later
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements-model-validation.txt
+
+      - name: Check model presence
+        id: check-model
+        run: |
+          if [ ! -f models/finbert-finetuned/model.onnx ] && [ ! -f models/finbert-finetuned/finbert.onnx ]; then
+            echo "::warning::Model artifacts not present; skipping model drift monitoring."
+            echo "SKIPPED=true" >> "$GITHUB_ENV"
+          else
+            echo "SKIPPED=false" >> "$GITHUB_ENV"
+          fi
+
+      - name: Run Model Drift Monitor
+        run: |
+          if [ "$SKIPPED" = "true" ]; then
+            echo "Running drift monitor in SKIP verification mode..."
+            python scripts/model_drift_monitor.py \
+              --dataset config/model_validation_dataset.json \
+              --model-dir models/finbert-finetuned \
+              --baseline data/model-drift/baseline.json \
+              --output-dir data/model-drift \
+              --report-path docs/MODEL_DRIFT_REPORT.md || exit_code=$?
+            if [ "${exit_code:-0}" -eq 3 ]; then
+              echo "Harness exited with code 3 (clean SKIP as expected)."
+            else
+              echo "Unexpected exit code: ${exit_code:-0}"
+              exit "${exit_code:-0}"
+            fi
+          else
+            python scripts/model_drift_monitor.py \
+              --dataset config/model_validation_dataset.json \
+              --model-dir models/finbert-finetuned \
+              --baseline data/model-drift/baseline.json \
+              --output-dir data/model-drift \
+              --report-path docs/MODEL_DRIFT_REPORT.md
+          fi
+
+      - name: Upload drift reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: model-drift-report
+          path: |
+            data/model-drift/*.json
+            docs/MODEL_DRIFT_REPORT.md
+          if-no-files-found: warn

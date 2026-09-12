@@ -147,7 +147,10 @@ impl CircuitBreakerConfig {
                 }
             }
 
-            if in_database && (trimmed.starts_with("circuit_breaker:") || trimmed.starts_with("circuit-breaker:")) {
+            if in_database
+                && (trimmed.starts_with("circuit_breaker:")
+                    || trimmed.starts_with("circuit-breaker:"))
+            {
                 in_circuit_breaker = true;
                 continue;
             }
@@ -376,7 +379,9 @@ impl DbCircuitBreaker {
                     if attempts >= self.config.retry_attempts || !Self::is_retryable_error(&err) {
                         return Err(err);
                     }
-                    let factor = 1u64.checked_shl(attempts.saturating_sub(1)).unwrap_or(u64::MAX);
+                    let factor = 1u64
+                        .checked_shl(attempts.saturating_sub(1))
+                        .unwrap_or(u64::MAX);
                     let delay_ms = (self.config.retry_base_delay_ms.saturating_mul(factor))
                         .min(self.config.retry_max_delay_ms);
                     debug!(
@@ -399,7 +404,14 @@ impl DbCircuitBreaker {
                 if let Some(code) = db_err.code() {
                     matches!(
                         code.as_ref(),
-                        "57P01" | "57P02" | "57P03" | "40001" | "40P01" | "08000" | "08003" | "08006"
+                        "57P01"
+                            | "57P02"
+                            | "57P03"
+                            | "40001"
+                            | "40P01"
+                            | "08000"
+                            | "08003"
+                            | "08006"
                     )
                 } else {
                     false
@@ -542,7 +554,9 @@ database:
             .await;
         assert_eq!(breaker.current_state(), "Open");
 
-        let res = breaker.execute(|| async { Ok::<_, sqlx::Error>("never_called") }).await;
+        let res = breaker
+            .execute(|| async { Ok::<_, sqlx::Error>("never_called") })
+            .await;
         assert!(matches!(res, Err(DbError::CircuitOpen)));
     }
 
@@ -562,7 +576,9 @@ database:
 
         tokio::time::sleep(Duration::from_millis(25)).await;
 
-        let res = breaker.execute(|| async { Ok::<_, sqlx::Error>("recovered") }).await;
+        let res = breaker
+            .execute(|| async { Ok::<_, sqlx::Error>("recovered") })
+            .await;
         assert_eq!(res.unwrap(), "recovered");
         assert_eq!(breaker.current_state(), "Closed");
     }
@@ -579,7 +595,9 @@ database:
         breaker.trip_to_open().await;
         tokio::time::sleep(Duration::from_millis(20)).await;
 
-        let res = breaker.execute(|| async { Ok::<_, sqlx::Error>(100) }).await;
+        let res = breaker
+            .execute(|| async { Ok::<_, sqlx::Error>(100) })
+            .await;
         assert_eq!(res.unwrap(), 100);
         assert_eq!(breaker.current_state(), "Closed");
         let (_, failures, _) = breaker.metrics_snapshot();

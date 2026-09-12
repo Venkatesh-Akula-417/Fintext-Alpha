@@ -283,7 +283,10 @@ impl PolygonClient {
 
         // Fast-path mock mode for offline testing / CI environments
         if crate::is_production_mode() {
-            if self.api_key == "mock_key" || self.api_key.starts_with("mock") || self.api_key.trim().is_empty() {
+            if self.api_key == "mock_key"
+                || self.api_key.starts_with("mock")
+                || self.api_key.trim().is_empty()
+            {
                 return Err("Real Polygon.io API key is required in production mode.".to_string());
             }
         } else if self.api_key == "mock_key"
@@ -463,7 +466,10 @@ impl PolygonClient {
 
         // Fast-path mock mode for offline testing / CI environments
         if crate::is_production_mode() {
-            if self.api_key == "mock_key" || self.api_key.starts_with("mock") || self.api_key.trim().is_empty() {
+            if self.api_key == "mock_key"
+                || self.api_key.starts_with("mock")
+                || self.api_key.trim().is_empty()
+            {
                 return Err("Real Polygon.io API key is required in production mode.".to_string());
             }
         } else if self.api_key == "mock_key"

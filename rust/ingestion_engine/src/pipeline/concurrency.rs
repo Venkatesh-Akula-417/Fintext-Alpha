@@ -69,8 +69,8 @@ impl IngestionConcurrencyConfig {
         }
 
         // 2. Environment variable overrides (highest precedence)
-        if let Ok(val) = env::var("MAX_CONCURRENT_TASKS")
-            .or_else(|_| env::var("INGESTION_MAX_CONCURRENT_TASKS"))
+        if let Ok(val) =
+            env::var("MAX_CONCURRENT_TASKS").or_else(|_| env::var("INGESTION_MAX_CONCURRENT_TASKS"))
         {
             if let Ok(num) = val.trim().parse::<usize>() {
                 if num > 0 {
@@ -79,8 +79,8 @@ impl IngestionConcurrencyConfig {
             }
         }
 
-        if let Ok(val) = env::var("INPUT_QUEUE_CAPACITY")
-            .or_else(|_| env::var("INGESTION_INPUT_QUEUE_CAPACITY"))
+        if let Ok(val) =
+            env::var("INPUT_QUEUE_CAPACITY").or_else(|_| env::var("INGESTION_INPUT_QUEUE_CAPACITY"))
         {
             if let Ok(num) = val.trim().parse::<usize>() {
                 if num > 0 {
@@ -89,8 +89,8 @@ impl IngestionConcurrencyConfig {
             }
         }
 
-        if let Ok(val) = env::var("TASK_TIMEOUT_MS")
-            .or_else(|_| env::var("INGESTION_TASK_TIMEOUT_MS"))
+        if let Ok(val) =
+            env::var("TASK_TIMEOUT_MS").or_else(|_| env::var("INGESTION_TASK_TIMEOUT_MS"))
         {
             if let Ok(num) = val.trim().parse::<u64>() {
                 if num > 0 {
@@ -116,13 +116,23 @@ impl IngestionConcurrencyConfig {
             }
             if in_block {
                 // If top-level non-indented key encountered, exit block
-                if !line.starts_with("  ") && !line.starts_with('\t') && trimmed.contains(':') && !trimmed.starts_with('-') {
+                if !line.starts_with("  ")
+                    && !line.starts_with('\t')
+                    && trimmed.contains(':')
+                    && !trimmed.starts_with('-')
+                {
                     break;
                 }
                 let parts: Vec<&str> = trimmed.splitn(2, ':').collect();
                 if parts.len() == 2 {
                     let key = parts[0].trim();
-                    let val = parts[1].split('#').next().unwrap_or("").trim().trim_matches('"').trim_matches('\'');
+                    let val = parts[1]
+                        .split('#')
+                        .next()
+                        .unwrap_or("")
+                        .trim()
+                        .trim_matches('"')
+                        .trim_matches('\'');
                     match key {
                         "max_concurrent_tasks" => {
                             if let Ok(num) = val.parse::<usize>() {

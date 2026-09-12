@@ -94,7 +94,8 @@ impl DeadLetterWorker {
                 let reprocess_topic = config.reprocess_topic.clone();
                 let payload_owned = payload.to_string();
                 async move {
-                    Self::process_payload(&payload_owned, attempt, producer_opt, &reprocess_topic).await
+                    Self::process_payload(&payload_owned, attempt, producer_opt, &reprocess_topic)
+                        .await
                 }
             },
         )
@@ -201,9 +202,7 @@ impl DeadLetterWorker {
 
         // If real Kafka producer is active, publish back to reprocess topic
         if let Some(producer) = kafka_producer {
-            let record = FutureRecord::to(reprocess_topic)
-                .payload(payload)
-                .key("");
+            let record = FutureRecord::to(reprocess_topic).payload(payload).key("");
             producer
                 .send(record, Timeout::After(Duration::from_millis(5000)))
                 .await

@@ -63,7 +63,6 @@ fn default_quality_score() -> f64 {
     1.0
 }
 
-
 /// Response payload for provider health status inquiry (`GET /providers/health`).
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, ToSchema)]
 pub struct ProviderHealthResponse {

@@ -225,9 +225,7 @@ pub async fn sla_latency_handler(
     }
 
     // 2. Validate SLA target latency
-    let sla_target_ms = params
-        .sla_target_ms
-        .unwrap_or(DEFAULT_SIGNAL_SLA_TARGET_MS);
+    let sla_target_ms = params.sla_target_ms.unwrap_or(DEFAULT_SIGNAL_SLA_TARGET_MS);
     if !(MIN_SIGNAL_SLA_TARGET_MS..=MAX_SIGNAL_SLA_TARGET_MS).contains(&sla_target_ms) {
         return (
             StatusCode::BAD_REQUEST,
@@ -260,11 +258,7 @@ pub async fn sla_latency_handler(
     let ticker_filter = params.ticker.as_deref().map(|t| t.trim().to_uppercase());
 
     // 4. Check QuestDB for live records
-    let sql = build_latency_metrics_query(
-        ticker_filter.as_deref(),
-        start_date,
-        end_date,
-    );
+    let sql = build_latency_metrics_query(ticker_filter.as_deref(), start_date, end_date);
     match QUESTDB_CLIENT.exec_raw_query(&sql).await {
         Ok(json_res) => {
             if let Some(dataset) = json_res.get("dataset").and_then(|d| d.as_array()) {
@@ -283,7 +277,10 @@ pub async fn sla_latency_handler(
                             let inf_ms = arr.get(2).and_then(|v| v.as_f64()).unwrap_or(0.0);
                             let write_ms = arr.get(3).and_then(|v| v.as_f64()).unwrap_or(0.0);
                             let total_ms = arr.get(4).and_then(|v| v.as_f64()).unwrap_or(0.0);
-                            let compliant = arr.get(5).and_then(|v| v.as_bool()).unwrap_or_else(|| total_ms <= sla_target_ms as f64);
+                            let compliant = arr
+                                .get(5)
+                                .and_then(|v| v.as_bool())
+                                .unwrap_or_else(|| total_ms <= sla_target_ms as f64);
 
                             fetch_sum += fetch_ms;
                             norm_sum += norm_ms;
@@ -297,21 +294,32 @@ pub async fn sla_latency_handler(
                         }
                     }
 
-                    total_latencies.sort_by(|a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal));
+                    total_latencies
+                        .sort_by(|a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal));
                     let n = total_latencies.len() as f64;
-                    let average_latency_ms = ((total_latencies.iter().sum::<f64>() / n) * 100.0_f64).round() / 100.0_f64;
-                    let max_latency_ms = total_latencies.last().copied().map(|v| (v * 100.0_f64).round() / 100.0_f64).unwrap_or(0.0);
+                    let average_latency_ms =
+                        ((total_latencies.iter().sum::<f64>() / n) * 100.0_f64).round() / 100.0_f64;
+                    let max_latency_ms = total_latencies
+                        .last()
+                        .copied()
+                        .map(|v| (v * 100.0_f64).round() / 100.0_f64)
+                        .unwrap_or(0.0);
                     let total_signals = total_latencies.len() as u64;
-                    let sla_compliance_rate = ((compliant_count as f64 / total_signals as f64) * 100.0_f64 * 100.0_f64).round() / 100.0_f64;
-                    let sla_status = if sla_compliance_rate >= DEFAULT_SIGNAL_SLA_COMPLIANCE_THRESHOLD {
-                        "met".to_string()
-                    } else {
-                        "breached".to_string()
-                    };
+                    let sla_compliance_rate =
+                        ((compliant_count as f64 / total_signals as f64) * 100.0_f64 * 100.0_f64)
+                            .round()
+                            / 100.0_f64;
+                    let sla_status =
+                        if sla_compliance_rate >= DEFAULT_SIGNAL_SLA_COMPLIANCE_THRESHOLD {
+                            "met".to_string()
+                        } else {
+                            "breached".to_string()
+                        };
 
                     let mut percentiles = BTreeMap::new();
                     for &p in &percentile_targets {
-                        let val = (compute_percentile(&total_latencies, p) * 100.0_f64).round() / 100.0_f64;
+                        let val = (compute_percentile(&total_latencies, p) * 100.0_f64).round()
+                            / 100.0_f64;
                         percentiles.insert(format_percentile_key(p), val);
                     }
 
@@ -336,12 +344,16 @@ pub async fn sla_latency_handler(
                         sla_status,
                         stage_breakdown,
                         generated_at: Utc::now(),
-                    }).into_response();
+                    })
+                    .into_response();
                 }
             }
         }
         Err(e) => {
-            debug!("[SLA Latency] QuestDB query notice: {}. Using deterministic synthesis.", e);
+            debug!(
+                "[SLA Latency] QuestDB query notice: {}. Using deterministic synthesis.",
+                e
+            );
         }
     }
 
@@ -368,14 +380,7 @@ mod tests {
         let end = NaiveDate::from_ymd_opt(2025, 8, 31).unwrap();
         let percentiles = vec![50.0, 95.0, 99.0];
 
-        let resp = generate_mock_sla_latency(
-            Some("AAPL"),
-            start,
-            end,
-            &percentiles,
-            500,
-            99.0,
-        );
+        let resp = generate_mock_sla_latency(Some("AAPL"), start, end, &percentiles, 500, 99.0);
 
         assert_eq!(resp.ticker.as_deref(), Some("AAPL"));
         assert_eq!(resp.start_date, "2025-08-01");

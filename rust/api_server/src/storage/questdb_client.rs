@@ -109,7 +109,10 @@ impl QuestDbClient {
         match as_of_utc {
             Some(as_of) if !as_of.trim().is_empty() => {
                 let trimmed = as_of.trim();
-                format!("valid_from <= '{}' AND (valid_to IS NULL OR valid_to > '{}')", trimmed, trimmed)
+                format!(
+                    "valid_from <= '{}' AND (valid_to IS NULL OR valid_to > '{}')",
+                    trimmed, trimmed
+                )
             }
             _ => "is_current = true".to_string(),
         }

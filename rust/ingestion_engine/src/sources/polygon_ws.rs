@@ -36,8 +36,7 @@ impl Default for PolygonWsConfig {
         let ws_url = env::var("POLYGON_WS_URL")
             .unwrap_or_else(|_| "wss://socket.polygon.io/options".to_string());
         let api_key = env::var("POLYGON_API_KEY").unwrap_or_default();
-        let subs_str = env::var("POLYGON_WS_SUBSCRIPTIONS")
-            .unwrap_or_else(|_| "T.*".to_string());
+        let subs_str = env::var("POLYGON_WS_SUBSCRIPTIONS").unwrap_or_else(|_| "T.*".to_string());
         let subscriptions = subs_str
             .split(',')
             .map(|s| s.trim().to_string())
@@ -140,7 +139,10 @@ impl PolygonWsClient {
     pub fn from_env() -> Result<Self, String> {
         let config = PolygonWsConfig::default();
         if crate::is_production_mode() {
-            if config.api_key.trim().is_empty() || config.api_key == "mock_key" || config.api_key.starts_with("mock") {
+            if config.api_key.trim().is_empty()
+                || config.api_key == "mock_key"
+                || config.api_key.starts_with("mock")
+            {
                 return Err("Real Polygon.io API key is required in production mode.".to_string());
             }
         } else if config.api_key.trim().is_empty() && !config.mock_mode {
@@ -202,10 +204,7 @@ impl PolygonWsClient {
                         "action": "subscribe",
                         "params": sub_param
                     });
-                    if let Err(e) = ws_stream
-                        .send(Message::Text(sub_payload.to_string()))
-                        .await
-                    {
+                    if let Err(e) = ws_stream.send(Message::Text(sub_payload.to_string())).await {
                         warn!("[Polygon WS] Failed to send subscription frame: {}", e);
                     } else {
                         info!(
@@ -298,10 +297,42 @@ impl PolygonWsClient {
         mut shutdown_rx: watch::Receiver<bool>,
     ) {
         let mock_contracts = [
-            ("AAPL", "O:AAPL240119C00150000", "2024-01-19", "CALL", 150.0, 4.50, 10),
-            ("NVDA", "O:NVDA240119C00500000", "2024-01-19", "CALL", 500.0, 18.25, 25),
-            ("MSFT", "O:MSFT240119P00380000", "2024-01-19", "PUT", 380.0, 6.10, 15),
-            ("SPY", "O:SPY240119C00480000", "2024-01-19", "CALL", 480.0, 3.20, 100),
+            (
+                "AAPL",
+                "O:AAPL240119C00150000",
+                "2024-01-19",
+                "CALL",
+                150.0,
+                4.50,
+                10,
+            ),
+            (
+                "NVDA",
+                "O:NVDA240119C00500000",
+                "2024-01-19",
+                "CALL",
+                500.0,
+                18.25,
+                25,
+            ),
+            (
+                "MSFT",
+                "O:MSFT240119P00380000",
+                "2024-01-19",
+                "PUT",
+                380.0,
+                6.10,
+                15,
+            ),
+            (
+                "SPY",
+                "O:SPY240119C00480000",
+                "2024-01-19",
+                "CALL",
+                480.0,
+                3.20,
+                100,
+            ),
         ];
         let mut idx = 0;
 
@@ -357,7 +388,9 @@ mod tests {
             serde_json::from_str(sample_json).expect("Failed to deserialize Polygon trade frame");
         assert_eq!(raw_trades.len(), 1);
 
-        let trade = raw_trades[0].to_option_trade().expect("Failed to convert to OptionTrade");
+        let trade = raw_trades[0]
+            .to_option_trade()
+            .expect("Failed to convert to OptionTrade");
         assert_eq!(trade.options_ticker, "O:AAPL240119C00150000");
         assert_eq!(trade.underlying, "AAPL");
         assert_eq!(trade.expiry, "2024-01-19");

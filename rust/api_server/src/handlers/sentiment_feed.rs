@@ -347,7 +347,10 @@ pub async fn get_sentiment_feed_handler(
                     StatusCode::BAD_REQUEST,
                     Json(AuthErrorResponse {
                         error: "Bad Request".to_string(),
-                        message: format!("Invalid as_of_utc format '{}', expected RFC3339", as_of_str),
+                        message: format!(
+                            "Invalid as_of_utc format '{}', expected RFC3339",
+                            as_of_str
+                        ),
                     }),
                 )
                     .into_response();
@@ -486,7 +489,9 @@ pub async fn get_sentiment_feed_handler(
             if let Ok(as_of_dt) = chrono::DateTime::parse_from_rfc3339(as_of_str.trim()) {
                 let as_of_utc = as_of_dt.with_timezone(&chrono::Utc);
                 filtered.retain(|r| {
-                    let from_ok = r.valid_from.as_deref()
+                    let from_ok = r
+                        .valid_from
+                        .as_deref()
                         .and_then(|s| chrono::DateTime::parse_from_rfc3339(s).ok())
                         .map(|dt| dt <= as_of_utc)
                         .unwrap_or(true);
@@ -713,7 +718,8 @@ pub async fn get_sentiment_feed_handler(
                         "message": "Required data source unavailable in production mode.",
                         "status": "service_unavailable"
                     })),
-                ).into_response();
+                )
+                    .into_response();
             }
             warn!(
                 "QuestDB returned status {} for sentiment feed, falling back to mock generator",
@@ -772,7 +778,10 @@ pub async fn get_sentiment_feed_handler(
         }
         Err(e) => {
             if crate::state::is_production_mode() {
-                warn!("QuestDB unreachable in production mode for sentiment feed: {}", e);
+                warn!(
+                    "QuestDB unreachable in production mode for sentiment feed: {}",
+                    e
+                );
                 return (
                     StatusCode::SERVICE_UNAVAILABLE,
                     Json(serde_json::json!({
@@ -781,7 +790,8 @@ pub async fn get_sentiment_feed_handler(
                         "detail": format!("{}", e),
                         "status": "service_unavailable"
                     })),
-                ).into_response();
+                )
+                    .into_response();
             }
             warn!(
                 "QuestDB unreachable for sentiment feed ({}), falling back to mock generator",
@@ -888,10 +898,12 @@ mod tests {
         assert_eq!(total, total_items);
         assert_eq!(page1.len(), 5);
         assert!(next_cursor.is_some());
-        assert_eq!(next_cursor.as_deref(), Some(page1.last().unwrap().published_utc.as_str()));
+        assert_eq!(
+            next_cursor.as_deref(),
+            Some(page1.last().unwrap().published_utc.as_str())
+        );
 
-        let (page2, _, _) =
-            paginate_feed_records(records.clone(), "desc", None, 5, 5);
+        let (page2, _, _) = paginate_feed_records(records.clone(), "desc", None, 5, 5);
         assert_eq!(page2.len(), 5);
         assert_ne!(page1[0].title, page2[0].title);
     }
@@ -904,8 +916,7 @@ mod tests {
         records.sort_by(|a, b| b.published_utc.cmp(&a.published_utc));
 
         // First page: no cursor, limit 5
-        let (page1, _, next_cursor1) =
-            paginate_feed_records(records.clone(), "desc", None, 0, 5);
+        let (page1, _, next_cursor1) = paginate_feed_records(records.clone(), "desc", None, 0, 5);
         assert_eq!(page1.len(), 5);
         assert!(next_cursor1.is_some());
 
@@ -920,12 +931,17 @@ mod tests {
         // Ensure no overlap between page1 and page2
         let p1_titles: std::collections::HashSet<_> = page1.iter().map(|r| &r.title).collect();
         for r in &page2 {
-            assert!(!p1_titles.contains(&r.title), "Page 2 should not contain items from Page 1");
+            assert!(
+                !p1_titles.contains(&r.title),
+                "Page 2 should not contain items from Page 1"
+            );
         }
 
         // Verify strictly decreasing timestamps
-        let p1_last_dt = DateTime::parse_from_rfc3339(&page1.last().unwrap().published_utc).unwrap();
-        let p2_first_dt = DateTime::parse_from_rfc3339(&page2.first().unwrap().published_utc).unwrap();
+        let p1_last_dt =
+            DateTime::parse_from_rfc3339(&page1.last().unwrap().published_utc).unwrap();
+        let p2_first_dt =
+            DateTime::parse_from_rfc3339(&page2.first().unwrap().published_utc).unwrap();
         assert!(p2_first_dt < p1_last_dt);
     }
 
@@ -937,8 +953,7 @@ mod tests {
         records.sort_by(|a, b| a.published_utc.cmp(&b.published_utc));
 
         // First page: no cursor, limit 5, sort asc
-        let (page1, _, next_cursor1) =
-            paginate_feed_records(records.clone(), "asc", None, 0, 5);
+        let (page1, _, next_cursor1) = paginate_feed_records(records.clone(), "asc", None, 0, 5);
         assert_eq!(page1.len(), 5);
         assert!(next_cursor1.is_some());
 
@@ -953,12 +968,17 @@ mod tests {
         // Ensure no overlap between page1 and page2
         let p1_titles: std::collections::HashSet<_> = page1.iter().map(|r| &r.title).collect();
         for r in &page2 {
-            assert!(!p1_titles.contains(&r.title), "Page 2 should not contain items from Page 1");
+            assert!(
+                !p1_titles.contains(&r.title),
+                "Page 2 should not contain items from Page 1"
+            );
         }
 
         // Verify strictly increasing timestamps
-        let p1_last_dt = DateTime::parse_from_rfc3339(&page1.last().unwrap().published_utc).unwrap();
-        let p2_first_dt = DateTime::parse_from_rfc3339(&page2.first().unwrap().published_utc).unwrap();
+        let p1_last_dt =
+            DateTime::parse_from_rfc3339(&page1.last().unwrap().published_utc).unwrap();
+        let p2_first_dt =
+            DateTime::parse_from_rfc3339(&page2.first().unwrap().published_utc).unwrap();
         assert!(p2_first_dt > p1_last_dt);
     }
 
@@ -968,10 +988,12 @@ mod tests {
         let end = Utc::now();
         let records = generate_mock_feed_records(None, start, end);
         // Request limit larger than total records
-        let (paged, total, next_cursor) =
-            paginate_feed_records(records, "desc", None, 0, 1000);
+        let (paged, total, next_cursor) = paginate_feed_records(records, "desc", None, 0, 1000);
         assert_eq!(paged.len(), total);
-        assert!(next_cursor.is_none(), "Terminal page must have next_cursor = None");
+        assert!(
+            next_cursor.is_none(),
+            "Terminal page must have next_cursor = None"
+        );
     }
 
     #[test]
@@ -1018,4 +1040,3 @@ mod tests {
         assert!(params_cursor_only.cursor.is_some() && params_cursor_only.offset.is_none());
     }
 }
-

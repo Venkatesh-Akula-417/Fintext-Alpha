@@ -113,22 +113,40 @@ fn read_plans_from_config() -> HashMap<String, PlanDefinition> {
                         current_plan = Some(PlanDefinition {
                             id: id_val.clone(),
                             name: id_val.clone(),
-                            display_name: if id_val == "free" { "Free Tier".to_string() } else { id_val.clone() },
+                            display_name: if id_val == "free" {
+                                "Free Tier".to_string()
+                            } else {
+                                id_val.clone()
+                            },
                             price: 0,
                             monthly_price_cents: 0,
                             monthly_request_quota: None,
-                            monthly_request_limit: if id_val == "free" { Some(1_000) } else { None },
+                            monthly_request_limit: if id_val == "free" {
+                                Some(1_000)
+                            } else {
+                                None
+                            },
                             features: Vec::new(),
                             stripe_price_id_env: String::new(),
                         });
                     } else if let Some(ref mut p) = current_plan {
                         if let Some((k, v)) = trimmed.split_once(':') {
                             let k = k.trim().trim_start_matches('-').trim();
-                            let raw_v = v.split('#').next().unwrap_or("").trim().trim_matches('"').trim_matches('\'');
+                            let raw_v = v
+                                .split('#')
+                                .next()
+                                .unwrap_or("")
+                                .trim()
+                                .trim_matches('"')
+                                .trim_matches('\'');
                             match k {
                                 "name" => {
                                     p.name = raw_v.to_string();
-                                    p.display_name = if p.id == "free" { "Free Tier".to_string() } else { raw_v.to_string() };
+                                    p.display_name = if p.id == "free" {
+                                        "Free Tier".to_string()
+                                    } else {
+                                        raw_v.to_string()
+                                    };
                                 }
                                 "price" => {
                                     if let Ok(dollars) = raw_v.parse::<u32>() {
@@ -149,7 +167,12 @@ fn read_plans_from_config() -> HashMap<String, PlanDefinition> {
                                         let inside = &raw_v[1..raw_v.len() - 1];
                                         p.features = inside
                                             .split(',')
-                                            .map(|s| s.trim().trim_matches('"').trim_matches('\'').to_string())
+                                            .map(|s| {
+                                                s.trim()
+                                                    .trim_matches('"')
+                                                    .trim_matches('\'')
+                                                    .to_string()
+                                            })
                                             .filter(|s| !s.is_empty())
                                             .collect();
                                     }
@@ -1218,7 +1241,7 @@ pub async fn stripe_webhook_handler(
 
             if let Some(pool) = pool {
                 let user_row: Option<(String,)> = sqlx::query_as(
-                    "SELECT user_id::text FROM subscriptions WHERE stripe_customer_id = $1 LIMIT 1"
+                    "SELECT user_id::text FROM subscriptions WHERE stripe_customer_id = $1 LIMIT 1",
                 )
                 .bind(customer_id)
                 .fetch_optional(pool)
@@ -1265,23 +1288,21 @@ pub async fn stripe_webhook_handler(
                 .as_i64()
                 .map(|ts| DateTime::from_timestamp(ts, 0).unwrap_or_else(Utc::now));
 
-            let plan_id = data["metadata"]["plan_id"]
-                .as_str()
-                .or_else(|| {
-                    data["items"]["data"]
-                        .as_array()
-                        .and_then(|arr| arr.first())
-                        .and_then(|item| item["price"]["id"].as_str())
-                        .and_then(|price_id| {
-                            if price_id.contains("enterprise") {
-                                Some("enterprise_monthly")
-                            } else if price_id.contains("pro") {
-                                Some("pro_monthly")
-                            } else {
-                                None
-                            }
-                        })
-                });
+            let plan_id = data["metadata"]["plan_id"].as_str().or_else(|| {
+                data["items"]["data"]
+                    .as_array()
+                    .and_then(|arr| arr.first())
+                    .and_then(|item| item["price"]["id"].as_str())
+                    .and_then(|price_id| {
+                        if price_id.contains("enterprise") {
+                            Some("enterprise_monthly")
+                        } else if price_id.contains("pro") {
+                            Some("pro_monthly")
+                        } else {
+                            None
+                        }
+                    })
+            });
 
             if let Some(pool) = pool {
                 let user_row: Option<(String,)> = sqlx::query_as(
@@ -1433,7 +1454,10 @@ impl MonthlyQuotaCache {
 
     pub fn new_with_capacity(ttl_seconds: u64, max_capacity: usize) -> Self {
         Self {
-            cache: Arc::new(crate::cache::TtlCache::with_ttl_secs(ttl_seconds, max_capacity)),
+            cache: Arc::new(crate::cache::TtlCache::with_ttl_secs(
+                ttl_seconds,
+                max_capacity,
+            )),
             ttl_seconds,
         }
     }
@@ -1814,7 +1838,10 @@ mod tests {
         assert_eq!(get_plan_request_quota("free"), Some(10_000));
         assert_eq!(get_plan_request_quota("pro_monthly"), Some(100_000));
         // Enterprise is unlimited
-        assert_eq!(get_plan_request_quota("enterprise_monthly"), Some(1_000_000).or(None));
+        assert_eq!(
+            get_plan_request_quota("enterprise_monthly"),
+            Some(1_000_000).or(None)
+        );
     }
 
     #[test]
@@ -1863,14 +1890,8 @@ mod tests {
     fn test_overage_invoice_calculation() {
         let now = Utc::now();
         let start = now - chrono::Duration::days(30);
-        let invoice = calculate_overage_invoice(
-            "user_test_01",
-            "cus_test_01",
-            "free",
-            12_000,
-            start,
-            now,
-        );
+        let invoice =
+            calculate_overage_invoice("user_test_01", "cus_test_01", "free", 12_000, start, now);
 
         assert_eq!(invoice.user_id, "user_test_01");
         assert_eq!(invoice.customer_id, "cus_test_01");

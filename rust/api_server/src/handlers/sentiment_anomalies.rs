@@ -318,7 +318,10 @@ pub async fn get_sentiment_anomalies_handler(
                     StatusCode::BAD_REQUEST,
                     Json(AuthErrorResponse {
                         error: "Bad Request".to_string(),
-                        message: format!("Invalid as_of_utc format '{}', expected RFC3339", as_of_str),
+                        message: format!(
+                            "Invalid as_of_utc format '{}', expected RFC3339",
+                            as_of_str
+                        ),
                     }),
                 )
                     .into_response();
@@ -467,7 +470,8 @@ pub async fn get_sentiment_anomalies_handler(
                         "message": "Required data source unavailable in production mode.",
                         "status": "service_unavailable"
                     })),
-                ).into_response();
+                )
+                    .into_response();
             }
             warn!("QuestDB unreachable or returned error, falling back to mock anomaly generator");
             let mock_records = generate_mock_anomaly_data(&target_tickers, lookback_days, now);

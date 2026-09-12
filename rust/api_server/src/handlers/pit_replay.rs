@@ -267,10 +267,7 @@ pub async fn get_pit_replay_handler(
         filings_count: filings.len(),
         events_count: events.len(),
         sentiment_count: sentiment_records.len(),
-        total_records: news_articles.len()
-            + filings.len()
-            + events.len()
-            + sentiment_records.len(),
+        total_records: news_articles.len() + filings.len() + events.len() + sentiment_records.len(),
     };
 
     let replay_consistency = PITReplayConsistency {
@@ -348,11 +345,26 @@ fn generate_mock_pit_data(
             };
 
             let title = match i {
-                0 => format!("{} Expands Cloud Infrastructure and Neural Vector Capacity", ticker_upper),
-                1 => format!("{} Institutional Earnings & Order Flow Volume Update", ticker_upper),
-                2 => format!("{} Executive Leadership Outlines Multi-Year AI Strategy", ticker_upper),
-                3 => format!("{} Strategic Supply Chain and Component Sourcing Agreement", ticker_upper),
-                _ => format!("{} Market Sentiment & Institutional Positioning Overview", ticker_upper),
+                0 => format!(
+                    "{} Expands Cloud Infrastructure and Neural Vector Capacity",
+                    ticker_upper
+                ),
+                1 => format!(
+                    "{} Institutional Earnings & Order Flow Volume Update",
+                    ticker_upper
+                ),
+                2 => format!(
+                    "{} Executive Leadership Outlines Multi-Year AI Strategy",
+                    ticker_upper
+                ),
+                3 => format!(
+                    "{} Strategic Supply Chain and Component Sourcing Agreement",
+                    ticker_upper
+                ),
+                _ => format!(
+                    "{} Market Sentiment & Institutional Positioning Overview",
+                    ticker_upper
+                ),
             };
 
             news_articles.push(PITReplayNewsItem {
@@ -387,7 +399,12 @@ fn generate_mock_pit_data(
             };
 
             filings.push(PITReplayFilingItem {
-                id: format!("filing-{}-{}-{:04}", ticker_lower, form_type.to_lowercase().replace(' ', ""), i + 1),
+                id: format!(
+                    "filing-{}-{}-{:04}",
+                    ticker_lower,
+                    form_type.to_lowercase().replace(' ', ""),
+                    i + 1
+                ),
                 form_type,
                 filing_date: pub_dt.format("%Y-%m-%d").to_string(),
                 accession_number: format!("0000320193-25-{:06}", 50 + i),
@@ -504,16 +521,40 @@ async fn fetch_live_pit_data(
                         if let Some(dataset) = val.get("dataset").and_then(|d| d.as_array()) {
                             for (idx, row) in dataset.iter().enumerate() {
                                 if let Some(cols) = row.as_array() {
-                                    let pub_utc = cols.get(0).and_then(|v| v.as_str()).unwrap_or_default().to_string();
-                                    let t_str = cols.get(1).and_then(|v| v.as_str()).unwrap_or(ticker).to_string();
+                                    let pub_utc = cols
+                                        .get(0)
+                                        .and_then(|v| v.as_str())
+                                        .unwrap_or_default()
+                                        .to_string();
+                                    let t_str = cols
+                                        .get(1)
+                                        .and_then(|v| v.as_str())
+                                        .unwrap_or(ticker)
+                                        .to_string();
                                     let score = cols.get(2).and_then(|v| v.as_f64()).unwrap_or(0.0);
-                                    let label = cols.get(3).and_then(|v| v.as_str()).unwrap_or("NEUTRAL").to_string();
+                                    let label = cols
+                                        .get(3)
+                                        .and_then(|v| v.as_str())
+                                        .unwrap_or("NEUTRAL")
+                                        .to_string();
                                     let conf = cols.get(4).and_then(|v| v.as_f64()).unwrap_or(0.85);
-                                    let ing_utc = cols.get(5).and_then(|v| v.as_str()).unwrap_or(&pub_utc).to_string();
-                                    let db_utc = cols.get(6).and_then(|v| v.as_str()).unwrap_or(&pub_utc).to_string();
+                                    let ing_utc = cols
+                                        .get(5)
+                                        .and_then(|v| v.as_str())
+                                        .unwrap_or(&pub_utc)
+                                        .to_string();
+                                    let db_utc = cols
+                                        .get(6)
+                                        .and_then(|v| v.as_str())
+                                        .unwrap_or(&pub_utc)
+                                        .to_string();
 
                                     sentiment_records.push(PITReplaySentimentItem {
-                                        id: format!("sent-{}-{:04}", ticker.to_lowercase(), idx + 1),
+                                        id: format!(
+                                            "sent-{}-{:04}",
+                                            ticker.to_lowercase(),
+                                            idx + 1
+                                        ),
                                         ticker: t_str,
                                         published_utc: pub_utc,
                                         ingested_utc: ing_utc,
@@ -555,15 +596,39 @@ async fn fetch_live_pit_data(
                         if let Some(dataset) = val.get("dataset").and_then(|d| d.as_array()) {
                             for (idx, row) in dataset.iter().enumerate() {
                                 if let Some(cols) = row.as_array() {
-                                    let pub_utc = cols.get(0).and_then(|v| v.as_str()).unwrap_or_default().to_string();
-                                    let title = cols.get(2).and_then(|v| v.as_str()).unwrap_or("Financial News").to_string();
-                                    let source = cols.get(3).and_then(|v| v.as_str()).unwrap_or("Institutional Wire").to_string();
+                                    let pub_utc = cols
+                                        .get(0)
+                                        .and_then(|v| v.as_str())
+                                        .unwrap_or_default()
+                                        .to_string();
+                                    let title = cols
+                                        .get(2)
+                                        .and_then(|v| v.as_str())
+                                        .unwrap_or("Financial News")
+                                        .to_string();
+                                    let source = cols
+                                        .get(3)
+                                        .and_then(|v| v.as_str())
+                                        .unwrap_or("Institutional Wire")
+                                        .to_string();
                                     let score = cols.get(4).and_then(|v| v.as_f64()).unwrap_or(0.0);
-                                    let ing_utc = cols.get(5).and_then(|v| v.as_str()).unwrap_or(&pub_utc).to_string();
-                                    let db_utc = cols.get(6).and_then(|v| v.as_str()).unwrap_or(&pub_utc).to_string();
+                                    let ing_utc = cols
+                                        .get(5)
+                                        .and_then(|v| v.as_str())
+                                        .unwrap_or(&pub_utc)
+                                        .to_string();
+                                    let db_utc = cols
+                                        .get(6)
+                                        .and_then(|v| v.as_str())
+                                        .unwrap_or(&pub_utc)
+                                        .to_string();
 
                                     news_articles.push(PITReplayNewsItem {
-                                        id: format!("news-{}-{:04}", ticker.to_lowercase(), idx + 1),
+                                        id: format!(
+                                            "news-{}-{:04}",
+                                            ticker.to_lowercase(),
+                                            idx + 1
+                                        ),
                                         title,
                                         source,
                                         published_utc: pub_utc,

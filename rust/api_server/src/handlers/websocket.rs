@@ -365,10 +365,7 @@ mod tests {
             StreamEncoding::from_query(Some("json"), None),
             StreamEncoding::Json
         );
-        assert_eq!(
-            StreamEncoding::from_query(None, None),
-            StreamEncoding::Json
-        );
+        assert_eq!(StreamEncoding::from_query(None, None), StreamEncoding::Json);
         assert_eq!(
             StreamEncoding::from_query(Some("unknown"), None),
             StreamEncoding::Json
@@ -391,7 +388,8 @@ mod tests {
         };
 
         // 1. JSON Frame
-        let json_msg = encode_frame(&alert, StreamEncoding::Json).expect("Failed to encode JSON frame");
+        let json_msg =
+            encode_frame(&alert, StreamEncoding::Json).expect("Failed to encode JSON frame");
         match json_msg {
             Message::Text(text) => {
                 let parsed: TestAlert = serde_json::from_str(&text).expect("Failed to decode JSON");
@@ -401,10 +399,12 @@ mod tests {
         }
 
         // 2. MessagePack Frame
-        let msgpack_msg = encode_frame(&alert, StreamEncoding::MsgPack).expect("Failed to encode MsgPack frame");
+        let msgpack_msg =
+            encode_frame(&alert, StreamEncoding::MsgPack).expect("Failed to encode MsgPack frame");
         match msgpack_msg {
             Message::Binary(bytes) => {
-                let parsed: TestAlert = rmp_serde::from_slice(&bytes).expect("Failed to decode MsgPack");
+                let parsed: TestAlert =
+                    rmp_serde::from_slice(&bytes).expect("Failed to decode MsgPack");
                 assert_eq!(parsed, alert);
             }
             _ => panic!("Expected Message::Binary for MsgPack encoding"),
@@ -419,7 +419,8 @@ mod tests {
         });
 
         let bytes = rmp_serde::to_vec_named(&cmd).expect("Failed to serialize MsgPack");
-        let decoded: serde_json::Value = rmp_serde::from_slice(&bytes).expect("Failed to deserialize MsgPack");
+        let decoded: serde_json::Value =
+            rmp_serde::from_slice(&bytes).expect("Failed to deserialize MsgPack");
         assert_eq!(decoded["action"], "subscribe");
         assert_eq!(decoded["stream"], "anomalies");
     }

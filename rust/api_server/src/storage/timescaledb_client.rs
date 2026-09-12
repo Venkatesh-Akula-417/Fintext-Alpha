@@ -45,8 +45,9 @@ impl Default for TimescaleDbClientConfig {
             .map(|v| v == "1" || v.to_lowercase() == "true")
             .unwrap_or(false);
 
-        let url = env::var("TIMESCALE_DB_URL")
-            .unwrap_or_else(|_| "postgres://fintext:fintext@localhost:5432/fintext_timeseries".to_string());
+        let url = env::var("TIMESCALE_DB_URL").unwrap_or_else(|_| {
+            "postgres://fintext:fintext@localhost:5432/fintext_timeseries".to_string()
+        });
 
         let max_connections = env::var("TIMESCALE_MAX_CONNECTIONS")
             .ok()
@@ -177,7 +178,9 @@ impl TimescaleDbClientConfig {
         if let Ok(val) = env::var("ENABLE_TIMESCALEDB").or_else(|_| env::var("TIMESCALE_ENABLED")) {
             cfg.enabled = val == "1" || val.to_lowercase() == "true";
         }
-        if let Ok(val) = env::var("TIMESCALE_PRIMARY").or_else(|_| env::var("ENABLE_TIMESCALE_PRIMARY")) {
+        if let Ok(val) =
+            env::var("TIMESCALE_PRIMARY").or_else(|_| env::var("ENABLE_TIMESCALE_PRIMARY"))
+        {
             cfg.primary = val == "1" || val.to_lowercase() == "true";
         }
         if let Ok(val) = env::var("TIMESCALE_AUTO_BACKFILL") {
@@ -234,7 +237,10 @@ impl TimescaleDbClient {
             match pool_opts.connect_lazy(&config.url) {
                 Ok(p) => Some(p),
                 Err(e) => {
-                    warn!("[TimescaleDB Client] Failed to create connection pool: {}", e);
+                    warn!(
+                        "[TimescaleDB Client] Failed to create connection pool: {}",
+                        e
+                    );
                     None
                 }
             }
@@ -278,7 +284,10 @@ impl TimescaleDbClient {
     }
 
     /// Builder pattern method to attach a circuit breaker.
-    pub fn with_circuit_breaker(mut self, breaker: Arc<crate::resilience::DbCircuitBreaker>) -> Self {
+    pub fn with_circuit_breaker(
+        mut self,
+        breaker: Arc<crate::resilience::DbCircuitBreaker>,
+    ) -> Self {
         self.db_breaker = Some(breaker);
         self
     }
@@ -312,8 +321,13 @@ impl TimescaleDbClient {
         if trimmed.len() > 10 {
             return Err("Ticker exceeds maximum allowed length of 10 characters".to_string());
         }
-        if !trimmed.chars().all(|c| c.is_ascii_alphanumeric() || c == '.' || c == '-') {
-            return Err("Ticker contains invalid characters; only A-Z, 0-9, '.', '-' allowed".to_string());
+        if !trimmed
+            .chars()
+            .all(|c| c.is_ascii_alphanumeric() || c == '.' || c == '-')
+        {
+            return Err(
+                "Ticker contains invalid characters; only A-Z, 0-9, '.', '-' allowed".to_string(),
+            );
         }
         Ok(trimmed.to_uppercase())
     }
@@ -379,7 +393,11 @@ impl TimescaleDbClient {
     }
 
     /// Build static SQL query string for AS-OF point-in-time lookup.
-    pub fn build_as_of_query(ticker: &str, as_of_iso: &str, limit: usize) -> Result<String, String> {
+    pub fn build_as_of_query(
+        ticker: &str,
+        as_of_iso: &str,
+        limit: usize,
+    ) -> Result<String, String> {
         let valid_ticker = Self::validate_and_escape_ticker(ticker)?;
         let _ = DateTime::parse_from_rfc3339(as_of_iso)
             .map_err(|e| format!("Invalid RFC-3339 as_of timestamp: {}", e))?;
@@ -414,7 +432,12 @@ impl TimescaleDbClient {
     }
 
     /// Build static SQL query string for historical sentiment within a date range.
-    pub fn build_history_query(ticker: &str, start_iso: &str, end_iso: &str, limit: usize) -> Result<String, String> {
+    pub fn build_history_query(
+        ticker: &str,
+        start_iso: &str,
+        end_iso: &str,
+        limit: usize,
+    ) -> Result<String, String> {
         let valid_ticker = Self::validate_and_escape_ticker(ticker)?;
         Ok(format!(
             "SELECT id, ticker, published_utc, ingested_utc, db_commit_utc, source, title, \
@@ -472,7 +495,9 @@ impl TimescaleDbClient {
                     }
                 })?
             } else {
-                fetch_op().await.map_err(|e| format!("TimescaleDB AS-OF query error: {}", e))?
+                fetch_op()
+                    .await
+                    .map_err(|e| format!("TimescaleDB AS-OF query error: {}", e))?
             };
 
             Ok(records.into_iter().map(Into::into).collect())
@@ -533,7 +558,9 @@ impl TimescaleDbClient {
                     }
                 })?
             } else {
-                fetch_op().await.map_err(|e| format!("TimescaleDB latest query error: {}", e))?
+                fetch_op()
+                    .await
+                    .map_err(|e| format!("TimescaleDB latest query error: {}", e))?
             };
 
             Ok(records.into_iter().map(Into::into).collect())
@@ -594,7 +621,9 @@ impl TimescaleDbClient {
                     }
                 })?
             } else {
-                fetch_op().await.map_err(|e| format!("TimescaleDB history query error: {}", e))?
+                fetch_op()
+                    .await
+                    .map_err(|e| format!("TimescaleDB history query error: {}", e))?
             };
 
             Ok(records.into_iter().map(Into::into).collect())
@@ -690,12 +719,8 @@ mod tests {
 
     #[test]
     fn test_timescaledb_sql_builders() {
-        let as_of_sql = TimescaleDbClient::build_as_of_query(
-            "AAPL",
-            "2026-09-06T10:30:00Z",
-            50,
-        )
-        .unwrap();
+        let as_of_sql =
+            TimescaleDbClient::build_as_of_query("AAPL", "2026-09-06T10:30:00Z", 50).unwrap();
         assert!(as_of_sql.contains("FROM sentiment_records"));
         assert!(as_of_sql.contains("WHERE ticker = 'AAPL'"));
         assert!(as_of_sql.contains("valid_from <= '2026-09-06T10:30:00Z'"));
@@ -720,8 +745,14 @@ mod tests {
 
     #[test]
     fn test_ticker_validation() {
-        assert_eq!(TimescaleDbClient::validate_and_escape_ticker("aapl").unwrap(), "AAPL");
-        assert_eq!(TimescaleDbClient::validate_and_escape_ticker("brk.b").unwrap(), "BRK.B");
+        assert_eq!(
+            TimescaleDbClient::validate_and_escape_ticker("aapl").unwrap(),
+            "AAPL"
+        );
+        assert_eq!(
+            TimescaleDbClient::validate_and_escape_ticker("brk.b").unwrap(),
+            "BRK.B"
+        );
         assert!(TimescaleDbClient::validate_and_escape_ticker("").is_err());
         assert!(TimescaleDbClient::validate_and_escape_ticker("TOOLONGTICKERNAME").is_err());
         assert!(TimescaleDbClient::validate_and_escape_ticker("AAPL; DROP TABLE").is_err());
@@ -735,9 +766,15 @@ mod tests {
             ..Default::default()
         });
 
-        let t0 = DateTime::parse_from_rfc3339("2026-09-06T10:00:00Z").unwrap().with_timezone(&Utc);
-        let t1 = DateTime::parse_from_rfc3339("2026-09-06T11:00:00Z").unwrap().with_timezone(&Utc);
-        let _t2 = DateTime::parse_from_rfc3339("2026-09-06T12:00:00Z").unwrap().with_timezone(&Utc);
+        let t0 = DateTime::parse_from_rfc3339("2026-09-06T10:00:00Z")
+            .unwrap()
+            .with_timezone(&Utc);
+        let t1 = DateTime::parse_from_rfc3339("2026-09-06T11:00:00Z")
+            .unwrap()
+            .with_timezone(&Utc);
+        let _t2 = DateTime::parse_from_rfc3339("2026-09-06T12:00:00Z")
+            .unwrap()
+            .with_timezone(&Utc);
 
         // Record v1: Valid from 10:00 to 11:00
         client.insert_mock_record(TimescaleSentimentRecord {
@@ -782,22 +819,37 @@ mod tests {
         });
 
         // Query AS-OF 10:30 (between t0 and t1) -> should return revision 1
-        let as_of_1030 = DateTime::parse_from_rfc3339("2026-09-06T10:30:00Z").unwrap().with_timezone(&Utc);
-        let pit_records_1030 = client.query_sentiment_as_of("AAPL", as_of_1030, 10).await.unwrap();
+        let as_of_1030 = DateTime::parse_from_rfc3339("2026-09-06T10:30:00Z")
+            .unwrap()
+            .with_timezone(&Utc);
+        let pit_records_1030 = client
+            .query_sentiment_as_of("AAPL", as_of_1030, 10)
+            .await
+            .unwrap();
         assert_eq!(pit_records_1030.len(), 1);
         assert_eq!(pit_records_1030[0].revision_number, 1);
         assert_eq!(pit_records_1030[0].sentiment_score, 0.50);
 
         // Query AS-OF 11:30 (after t1) -> should return revision 2
-        let as_of_1130 = DateTime::parse_from_rfc3339("2026-09-06T11:30:00Z").unwrap().with_timezone(&Utc);
-        let pit_records_1130 = client.query_sentiment_as_of("AAPL", as_of_1130, 10).await.unwrap();
+        let as_of_1130 = DateTime::parse_from_rfc3339("2026-09-06T11:30:00Z")
+            .unwrap()
+            .with_timezone(&Utc);
+        let pit_records_1130 = client
+            .query_sentiment_as_of("AAPL", as_of_1130, 10)
+            .await
+            .unwrap();
         assert_eq!(pit_records_1130.len(), 1);
         assert_eq!(pit_records_1130[0].revision_number, 2);
         assert_eq!(pit_records_1130[0].sentiment_score, 0.80);
 
         // Query AS-OF 09:30 (before t0) -> should return 0 records
-        let as_of_0930 = DateTime::parse_from_rfc3339("2026-09-06T09:30:00Z").unwrap().with_timezone(&Utc);
-        let pit_records_0930 = client.query_sentiment_as_of("AAPL", as_of_0930, 10).await.unwrap();
+        let as_of_0930 = DateTime::parse_from_rfc3339("2026-09-06T09:30:00Z")
+            .unwrap()
+            .with_timezone(&Utc);
+        let pit_records_0930 = client
+            .query_sentiment_as_of("AAPL", as_of_0930, 10)
+            .await
+            .unwrap();
         assert_eq!(pit_records_0930.len(), 0);
 
         // Query latest -> returns current revision 2

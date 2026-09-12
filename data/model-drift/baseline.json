@@ -1,0 +1,17 @@
+{
+  "baseline_version": "1.0.0",
+  "created_utc": "2026-09-12T10:23:47Z",
+  "git_commit_sha": "5e2daa406c6023d6f262aef355162453937e586f",
+  "model_dir": "models\\finbert-finetuned",
+  "dataset_path": "config\\model_validation_dataset.json",
+  "dataset_size": 105,
+  "metrics": {
+    "accuracy": 0.981,
+    "f1_macro": 0.9802,
+    "f1_weighted": 0.981,
+    "ece_10bins": 0.0095,
+    "latency_p50_ms": 132.94,
+    "latency_p95_ms": 143.57,
+    "latency_p99_ms": 168.23
+  }
+}

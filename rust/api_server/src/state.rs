@@ -17,9 +17,9 @@ use crate::users::{ApiKeyRegistry, UserRegistry};
 use crate::webhooks::WebhookRegistry;
 use sqlx::PgPool;
 use std::env;
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use tokio::sync::mpsc::Sender;
-use std::sync::atomic::{AtomicBool, Ordering};
 
 /// Global production mode switch. When true, all mock fallbacks are disabled.
 pub static PRODUCTION_MODE_ACTIVE: AtomicBool = AtomicBool::new(false);
@@ -73,7 +73,11 @@ pub fn read_public_api_version_from_config() -> String {
                 if trimmed.starts_with("public_api_version:") {
                     let parts: Vec<&str> = trimmed.splitn(2, ':').collect();
                     if parts.len() == 2 {
-                        let val_str = parts[1].trim().trim_matches('"').trim_matches('\'').to_string();
+                        let val_str = parts[1]
+                            .trim()
+                            .trim_matches('"')
+                            .trim_matches('\'')
+                            .to_string();
                         if !val_str.is_empty() {
                             return val_str;
                         }
@@ -113,7 +117,11 @@ pub fn read_enable_full_api_surface() -> bool {
                 if trimmed.starts_with("enable_full_api_surface:") {
                     let parts: Vec<&str> = trimmed.splitn(2, ':').collect();
                     if parts.len() == 2 {
-                        let val_str = parts[1].trim().trim_matches('"').trim_matches('\'').to_lowercase();
+                        let val_str = parts[1]
+                            .trim()
+                            .trim_matches('"')
+                            .trim_matches('\'')
+                            .to_lowercase();
                         return val_str == "true" || val_str == "1" || val_str == "yes";
                     }
                 }
@@ -146,7 +154,11 @@ pub fn read_production_mode_from_config() -> bool {
                 if trimmed.starts_with("production_mode:") {
                     let parts: Vec<&str> = trimmed.splitn(2, ':').collect();
                     if parts.len() == 2 {
-                        let val_str = parts[1].trim().trim_matches('"').trim_matches('\'').to_lowercase();
+                        let val_str = parts[1]
+                            .trim()
+                            .trim_matches('"')
+                            .trim_matches('\'')
+                            .to_lowercase();
                         return val_str == "true" || val_str == "1" || val_str == "yes";
                     }
                 }
@@ -295,7 +307,9 @@ fn read_enable_fix_bridge() -> bool {
                 }
                 let indent = line.len() - line.trim_start().len();
                 if indent == 0 {
-                    if trimmed.starts_with("enterprise_features:") || trimmed.starts_with("enterprise:") {
+                    if trimmed.starts_with("enterprise_features:")
+                        || trimmed.starts_with("enterprise:")
+                    {
                         in_enterprise = true;
                     } else {
                         in_enterprise = false;
@@ -305,7 +319,12 @@ fn read_enable_fix_bridge() -> bool {
                 if in_enterprise && trimmed.starts_with("enable_fix_bridge:") {
                     let parts: Vec<&str> = trimmed.split(':').collect();
                     if parts.len() > 1 {
-                        let val = parts[1].split('#').next().unwrap_or("").trim().to_lowercase();
+                        let val = parts[1]
+                            .split('#')
+                            .next()
+                            .unwrap_or("")
+                            .trim()
+                            .to_lowercase();
                         return val == "true" || val == "1";
                     }
                 }
@@ -394,7 +413,9 @@ impl AppState {
                 let cfg = crate::cache::CacheConfig::from_env_or_config();
                 cfg
             },
-            provider_health_store: Arc::new(crate::handlers::provider_health::ProviderHealthStore::new()),
+            provider_health_store: Arc::new(
+                crate::handlers::provider_health::ProviderHealthStore::new(),
+            ),
         }
     }
 }
@@ -446,4 +467,3 @@ mod tests {
         assert!(!is_production_mode());
     }
 }
-

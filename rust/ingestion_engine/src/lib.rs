@@ -119,7 +119,11 @@ pub fn read_production_mode_from_config() -> bool {
                 if trimmed.starts_with("production_mode:") {
                     let parts: Vec<&str> = trimmed.splitn(2, ':').collect();
                     if parts.len() == 2 {
-                        let val_str = parts[1].trim().trim_matches('"').trim_matches('\'').to_lowercase();
+                        let val_str = parts[1]
+                            .trim()
+                            .trim_matches('"')
+                            .trim_matches('\'')
+                            .to_lowercase();
                         return val_str == "true" || val_str == "1" || val_str == "yes";
                     }
                 }
@@ -146,10 +150,10 @@ pub use nlp::{
 };
 pub use pipeline::{
     create_bounded_ingestion_channel, BackpressureMetrics, BackpressureMetricsSnapshot,
-    CircuitBreakerConfig, DbCircuitBreaker, DbError,
-    IngestionConcurrencyConfig, IngestionSendError, IngestionSender, Preprocessor,
-    ProcessedDocument, RawDocument, SignalLatencyMetrics, WorkerPool,
-    DEFAULT_INPUT_QUEUE_CAPACITY, DEFAULT_MAX_CONCURRENT_TASKS, DEFAULT_TASK_TIMEOUT_MS,
+    CircuitBreakerConfig, DbCircuitBreaker, DbError, IngestionConcurrencyConfig,
+    IngestionSendError, IngestionSender, Preprocessor, ProcessedDocument, RawDocument,
+    SignalLatencyMetrics, WorkerPool, DEFAULT_INPUT_QUEUE_CAPACITY, DEFAULT_MAX_CONCURRENT_TASKS,
+    DEFAULT_TASK_TIMEOUT_MS,
 };
 pub use quality::{
     calculate_freshness_ms, count_document_fields, quarantine_document, DataQualityConfig,
@@ -165,13 +169,11 @@ pub use sources::{
 pub use storage::{
     calculate_buffer_backoff, quarantine_failed_message, spawn_raw_archiver_worker,
     ArchiveUploader, CompleteSignalRecord, JsonlStreamSink, QuestDbBufferConfig,
-    QuestDbBufferConsumer, QuestDbBufferMessage, QuestDbBufferProducer, QuestDbConfig,
-    QuestDbSink, RawArchiveConfig, RawArchiveRecord, RawArchiveSender, RawArchiveWriter,
-    TimescaleDbConfig, TimescaleDbSink, TimescaleSentimentRecord,
+    QuestDbBufferConsumer, QuestDbBufferMessage, QuestDbBufferProducer, QuestDbConfig, QuestDbSink,
+    RawArchiveConfig, RawArchiveRecord, RawArchiveSender, RawArchiveWriter, TimescaleDbConfig,
+    TimescaleDbSink, TimescaleSentimentRecord,
 };
-pub use streaming::{
-    KafkaSentimentEvent, KafkaSink, KafkaSinkConfig, RealtimeSentimentEvent,
-};
+pub use streaming::{KafkaSentimentEvent, KafkaSink, KafkaSinkConfig, RealtimeSentimentEvent};
 pub use telemetry::PipelineMetrics;
 
 #[cfg(test)]

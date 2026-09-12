@@ -119,7 +119,8 @@ impl Default for ModelCardResponse {
                 VersionHistoryItem {
                     version: "3.0.0".to_string(),
                     release_date: "2026-09-05".to_string(),
-                    changes: "FinBERT domain-specific model integration with INT8 quantization".to_string(),
+                    changes: "FinBERT domain-specific model integration with INT8 quantization"
+                        .to_string(),
                 },
                 VersionHistoryItem {
                     version: "2.1.0".to_string(),
@@ -200,7 +201,10 @@ impl ModelCardResponse {
 
 /// Helper function to detect presence of fine-tuned FinBERT ONNX model in workspace.
 pub fn is_finetuned_model_present() -> bool {
-    if std::env::var("FINBERT_FINETUNED").map(|v| v == "1" || v.to_lowercase() == "true").unwrap_or(false) {
+    if std::env::var("FINBERT_FINETUNED")
+        .map(|v| v == "1" || v.to_lowercase() == "true")
+        .unwrap_or(false)
+    {
         return true;
     }
     if let Ok(p) = std::env::var("FINBERT_MODEL_DIR") {
@@ -333,7 +337,9 @@ fn parse_model_card_from_yaml(content: &str) -> Option<ModelCardResponse> {
                 if let Some((k, v)) = parse_yaml_kv(trimmed) {
                     match k {
                         "model_license" => card.licensing.model_license = v.to_string(),
-                        "training_data_rights" => card.licensing.training_data_rights = v.to_string(),
+                        "training_data_rights" => {
+                            card.licensing.training_data_rights = v.to_string()
+                        }
                         _ => {}
                     }
                 }
@@ -410,7 +416,10 @@ mod tests {
     fn test_model_card_default_values() {
         let card = ModelCardResponse::default();
         assert_eq!(card.model_id, "fintext-sentiment-finbert");
-        assert_eq!(card.model_name, "FinBERT (ProsusAI) Fine-Tuned for Financial Sentiment");
+        assert_eq!(
+            card.model_name,
+            "FinBERT (ProsusAI) Fine-Tuned for Financial Sentiment"
+        );
         assert_eq!(card.architecture, "bert");
         assert_eq!(card.base_model, "ProsusAI/finbert");
         assert_eq!(card.precision, "FP16");
@@ -454,7 +463,8 @@ model_card:
     training_data_rights: "public_domain"
 "#;
 
-        let parsed = parse_model_card_from_yaml(yaml_sample).expect("Should parse YAML successfully");
+        let parsed =
+            parse_model_card_from_yaml(yaml_sample).expect("Should parse YAML successfully");
         assert_eq!(parsed.model_id, "custom-sentiment-v3");
         assert_eq!(parsed.model_name, "Custom Model");
         assert_eq!(parsed.precision, "FP32");

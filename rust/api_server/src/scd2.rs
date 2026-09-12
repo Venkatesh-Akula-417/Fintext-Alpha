@@ -150,7 +150,9 @@ impl Scd2RevisionRegistry {
             is_current: Some(true),
         };
 
-        registry.records.insert("AAPL".to_string(), vec![aapl_v1, aapl_v2]);
+        registry
+            .records
+            .insert("AAPL".to_string(), vec![aapl_v1, aapl_v2]);
 
         // Seed MSFT baseline
         let msft_v1 = SentimentRecord {
@@ -199,7 +201,9 @@ impl Scd2RevisionRegistry {
 
         match as_of_utc {
             Some(as_of_str) if !as_of_str.trim().is_empty() => {
-                let parsed_as_of = DateTime::parse_from_rfc3339(as_of_str.trim()).ok()?.with_timezone(&Utc);
+                let parsed_as_of = DateTime::parse_from_rfc3339(as_of_str.trim())
+                    .ok()?
+                    .with_timezone(&Utc);
 
                 // Find version valid at as_of: valid_from <= as_of AND (valid_to IS NULL OR valid_to > as_of)
                 versions
@@ -257,8 +261,12 @@ impl Scd2RevisionRegistry {
 
         let now = Utc::now();
         let pub_utc = now.to_rfc3339();
-        let ing_utc = req.ingested_utc.unwrap_or_else(|| (now + Duration::milliseconds(50)).to_rfc3339());
-        let db_utc = req.db_commit_utc.unwrap_or_else(|| (now + Duration::milliseconds(100)).to_rfc3339());
+        let ing_utc = req
+            .ingested_utc
+            .unwrap_or_else(|| (now + Duration::milliseconds(50)).to_rfc3339());
+        let db_utc = req
+            .db_commit_utc
+            .unwrap_or_else(|| (now + Duration::milliseconds(100)).to_rfc3339());
         let valid_from = db_utc.clone();
 
         let source = req.source.unwrap_or_else(|| "SEC EDGAR".to_string());
@@ -326,7 +334,9 @@ mod tests {
         let registry = Scd2RevisionRegistry::new();
 
         // 1. Query latest AAPL (should be revision 2)
-        let latest = registry.query_as_of("AAPL", None).expect("Should find AAPL");
+        let latest = registry
+            .query_as_of("AAPL", None)
+            .expect("Should find AAPL");
         assert_eq!(latest.revision_number, Some(2));
         assert_eq!(latest.is_current, Some(true));
         assert_eq!(latest.sentiment_score, 0.72);
@@ -337,7 +347,10 @@ mod tests {
             .expect("Should find AAPL v1");
         assert_eq!(as_of_v1.revision_number, Some(1));
         assert_eq!(as_of_v1.sentiment_score, 0.45);
-        assert_eq!(as_of_v1.valid_to, Some("2025-06-16T10:00:00.000000Z".to_string()));
+        assert_eq!(
+            as_of_v1.valid_to,
+            Some("2025-06-16T10:00:00.000000Z".to_string())
+        );
 
         // 3. Query AAPL as of 2025-06-16T12:00:00Z (should be revision 2)
         let as_of_v2 = registry

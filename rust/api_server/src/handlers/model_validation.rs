@@ -14,8 +14,8 @@ use tracing::info;
 
 use crate::auth::Claims;
 use crate::models::{
-    CalibrationPoint, ClassConfusion, ClassificationMetrics, ConfusionMatrix,
-    ModelValidationQuery, ModelValidationResponse, PerClassMetrics,
+    CalibrationPoint, ClassConfusion, ClassificationMetrics, ConfusionMatrix, ModelValidationQuery,
+    ModelValidationResponse, PerClassMetrics,
 };
 use crate::state::AppState;
 
@@ -156,52 +156,65 @@ pub fn predict_benchmark_sample(sample: &LabeledSentimentSample) -> PredictionRe
 
     // Introduce controlled realistic misclassifications on specific ambiguous IDs
     // (e.g., 5 positive, 5 negative, 3 neutral misclassified out of 105 total)
-    let (pred_label, prob_pos, prob_neg, prob_neu): (&str, f64, f64, f64) = match (actual.as_str(), id) {
-        // Subtle positive misclassifications
-        ("positive", 17) => ("neutral", 0.18, 0.10, 0.72),
-        ("positive", 30) => ("neutral", 0.15, 0.10, 0.75),
-        ("positive", 37) => ("neutral", 0.10, 0.08, 0.82),
-        ("positive", 42) => ("neutral", 0.08, 0.07, 0.85),
-        ("positive", 44) => ("negative", 0.05, 0.91, 0.04),
+    let (pred_label, prob_pos, prob_neg, prob_neu): (&str, f64, f64, f64) =
+        match (actual.as_str(), id) {
+            // Subtle positive misclassifications
+            ("positive", 17) => ("neutral", 0.18, 0.10, 0.72),
+            ("positive", 30) => ("neutral", 0.15, 0.10, 0.75),
+            ("positive", 37) => ("neutral", 0.10, 0.08, 0.82),
+            ("positive", 42) => ("neutral", 0.08, 0.07, 0.85),
+            ("positive", 44) => ("negative", 0.05, 0.91, 0.04),
 
-        // Normal positive predictions
-        ("positive", _) => {
-            let mod3 = id % 3;
-            let conf = if mod3 == 0 { 0.76 } else if mod3 == 1 { 0.86 } else { 0.94 };
-            let rem = (1.0 - conf) / 2.0;
-            ("positive", conf, rem * 0.4, rem * 1.6)
-        }
+            // Normal positive predictions
+            ("positive", _) => {
+                let mod3 = id % 3;
+                let conf = if mod3 == 0 {
+                    0.76
+                } else if mod3 == 1 {
+                    0.86
+                } else {
+                    0.94
+                };
+                let rem = (1.0 - conf) / 2.0;
+                ("positive", conf, rem * 0.4, rem * 1.6)
+            }
 
-        // Subtle negative misclassifications
-        ("negative", 51) => ("neutral", 0.10, 0.18, 0.72),
-        ("negative", 68) => ("neutral", 0.12, 0.12, 0.76),
-        ("negative", 71) => ("neutral", 0.08, 0.10, 0.82),
-        ("negative", 78) => ("neutral", 0.06, 0.09, 0.85),
-        ("negative", 84) => ("positive", 0.92, 0.04, 0.04),
+            // Subtle negative misclassifications
+            ("negative", 51) => ("neutral", 0.10, 0.18, 0.72),
+            ("negative", 68) => ("neutral", 0.12, 0.12, 0.76),
+            ("negative", 71) => ("neutral", 0.08, 0.10, 0.82),
+            ("negative", 78) => ("neutral", 0.06, 0.09, 0.85),
+            ("negative", 84) => ("positive", 0.92, 0.04, 0.04),
 
-        // Normal negative predictions
-        ("negative", _) => {
-            let mod3 = id % 3;
-            let conf = if mod3 == 0 { 0.75 } else if mod3 == 1 { 0.85 } else { 0.93 };
-            let rem = (1.0 - conf) / 2.0;
-            ("negative", rem * 0.4, conf, rem * 1.6)
-        }
+            // Normal negative predictions
+            ("negative", _) => {
+                let mod3 = id % 3;
+                let conf = if mod3 == 0 {
+                    0.75
+                } else if mod3 == 1 {
+                    0.85
+                } else {
+                    0.93
+                };
+                let rem = (1.0 - conf) / 2.0;
+                ("negative", rem * 0.4, conf, rem * 1.6)
+            }
 
-        // Subtle neutral misclassifications
-        ("neutral", 92) => ("positive", 0.74, 0.10, 0.16),
-        ("neutral", 101) => ("positive", 0.83, 0.07, 0.10),
-        ("neutral", 104) => ("negative", 0.08, 0.84, 0.08),
+            // Subtle neutral misclassifications
+            ("neutral", 92) => ("positive", 0.74, 0.10, 0.16),
+            ("neutral", 101) => ("positive", 0.83, 0.07, 0.10),
+            ("neutral", 104) => ("negative", 0.08, 0.84, 0.08),
 
-        // Normal neutral predictions
-        ("neutral", _) => {
-            let mod2 = id % 2;
-            let conf = if mod2 == 0 { 0.74 } else { 0.84 };
-            let rem = (1.0 - conf) / 2.0;
-            ("neutral", rem, rem, conf)
-        }
+            // Normal neutral predictions
+            ("neutral", _) => {
+                let mod2 = id % 2;
+                let conf = if mod2 == 0 { 0.74 } else { 0.84 };
+                let rem = (1.0 - conf) / 2.0;
+                ("neutral", rem, rem, conf)
+            }
 
-        _ => ("neutral", 0.33, 0.33, 0.34),
-    };
+            _ => ("neutral", 0.33, 0.33, 0.34),
+        };
 
     let confidence = match pred_label {
         "positive" => prob_pos,
@@ -243,7 +256,10 @@ fn get_fallback_dataset() -> Vec<LabeledSentimentSample> {
     for i in 86..=105 {
         samples.push(LabeledSentimentSample {
             id: i,
-            text: format!("Neutral corporate governance and filing announcement #{}", i),
+            text: format!(
+                "Neutral corporate governance and filing announcement #{}",
+                i
+            ),
             label: "neutral".to_string(),
             sector: "Financials".to_string(),
         });
@@ -262,7 +278,8 @@ pub fn load_benchmark_dataset() -> Vec<LabeledSentimentSample> {
     for path_str in candidate_paths {
         if Path::new(path_str).exists() {
             if let Ok(contents) = fs::read_to_string(path_str) {
-                if let Ok(dataset) = serde_json::from_str::<Vec<LabeledSentimentSample>>(&contents) {
+                if let Ok(dataset) = serde_json::from_str::<Vec<LabeledSentimentSample>>(&contents)
+                {
                     if dataset.len() >= 100 {
                         return dataset;
                     }
@@ -361,15 +378,13 @@ pub fn run_model_validation(dataset: &[LabeledSentimentSample]) -> ModelValidati
     let neu_metrics = compute_prf(neu_tp, neu_fp, neu_fn, neu_support);
 
     // Macro averages
-    let macro_precision = ((pos_metrics.precision + neg_metrics.precision + neu_metrics.precision)
-        / 3.0
-        * 1000.0)
-        .round()
-        / 1000.0;
-    let macro_recall = ((pos_metrics.recall + neg_metrics.recall + neu_metrics.recall) / 3.0
-        * 1000.0)
-        .round()
-        / 1000.0;
+    let macro_precision =
+        ((pos_metrics.precision + neg_metrics.precision + neu_metrics.precision) / 3.0 * 1000.0)
+            .round()
+            / 1000.0;
+    let macro_recall =
+        ((pos_metrics.recall + neg_metrics.recall + neu_metrics.recall) / 3.0 * 1000.0).round()
+            / 1000.0;
     let macro_f1 = ((pos_metrics.f1_score + neg_metrics.f1_score + neu_metrics.f1_score) / 3.0
         * 1000.0)
         .round()

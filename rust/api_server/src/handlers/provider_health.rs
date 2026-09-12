@@ -11,7 +11,9 @@ use serde_json::json;
 use tracing::info;
 
 use crate::auth::Claims;
-use crate::models::provider_health::{ProviderHealthItem, ProviderHealthQuery, ProviderHealthResponse};
+use crate::models::provider_health::{
+    ProviderHealthItem, ProviderHealthQuery, ProviderHealthResponse,
+};
 use crate::state::AppState;
 
 pub const VALID_PROVIDERS: &[&str] = &["sec_edgar", "finnhub", "polygon", "all"];
@@ -115,7 +117,10 @@ impl ProviderHealthStore {
     /// Create with explicit TTL in seconds and capacity.
     pub fn with_ttl_secs(ttl_secs: u64, max_capacity: usize) -> Self {
         Self {
-            cache: std::sync::Arc::new(crate::cache::TtlCache::with_ttl_secs(ttl_secs, max_capacity)),
+            cache: std::sync::Arc::new(crate::cache::TtlCache::with_ttl_secs(
+                ttl_secs,
+                max_capacity,
+            )),
         }
     }
 
@@ -253,11 +258,19 @@ pub async fn get_provider_health_handler(
 
     if provider_raw == "all" {
         for &prov in &["sec_edgar", "finnhub", "polygon"] {
-            if let Some(item) = state.provider_health_store.get_or_compute(prov, window_minutes, now) {
+            if let Some(item) =
+                state
+                    .provider_health_store
+                    .get_or_compute(prov, window_minutes, now)
+            {
                 items.push(item);
             }
         }
-    } else if let Some(item) = state.provider_health_store.get_or_compute(&provider_raw, window_minutes, now) {
+    } else if let Some(item) =
+        state
+            .provider_health_store
+            .get_or_compute(&provider_raw, window_minutes, now)
+    {
         items.push(item);
     }
 
@@ -286,7 +299,8 @@ mod tests {
     #[test]
     fn test_generate_provider_health_metric_sec_edgar() {
         let now = Utc::now();
-        let metric = generate_provider_health_metric("sec_edgar", 60, now).expect("Should generate metric");
+        let metric =
+            generate_provider_health_metric("sec_edgar", 60, now).expect("Should generate metric");
         assert_eq!(metric.provider, "sec_edgar");
         assert_eq!(metric.status, "healthy");
         assert_eq!(metric.requests_total, 120);
@@ -301,14 +315,18 @@ mod tests {
     #[test]
     fn test_generate_provider_health_metric_finnhub() {
         let now = Utc::now();
-        let metric = generate_provider_health_metric("finnhub", 60, now).expect("Should generate metric");
+        let metric =
+            generate_provider_health_metric("finnhub", 60, now).expect("Should generate metric");
         assert_eq!(metric.provider, "finnhub");
         assert_eq!(metric.status, "degraded");
         assert_eq!(metric.requests_total, 80);
         assert_eq!(metric.requests_success, 75);
         assert_eq!(metric.success_rate_pct, 93.75);
         assert_eq!(metric.error_count_last_hour, 5);
-        assert_eq!(metric.last_error_message.as_deref(), Some("Rate limit exceeded"));
+        assert_eq!(
+            metric.last_error_message.as_deref(),
+            Some("Rate limit exceeded")
+        );
         assert_eq!(metric.quality_score, 0.88);
         assert_eq!(metric.quarantine_count, 1);
     }
@@ -316,7 +334,8 @@ mod tests {
     #[test]
     fn test_generate_provider_health_metric_polygon() {
         let now = Utc::now();
-        let metric = generate_provider_health_metric("polygon", 60, now).expect("Should generate metric");
+        let metric =
+            generate_provider_health_metric("polygon", 60, now).expect("Should generate metric");
         assert_eq!(metric.provider, "polygon");
         assert_eq!(metric.status, "healthy");
         assert_eq!(metric.requests_total, 200);

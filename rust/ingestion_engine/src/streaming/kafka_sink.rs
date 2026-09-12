@@ -230,8 +230,12 @@ impl RealtimeSentimentEvent {
 
     /// Serializes the event into a compact JSON string (<1KB).
     pub fn to_json_string(&self) -> Result<String, String> {
-        serde_json::to_string(self)
-            .map_err(|e| format!("Failed to serialize realtime sentiment event to JSON: {}", e))
+        serde_json::to_string(self).map_err(|e| {
+            format!(
+                "Failed to serialize realtime sentiment event to JSON: {}",
+                e
+            )
+        })
     }
 }
 
@@ -371,22 +375,14 @@ impl KafkaSink {
     ) -> Result<(), String> {
         let event = RealtimeSentimentEvent::from_components(doc, sentiment, signal_avail_ts_us);
         let payload = event.to_json_string()?;
-        let partition_key = doc
-            .primary_ticker
-            .clone()
-            .unwrap_or_else(|| doc.id.clone());
+        let partition_key = doc.primary_ticker.clone().unwrap_or_else(|| doc.id.clone());
 
         self.publish_raw(&self.config.realtime_topic, &partition_key, &payload)
             .await
     }
 
     /// Sends a payload to an arbitrary topic with backoff and retry handling.
-    pub async fn send_to_topic(
-        &self,
-        topic: &str,
-        key: &str,
-        payload: &str,
-    ) -> Result<(), String> {
+    pub async fn send_to_topic(&self, topic: &str, key: &str, payload: &str) -> Result<(), String> {
         self.publish_raw(topic, key, payload).await
     }
 
@@ -556,7 +552,10 @@ mod tests {
         assert_eq!(event.signal_available_ts_us, signal_ts);
 
         let json_str = event.to_json_string().expect("Serialization failed");
-        assert!(json_str.len() < 1024, "Realtime JSON should be compact and <1KB");
+        assert!(
+            json_str.len() < 1024,
+            "Realtime JSON should be compact and <1KB"
+        );
         assert!(json_str.contains("\"article_id\":\"doc-kafka-001\""));
         assert!(json_str.contains("\"ticker\":\"NVDA\""));
 
@@ -585,8 +584,13 @@ mod tests {
         let res1 = sink.send_event(&doc, &sentiment, signal_ts).await;
         assert!(res1.is_ok(), "Expected mock send_event to succeed");
 
-        let res2 = sink.publish_realtime_event(&doc, &sentiment, signal_ts).await;
-        assert!(res2.is_ok(), "Expected mock publish_realtime_event to succeed");
+        let res2 = sink
+            .publish_realtime_event(&doc, &sentiment, signal_ts)
+            .await;
+        assert!(
+            res2.is_ok(),
+            "Expected mock publish_realtime_event to succeed"
+        );
     }
 
     #[tokio::test]

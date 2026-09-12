@@ -159,9 +159,7 @@ pub mod language;
 pub use language::{LanguageDetectionQuery, LanguageDetectionResponse};
 
 pub mod model_card;
-pub use model_card::{
-    HardwareRequirements, LicensingInfo, ModelCardResponse, VersionHistoryItem,
-};
+pub use model_card::{HardwareRequirements, LicensingInfo, ModelCardResponse, VersionHistoryItem};
 
 pub mod alpha;
 pub use alpha::{
@@ -188,10 +186,6 @@ pub use provider_health::{ProviderHealthItem, ProviderHealthQuery, ProviderHealt
 
 pub mod model_validation;
 pub use model_validation::{
-    CalibrationPoint, ClassConfusion, ClassificationMetrics, ConfusionMatrix,
-    ModelValidationQuery, ModelValidationResponse, PerClassMetrics,
+    CalibrationPoint, ClassConfusion, ClassificationMetrics, ConfusionMatrix, ModelValidationQuery,
+    ModelValidationResponse, PerClassMetrics,
 };
-
-
-
-

@@ -86,7 +86,8 @@ impl SecUpdaterConfig {
 
         // 2. Environment variable overrides
         if let Ok(v) = std::env::var("ENABLE_SEC_UPDATER") {
-            cfg.enabled = v == "1" || v.eq_ignore_ascii_case("true") || v.eq_ignore_ascii_case("yes");
+            cfg.enabled =
+                v == "1" || v.eq_ignore_ascii_case("true") || v.eq_ignore_ascii_case("yes");
         }
         if let Ok(v) = std::env::var("UPDATE_INTERVAL_HOURS") {
             if let Ok(h) = v.trim().parse::<u64>() {
@@ -156,9 +157,13 @@ impl SecUpdaterConfig {
                         }
                         "snapshot_path" => self.snapshot_path = val.to_string(),
                         "ticker_history_path" => self.ticker_history_path = val.to_string(),
-                        "delisted_securities_path" => self.delisted_securities_path = val.to_string(),
+                        "delisted_securities_path" => {
+                            self.delisted_securities_path = val.to_string()
+                        }
                         "user_agent" => self.user_agent = val.to_string(),
-                        "api_server_reload_url" => self.api_server_reload_url = Some(val.to_string()),
+                        "api_server_reload_url" => {
+                            self.api_server_reload_url = Some(val.to_string())
+                        }
                         "mock" => self.mock = val == "true" || val == "1" || val == "yes",
                         _ => {}
                     }
@@ -262,7 +267,9 @@ pub struct UpdaterRunReport {
 // ─────────────────────────────────────────────────────────────────────────────
 
 /// Parses SEC company tickers JSON payload (supporting both indexed object and list formats).
-pub fn parse_sec_company_tickers_json(content: &str) -> Result<HashMap<String, SecTickerRecord>, String> {
+pub fn parse_sec_company_tickers_json(
+    content: &str,
+) -> Result<HashMap<String, SecTickerRecord>, String> {
     let root: serde_json::Value = serde_json::from_str(content).map_err(|e| e.to_string())?;
     let mut map = HashMap::new();
 
@@ -370,7 +377,10 @@ pub async fn fetch_sec_company_tickers(
         .map_err(|e| format!("Network request failed: {}", e))?;
 
     if !resp.status().is_success() {
-        return Err(format!("SEC EDGAR returned HTTP error status: {}", resp.status()));
+        return Err(format!(
+            "SEC EDGAR returned HTTP error status: {}",
+            resp.status()
+        ));
     }
 
     let text = resp
@@ -487,7 +497,10 @@ pub fn compute_ticker_diff(
     changes.sort_by(|a, b| a.cik.cmp(&b.cik));
     delistings.sort_by(|a, b| a.cik.cmp(&b.cik));
 
-    TickerDiff { changes, delistings }
+    TickerDiff {
+        changes,
+        delistings,
+    }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -504,11 +517,21 @@ pub fn atomic_write_json<T: Serialize>(target_path: &Path, data: &T) -> Result<(
         }
     }
 
-    let content = serde_json::to_string_pretty(data)
-        .map_err(|e| format!("Failed to serialize JSON for {}: {}", target_path.display(), e))?;
+    let content = serde_json::to_string_pretty(data).map_err(|e| {
+        format!(
+            "Failed to serialize JSON for {}: {}",
+            target_path.display(),
+            e
+        )
+    })?;
 
-    fs::write(&tmp_path, content.as_bytes())
-        .map_err(|e| format!("Failed to write temporary file {}: {}", tmp_path.display(), e))?;
+    fs::write(&tmp_path, content.as_bytes()).map_err(|e| {
+        format!(
+            "Failed to write temporary file {}: {}",
+            tmp_path.display(),
+            e
+        )
+    })?;
 
     fs::rename(&tmp_path, target_path).map_err(|e| {
         format!(
@@ -572,7 +595,9 @@ pub fn apply_ticker_changes(
 
                 // Close out previous open interval
                 for m in &mut entity.mappings {
-                    if m.ticker.eq_ignore_ascii_case(&change.old_ticker) && m.end_iso.as_str() >= "9000" {
+                    if m.ticker.eq_ignore_ascii_case(&change.old_ticker)
+                        && m.end_iso.as_str() >= "9000"
+                    {
                         m.end_iso = eff_iso.clone();
                     }
                 }
@@ -715,10 +740,7 @@ pub fn load_snapshot(snapshot_file: &Path) -> Result<HashMap<String, SecTickerRe
 }
 
 /// Notify running API server to reload Point-in-Time data into memory.
-pub async fn notify_api_server_reload(
-    reload_url: &str,
-    admin_token: &str,
-) -> Result<(), String> {
+pub async fn notify_api_server_reload(reload_url: &str, admin_token: &str) -> Result<(), String> {
     let client = Client::builder()
         .timeout(Duration::from_secs(5))
         .build()
@@ -733,7 +755,10 @@ pub async fn notify_api_server_reload(
         .map_err(|e| format!("Failed contacting reload endpoint: {}", e))?;
 
     if resp.status().is_success() {
-        info!("[SEC Updater] API Server PIT data reloaded successfully via {}", reload_url);
+        info!(
+            "[SEC Updater] API Server PIT data reloaded successfully via {}",
+            reload_url
+        );
         Ok(())
     } else {
         Err(format!(
@@ -778,7 +803,10 @@ pub async fn run_updater_cycle(config: &SecUpdaterConfig) -> Result<UpdaterRunRe
         match fetch_sec_company_tickers(&config.user_agent, None).await {
             Ok(map) => map,
             Err(err) => {
-                warn!("[SEC Updater] Live fetch failed ({}), falling back to mock generator", err);
+                warn!(
+                    "[SEC Updater] Live fetch failed ({}), falling back to mock generator",
+                    err
+                );
                 generate_mock_company_tickers()
             }
         }
@@ -810,10 +838,16 @@ pub async fn run_updater_cycle(config: &SecUpdaterConfig) -> Result<UpdaterRunRe
     let mut api_reloaded = false;
     if (history_updated > 0 || delisted_updated > 0) && config.api_server_reload_url.is_some() {
         if let Some(ref url) = config.api_server_reload_url {
-            let admin_token = config.admin_token.as_deref().unwrap_or("dev-admin-secret-change-in-production");
+            let admin_token = config
+                .admin_token
+                .as_deref()
+                .unwrap_or("dev-admin-secret-change-in-production");
             match notify_api_server_reload(url, admin_token).await {
                 Ok(_) => api_reloaded = true,
-                Err(e) => warn!("[SEC Updater] Notice on API reload: {} (Server may be offline)", e),
+                Err(e) => warn!(
+                    "[SEC Updater] Notice on API reload: {} (Server may be offline)",
+                    e
+                ),
             }
         }
     }

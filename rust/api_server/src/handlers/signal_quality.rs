@@ -18,13 +18,7 @@ use crate::models::{
 use crate::sector::GLOBAL_SECTOR_MAP;
 use crate::storage::QuestDbClient;
 
-pub const ALLOWED_SIGNAL_TYPES: &[&str] = &[
-    "sentiment",
-    "spillover",
-    "gex",
-    "insider",
-    "event",
-];
+pub const ALLOWED_SIGNAL_TYPES: &[&str] = &["sentiment", "spillover", "gex", "insider", "event"];
 
 pub const DECAY_HORIZONS: &[u32] = &[1, 2, 3, 5, 10, 20];
 
@@ -252,7 +246,8 @@ fn compute_signal_quality_report(
             let cap_proxy = p_cur * volume_proxy;
 
             // Ingestion latency in ms (mean ~380ms, spikes to 950ms)
-            let latency_ms = 220.0 + ((hash_val + day_idx * 31) % 400) as f64 + (phase.sin().abs() * 300.0);
+            let latency_ms =
+                220.0 + ((hash_val + day_idx * 31) % 400) as f64 + (phase.sin().abs() * 300.0);
             all_latencies.push(latency_ms);
 
             // Record observation
@@ -420,10 +415,7 @@ fn compute_signal_quality_report(
     }
 
     // 5. Half-Life Calculation
-    let ic_1 = decay_curve
-        .first()
-        .map(|p| p.ic)
-        .unwrap_or(0.05);
+    let ic_1 = decay_curve.first().map(|p| p.ic).unwrap_or(0.05);
 
     let half_life_days = if ic_1 > 0.001 {
         // Fit exponential decay or find horizon where IC drops below ic_1 / 2
@@ -434,7 +426,8 @@ fn compute_signal_quality_report(
             let p2 = &decay_curve[i + 1];
             if p1.ic >= target_ic && p2.ic <= target_ic && (p1.ic - p2.ic).abs() > 1e-6 {
                 let frac = (p1.ic - target_ic) / (p1.ic - p2.ic);
-                let hl = (p1.horizon_days as f64) + frac * ((p2.horizon_days - p1.horizon_days) as f64);
+                let hl =
+                    (p1.horizon_days as f64) + frac * ((p2.horizon_days - p1.horizon_days) as f64);
                 found_hl = Some((hl * 10.0).round() / 10.0);
                 break;
             }
@@ -694,4 +687,3 @@ mod tests {
         assert_eq!(compute_icir(&ics), None);
     }
 }
-

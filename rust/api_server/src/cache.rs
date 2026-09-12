@@ -6,11 +6,11 @@
 //! over `DashMap` to prevent unbounded heap memory growth, mitigate potential
 //! memory leaks, and guarantee system stability in continuous production deployments.
 
+use dashmap::DashMap;
 use std::env;
 use std::hash::Hash;
 use std::sync::Arc;
 use std::time::{Duration, Instant};
-use dashmap::DashMap;
 use tracing::debug;
 
 /// Global configuration settings for in-memory cache governance.
@@ -40,7 +40,8 @@ impl CacheConfig {
         let mut cfg = Self::default();
 
         // 1. Parse YAML config if present
-        let config_path = env::var("CONFIG_PATH").unwrap_or_else(|_| "config/config.yaml".to_string());
+        let config_path =
+            env::var("CONFIG_PATH").unwrap_or_else(|_| "config/config.yaml".to_string());
         if let Ok(contents) = std::fs::read_to_string(&config_path) {
             let mut in_cache = false;
             for line in contents.lines() {
@@ -49,7 +50,11 @@ impl CacheConfig {
                     in_cache = true;
                     continue;
                 }
-                if in_cache && !line.starts_with(' ') && !line.starts_with('\t') && !trimmed.is_empty() {
+                if in_cache
+                    && !line.starts_with(' ')
+                    && !line.starts_with('\t')
+                    && !trimmed.is_empty()
+                {
                     break;
                 }
                 if in_cache {
@@ -314,7 +319,10 @@ mod tests {
     fn test_ttl_cache_expiration() {
         let cache: TtlCache<String, String> = TtlCache::new(Duration::from_millis(50), 100);
         cache.insert("session_1".to_string(), "active".to_string());
-        assert_eq!(cache.get(&"session_1".to_string()), Some("active".to_string()));
+        assert_eq!(
+            cache.get(&"session_1".to_string()),
+            Some("active".to_string())
+        );
 
         sleep(Duration::from_millis(70));
         // Lazy expiration on get()
@@ -377,11 +385,13 @@ mod tests {
     #[test]
     fn test_ttl_cache_get_or_insert_with() {
         let cache: TtlCache<String, String> = TtlCache::with_ttl_secs(60, 100);
-        let val1 = cache.get_or_insert_with("user_123".to_string(), || "computed_value".to_string());
+        let val1 =
+            cache.get_or_insert_with("user_123".to_string(), || "computed_value".to_string());
         assert_eq!(val1, "computed_value");
 
         // Second call should return cached value without invoking generator
-        let val2 = cache.get_or_insert_with("user_123".to_string(), || "should_not_run".to_string());
+        let val2 =
+            cache.get_or_insert_with("user_123".to_string(), || "should_not_run".to_string());
         assert_eq!(val2, "computed_value");
     }
 

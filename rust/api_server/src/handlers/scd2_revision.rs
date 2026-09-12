@@ -65,7 +65,10 @@ pub async fn post_sentiment_revision_handler(
     };
 
     // 2. Validate sentiment score in [-1.0, 1.0]
-    if payload.sentiment_score < -1.0 || payload.sentiment_score > 1.0 || payload.sentiment_score.is_nan() {
+    if payload.sentiment_score < -1.0
+        || payload.sentiment_score > 1.0
+        || payload.sentiment_score.is_nan()
+    {
         return (
             StatusCode::BAD_REQUEST,
             Json(AuthErrorResponse {

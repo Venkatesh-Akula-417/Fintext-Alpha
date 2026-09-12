@@ -282,7 +282,9 @@ pub struct PITReplayResponse {
     pub model_generated_at: String,
 
     /// Diagnostic and status message.
-    #[schema(example = "Point-in-time historical state successfully reconstructed for AAPL as of 2025-06-15T14:30:00Z")]
+    #[schema(
+        example = "Point-in-time historical state successfully reconstructed for AAPL as of 2025-06-15T14:30:00Z"
+    )]
     pub message: String,
 }
 
@@ -449,7 +451,9 @@ pub struct PITCertificateResponse {
 
     /// Archive object storage key for cryptographic audit proof (null if archival disabled).
     #[serde(skip_serializing_if = "Option::is_none")]
-    #[schema(example = "data/pit-cert-archive/pit-cert-2.1.0-all-2025-06-01-2025-08-31-0123456789abcdef.json")]
+    #[schema(
+        example = "data/pit-cert-archive/pit-cert-2.1.0-all-2025-06-01-2025-08-31-0123456789abcdef.json"
+    )]
     pub archive_object_key: Option<String>,
 
     /// Timestamp when cryptographic proof was archived (ISO-8601 UTC, null if archival disabled).

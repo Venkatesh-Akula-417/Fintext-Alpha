@@ -63,8 +63,8 @@ impl Default for QuestDbBufferConfig {
             .unwrap_or_else(|_| "sentiment-questdb-buffer".to_string());
         let consumer_group_id = env::var("KAFKA_CONSUMER_GROUP_ID")
             .unwrap_or_else(|_| "fintext-questdb-recovery".to_string());
-        let bootstrap_servers = env::var("KAFKA_BOOTSTRAP_SERVERS")
-            .unwrap_or_else(|_| "localhost:9092".to_string());
+        let bootstrap_servers =
+            env::var("KAFKA_BOOTSTRAP_SERVERS").unwrap_or_else(|_| "localhost:9092".to_string());
         let max_retry_attempts = env::var("QUESTDB_WRITE_RETRY_MAX_ATTEMPTS")
             .ok()
             .and_then(|v| v.parse::<usize>().ok())
@@ -146,8 +146,7 @@ impl QuestDbBufferMessage {
     }
 
     pub fn from_json_str(s: &str) -> Result<Self, String> {
-        serde_json::from_str(s)
-            .map_err(|e| format!("Failed to deserialize buffer message: {}", e))
+        serde_json::from_str(s).map_err(|e| format!("Failed to deserialize buffer message: {}", e))
     }
 }
 
@@ -316,7 +315,10 @@ impl QuestDbBufferProducer {
             .key(&msg.ticker)
             .payload(&payload);
 
-        match producer.send(record, Timeout::After(Duration::from_millis(5000))).await {
+        match producer
+            .send(record, Timeout::After(Duration::from_millis(5000)))
+            .await
+        {
             Ok(_) => {
                 debug!(
                     "[QuestDB Buffer Producer] Buffered event for ticker='{}' -> topic='{}'",
@@ -338,7 +340,9 @@ pub fn calculate_buffer_backoff(attempt: usize, base_delay_ms: u64, max_delay_ms
     if attempt == 0 {
         return Duration::from_millis(base_delay_ms);
     }
-    let factor = 1u64.checked_shl((attempt.saturating_sub(1)) as u32).unwrap_or(u64::MAX);
+    let factor = 1u64
+        .checked_shl((attempt.saturating_sub(1)) as u32)
+        .unwrap_or(u64::MAX);
     let delay_ms = base_delay_ms.saturating_mul(factor).min(max_delay_ms);
     Duration::from_millis(delay_ms)
 }
@@ -454,13 +458,13 @@ impl QuestDbBufferConsumer {
                     );
 
                     if attempt >= self.config.max_retry_attempts {
-                        let quarantine_res = quarantine_failed_message(
-                            &self.config.quarantine_dir,
-                            msg,
-                            &err,
-                        );
+                        let quarantine_res =
+                            quarantine_failed_message(&self.config.quarantine_dir, msg, &err);
                         if let Err(q_err) = quarantine_res {
-                            error!("[QuestDB Buffer Consumer] Quarantine write failed: {}", q_err);
+                            error!(
+                                "[QuestDB Buffer Consumer] Quarantine write failed: {}",
+                                q_err
+                            );
                         }
                         return Err(format!(
                             "Max retries ({}) exceeded. Message quarantined.",
@@ -521,10 +525,7 @@ impl QuestDbBufferConsumer {
     }
 
     /// Runs the asynchronous consumer drain loop.
-    pub async fn run_drain_loop(
-        &self,
-        shutdown_rx: tokio::sync::watch::Receiver<bool>,
-    ) {
+    pub async fn run_drain_loop(&self, shutdown_rx: tokio::sync::watch::Receiver<bool>) {
         info!(
             "[QuestDB Buffer Consumer] Starting recovery consumer loop for topic='{}' (group_id='{}')",
             self.config.topic, self.config.consumer_group_id
@@ -580,8 +581,8 @@ impl QuestDbBufferConsumer {
                         match QuestDbBufferMessage::from_json_str(&payload_str) {
                             Ok(mut buffer_msg) => {
                                 let _ = self.drain_message(&mut buffer_msg).await;
-                                if let Err(commit_err) =
-                                    consumer.commit_message(&m, rdkafka::consumer::CommitMode::Async)
+                                if let Err(commit_err) = consumer
+                                    .commit_message(&m, rdkafka::consumer::CommitMode::Async)
                                 {
                                     warn!(
                                         "[QuestDB Buffer Consumer] Offset commit warning: {}",
@@ -666,9 +667,18 @@ mod tests {
         let ilp_2 = "sentiment_news,ticker=NVDA sentiment_score=0.88 1787668201000000000";
         let ilp_3 = "sentiment_news,ticker=MSFT sentiment_score=0.45 1787668202000000000";
 
-        producer.push_raw_ilp("AAPL", ilp_1, 1787668200000).await.unwrap();
-        producer.push_raw_ilp("NVDA", ilp_2, 1787668201000).await.unwrap();
-        producer.push_raw_ilp("MSFT", ilp_3, 1787668202000).await.unwrap();
+        producer
+            .push_raw_ilp("AAPL", ilp_1, 1787668200000)
+            .await
+            .unwrap();
+        producer
+            .push_raw_ilp("NVDA", ilp_2, 1787668201000)
+            .await
+            .unwrap();
+        producer
+            .push_raw_ilp("MSFT", ilp_3, 1787668202000)
+            .await
+            .unwrap();
 
         assert_eq!(queue.lock().await.len(), 3);
 
@@ -686,10 +696,24 @@ mod tests {
         let queue = Arc::new(Mutex::new(VecDeque::new()));
 
         let producer = QuestDbBufferProducer::new_mock(config.clone(), queue.clone());
-        
+
         // Push 2 messages to buffer
-        producer.push_raw_ilp("AAPL", "sentiment_news,ticker=AAPL sentiment_score=0.9 1787668200000000000", 1787668200000).await.unwrap();
-        producer.push_raw_ilp("GOOGL", "sentiment_news,ticker=GOOGL sentiment_score=0.6 1787668201000000000", 1787668201000).await.unwrap();
+        producer
+            .push_raw_ilp(
+                "AAPL",
+                "sentiment_news,ticker=AAPL sentiment_score=0.9 1787668200000000000",
+                1787668200000,
+            )
+            .await
+            .unwrap();
+        producer
+            .push_raw_ilp(
+                "GOOGL",
+                "sentiment_news,ticker=GOOGL sentiment_score=0.6 1787668201000000000",
+                1787668201000,
+            )
+            .await
+            .unwrap();
 
         assert_eq!(queue.lock().await.len(), 2);
 

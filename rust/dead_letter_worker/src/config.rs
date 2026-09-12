@@ -54,8 +54,8 @@ impl DlqConfig {
     pub fn from_env() -> Self {
         let defaults = Self::default();
 
-        let kafka_bootstrap_servers = env::var("KAFKA_BOOTSTRAP_SERVERS")
-            .unwrap_or(defaults.kafka_bootstrap_servers);
+        let kafka_bootstrap_servers =
+            env::var("KAFKA_BOOTSTRAP_SERVERS").unwrap_or(defaults.kafka_bootstrap_servers);
         let dlq_topic = env::var("KAFKA_DLQ_TOPIC")
             .or_else(|_| env::var("DLQ_TOPIC"))
             .unwrap_or(defaults.dlq_topic);
@@ -90,7 +90,9 @@ impl DlqConfig {
 
         let mock_mode = env::var("KAFKA_MOCK_FALLBACK").as_deref() == Ok("1")
             || env::var("KAFKA_MOCK_MODE").as_deref() == Ok("1")
-            || env::var("DLQ_MOCK_MODE").map(|v| v == "1" || v.eq_ignore_ascii_case("true")).unwrap_or(false);
+            || env::var("DLQ_MOCK_MODE")
+                .map(|v| v == "1" || v.eq_ignore_ascii_case("true"))
+                .unwrap_or(false);
 
         let concurrency_limit = env::var("DLQ_CONCURRENCY_LIMIT")
             .ok()

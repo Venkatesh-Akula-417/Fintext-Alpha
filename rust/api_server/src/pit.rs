@@ -506,7 +506,10 @@ impl PITData {
         let new_snapshot = PITDataSnapshot::load_from_dir(dir);
         let mut guard = self.inner.write().map_err(|e| e.to_string())?;
         *guard = Arc::new(new_snapshot);
-        info!("[PIT Engine] Point-in-Time cache reloaded successfully from {}", dir.display());
+        info!(
+            "[PIT Engine] Point-in-Time cache reloaded successfully from {}",
+            dir.display()
+        );
         Ok(())
     }
 
@@ -565,12 +568,18 @@ impl PITData {
         start_date: NaiveDate,
         end_date: NaiveDate,
     ) -> Option<(NaiveDate, NaiveDate)> {
-        self.inner.read().unwrap().clamp_query_range(ticker, start_date, end_date)
+        self.inner
+            .read()
+            .unwrap()
+            .clamp_query_range(ticker, start_date, end_date)
     }
 
     /// Filter a slice of tickers, retaining only those that were valid on `date`.
     pub fn filter_universe_by_date(&self, tickers: &[String], date: NaiveDate) -> Vec<String> {
-        self.inner.read().unwrap().filter_universe_by_date(tickers, date)
+        self.inner
+            .read()
+            .unwrap()
+            .filter_universe_by_date(tickers, date)
     }
 
     /// Check if a ticker was a constituent of the S&P 500 index on a specific date.
@@ -668,8 +677,10 @@ mod tests {
         // Delisted: TWTR on 2022-10-28, SIVB on 2023-03-28
         let twtr_delist = NaiveDate::from_ymd_opt(2022, 10, 28).unwrap();
         let sivb_delist = NaiveDate::from_ymd_opt(2023, 3, 28).unwrap();
-        snap.delisted_tickers.insert("TWTR".to_string(), twtr_delist);
-        snap.delisted_tickers.insert("SIVB".to_string(), sivb_delist);
+        snap.delisted_tickers
+            .insert("TWTR".to_string(), twtr_delist);
+        snap.delisted_tickers
+            .insert("SIVB".to_string(), sivb_delist);
 
         snap.delisted_details.insert(
             "TWTR".to_string(),
