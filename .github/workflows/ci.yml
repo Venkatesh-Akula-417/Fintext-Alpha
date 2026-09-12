@@ -66,26 +66,21 @@ jobs:
           if (Test-Path requirements.txt) {
             pip install -r requirements.txt
           }
-          pip install pytest pytest-asyncio httpx pydantic python-dotenv requests websockets pyyaml clang
+          pip install pytest pytest-asyncio httpx pydantic python-dotenv requests websockets pyyaml libclang
           if (Test-Path python_sdk/pyproject.toml) {
             pip install -e python_sdk
           }
 
       - name: Configure LIBCLANG_PATH for Native Bindgen
-        shell: powershell
+        shell: pwsh
         run: |
-          $clangPath = "$((Get-Item .\venv\Lib\site-packages\clang\native).FullName)"
-          if (Test-Path "$clangPath\libclang.dll") {
-            Write-Host "Configuring LIBCLANG_PATH to: $clangPath"
-            echo "LIBCLANG_PATH=$clangPath" >> $env:GITHUB_ENV
+          $clangNative = Join-Path $PWD "venv\Lib\site-packages\clang\native"
+          if (Test-Path $clangNative) {
+            $clangPath = (Get-Item $clangNative).FullName
+            "LIBCLANG_PATH=$clangPath" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+            Write-Host "LIBCLANG_PATH set to $clangPath"
           } else {
-            Write-Host "Warning: libclang.dll not found in venv, searching system..."
-            $sysClang = Get-ChildItem -Path "C:\Program Files" -Filter "libclang.dll" -Recurse -ErrorAction SilentlyContinue | Select-Object -First 1
-            if ($sysClang) {
-              $dir = $sysClang.DirectoryName
-              Write-Host "Found system libclang at: $dir"
-              echo "LIBCLANG_PATH=$dir" >> $env:GITHUB_ENV
-            }
+            Write-Host "::warning::libclang native directory not found at $clangNative; LIBCLANG_PATH not set. Downstream bindgen steps may fail if libclang is required."
           }
 
       - name: Check Rust Code Formatting
