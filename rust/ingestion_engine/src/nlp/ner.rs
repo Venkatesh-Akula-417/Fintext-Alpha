@@ -536,8 +536,32 @@ pub mod tests {
             .try_init();
     }
 
+    /// Returns true if every provided path exists on disk.
+    fn model_assets_present(paths: &[&std::path::Path]) -> bool {
+        paths.iter().all(|p| p.exists())
+    }
+
+    fn check_ner_assets() -> (PathBuf, PathBuf) {
+        match find_ner_assets() {
+            Ok(p) => p,
+            Err(_) => (
+                PathBuf::from("models/ner/model_static.onnx"),
+                PathBuf::from("models/ner/tokenizer.json"),
+            ),
+        }
+    }
+
     #[test]
     fn test_ner_entity_extraction_sample() {
+        let (m, t) = check_ner_assets();
+        if !model_assets_present(&[m.as_path(), t.as_path()]) {
+            eprintln!(
+                "SKIP: required model assets not present: {:?}. Set MODEL_DIR or run locally with assets.",
+                &[m.as_path(), t.as_path()]
+            );
+            return;
+        }
+
         init_test_tracing();
         let text = "Apple Inc. is based in Cupertino, California.";
         let res = extract_entities(text);
@@ -565,6 +589,15 @@ pub mod tests {
 
     #[test]
     fn test_ner_empty_text_returns_empty_vec() {
+        let (m, t) = check_ner_assets();
+        if !model_assets_present(&[m.as_path(), t.as_path()]) {
+            eprintln!(
+                "SKIP: required model assets not present: {:?}. Set MODEL_DIR or run locally with assets.",
+                &[m.as_path(), t.as_path()]
+            );
+            return;
+        }
+
         init_test_tracing();
         let res = extract_entities("   ");
         assert!(res.is_ok());
@@ -573,6 +606,15 @@ pub mod tests {
 
     #[test]
     fn test_ner_benchmark_latency() {
+        let (m, t) = check_ner_assets();
+        if !model_assets_present(&[m.as_path(), t.as_path()]) {
+            eprintln!(
+                "SKIP: required model assets not present: {:?}. Set MODEL_DIR or run locally with assets.",
+                &[m.as_path(), t.as_path()]
+            );
+            return;
+        }
+
         init_test_tracing();
         let (model_path, tokenizer_path) = find_ner_assets().expect("NER assets must be present");
         let pipeline = OnnxNerPipeline::load_from_paths(&model_path, &tokenizer_path)

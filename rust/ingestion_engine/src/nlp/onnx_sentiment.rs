@@ -1054,8 +1054,32 @@ pub mod tests {
             .try_init();
     }
 
+    /// Returns true if every provided path exists on disk.
+    fn model_assets_present(paths: &[&std::path::Path]) -> bool {
+        paths.iter().all(|p| p.exists())
+    }
+
+    fn check_finbert_assets() -> (PathBuf, PathBuf) {
+        match find_finbert_assets() {
+            Ok(p) => p,
+            Err(_) => (
+                PathBuf::from("models/finbert-finetuned/model_static.onnx"),
+                PathBuf::from("models/finbert-finetuned/tokenizer.json"),
+            ),
+        }
+    }
+
     #[test]
     fn test_onnx_sentiment_positive() {
+        let (m, t) = check_finbert_assets();
+        if !model_assets_present(&[m.as_path(), t.as_path()]) {
+            eprintln!(
+                "SKIP: required model assets not present: {:?}. Set MODEL_DIR or run locally with assets.",
+                &[m.as_path(), t.as_path()]
+            );
+            return;
+        }
+
         init_test_tracing();
         let output = compute_sentiment_onnx(
             "Apple reported record quarterly revenue and raised dividend guidance.",
@@ -1069,6 +1093,15 @@ pub mod tests {
 
     #[test]
     fn test_onnx_sentiment_negative() {
+        let (m, t) = check_finbert_assets();
+        if !model_assets_present(&[m.as_path(), t.as_path()]) {
+            eprintln!(
+                "SKIP: required model assets not present: {:?}. Set MODEL_DIR or run locally with assets.",
+                &[m.as_path(), t.as_path()]
+            );
+            return;
+        }
+
         init_test_tracing();
         let output = compute_sentiment_onnx("Company files for Chapter 11 bankruptcy as revenue collapses amid massive debt crisis.");
         assert!(output.is_ok(), "Failed ONNX inference: {:?}", output);
@@ -1087,6 +1120,15 @@ pub mod tests {
 
     #[test]
     fn test_onnx_execution_provider_registered() {
+        let (m, t) = check_finbert_assets();
+        if !model_assets_present(&[m.as_path(), t.as_path()]) {
+            eprintln!(
+                "SKIP: required model assets not present: {:?}. Set MODEL_DIR or run locally with assets.",
+                &[m.as_path(), t.as_path()]
+            );
+            return;
+        }
+
         init_test_tracing();
         let (model_path, tokenizer_path) = find_finbert_assets().expect("Assets must be present");
         let pipeline = OnnxSentimentPipeline::load_from_paths(&model_path, &tokenizer_path)
@@ -1135,6 +1177,15 @@ pub mod tests {
 
     #[test]
     fn test_onnx_sentiment_benchmark_latency() {
+        let (m, t) = check_finbert_assets();
+        if !model_assets_present(&[m.as_path(), t.as_path()]) {
+            eprintln!(
+                "SKIP: required model assets not present: {:?}. Set MODEL_DIR or run locally with assets.",
+                &[m.as_path(), t.as_path()]
+            );
+            return;
+        }
+
         init_test_tracing();
 
         let (model_path, tokenizer_path) = find_finbert_assets().expect("Assets must be present");
@@ -1190,6 +1241,15 @@ pub mod tests {
 
     #[test]
     fn test_onnx_sentiment_sliding_window_long_text() {
+        let (m, t) = check_finbert_assets();
+        if !model_assets_present(&[m.as_path(), t.as_path()]) {
+            eprintln!(
+                "SKIP: required model assets not present: {:?}. Set MODEL_DIR or run locally with assets.",
+                &[m.as_path(), t.as_path()]
+            );
+            return;
+        }
+
         init_test_tracing();
 
         // Synthetic long financial filing text (>600 tokens to ensure chunking triggers on both 32-token and 512-token models)
@@ -1252,6 +1312,15 @@ pub mod tests {
 
     #[test]
     fn test_onnx_sentiment_short_text_no_chunking() {
+        let (m, t) = check_finbert_assets();
+        if !model_assets_present(&[m.as_path(), t.as_path()]) {
+            eprintln!(
+                "SKIP: required model assets not present: {:?}. Set MODEL_DIR or run locally with assets.",
+                &[m.as_path(), t.as_path()]
+            );
+            return;
+        }
+
         init_test_tracing();
 
         let short_text = "NVIDIA beats earnings.";
@@ -1275,6 +1344,15 @@ pub mod tests {
 
     #[test]
     fn test_finbert_confidence_and_structure() {
+        let (m, t) = check_finbert_assets();
+        if !model_assets_present(&[m.as_path(), t.as_path()]) {
+            eprintln!(
+                "SKIP: required model assets not present: {:?}. Set MODEL_DIR or run locally with assets.",
+                &[m.as_path(), t.as_path()]
+            );
+            return;
+        }
+
         init_test_tracing();
         let output = compute_sentiment_onnx(
             "Apple reported record quarterly revenue and raised dividend guidance.",
