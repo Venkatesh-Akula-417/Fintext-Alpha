@@ -33,6 +33,9 @@ dist/
 # Ignore specific large data directories
 **/data/
 data/
+# Do not ignore Rust source directories that are named "data"
+!rust/ingestion_engine/src/data/
+!rust/ingestion_engine/src/data/**
 **/logs/
 logs/
 **/scratch/

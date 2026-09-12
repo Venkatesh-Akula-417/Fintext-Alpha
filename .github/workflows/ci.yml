@@ -39,10 +39,12 @@ jobs:
       - name: Checkout Source Code
         uses: actions/checkout@v4
 
-      - name: Set up Rust Toolchain (Pinned 1.80.1)
+      # Toolchain version is defined in rust-toolchain.toml (channel = "stable").
+      # Keeping CI on the same channel prevents rustfmt drift between local and CI.
+      - name: Set up Rust Toolchain (From rust-toolchain.toml)
         uses: dtolnay/rust-toolchain@master
         with:
-          toolchain: 1.80.1
+          toolchain: stable
           components: rustfmt, clippy
 
 
