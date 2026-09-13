@@ -36,6 +36,12 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements-model-validation.txt
 
+      - name: Fetch Model Assets (Optional)
+        if: always()
+        continue-on-error: true
+        run: |
+          python scripts/fetch_models.py --manifest config/models_manifest.json
+
       - name: Check model presence
         id: check-model
         run: |

@@ -1,0 +1,33 @@
+{
+  "version": "1.0.0",
+  "description": "FinText model asset distribution manifest. Populate 'url' and 'sha256' fields to enable CI fetching. Leave null to fall back to local SKIP mode.",
+  "assets": [
+    {
+      "id": "finbert-finetuned",
+      "target_dir": "models/finbert-finetuned",
+      "required_files": ["model.onnx", "tokenizer.json", "config.json"],
+      "url": null,
+      "sha256": null,
+      "archive_format": "none",
+      "size_mb": 110
+    },
+    {
+      "id": "ner",
+      "target_dir": "models/ner",
+      "required_files": ["model_static.onnx", "tokenizer.json"],
+      "url": null,
+      "sha256": null,
+      "archive_format": "none",
+      "size_mb": 30
+    },
+    {
+      "id": "minilm_seq32",
+      "target_dir": "models/minilm_seq32",
+      "required_files": ["model_static.onnx", "tokenizer.json"],
+      "url": null,
+      "sha256": null,
+      "archive_format": "none",
+      "size_mb": 15
+    }
+  ]
+}

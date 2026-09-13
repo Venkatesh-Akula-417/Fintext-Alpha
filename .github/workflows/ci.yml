@@ -76,6 +76,12 @@ jobs:
             pip install -e python_sdk
           }
 
+      - name: Fetch Model Assets (Optional)
+        if: always()
+        continue-on-error: true
+        run: |
+          python scripts/fetch_models.py --manifest config/models_manifest.json
+
       - name: Configure LIBCLANG_PATH for Native Bindgen
         shell: pwsh
         run: |
