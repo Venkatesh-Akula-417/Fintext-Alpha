@@ -6,12 +6,12 @@
       "id": "finbert-finetuned",
       "target_dir": "models/finbert-finetuned",
       "required_files": [
-        "model.onnx",
+        "finbert.onnx",
         "tokenizer.json",
         "config.json"
       ],
       "url": "https://github.com/VENKATESH-A-rgb/FinText-Alpha-Vectorizer/releases/download/models-v1.0.0/finbert-finetuned-v1.0.0.zip",
-      "sha256": "a20c928588f1edb03f077b9554e37b3fefe5858f19a111b1364bcaae4ebb7020",
+      "sha256": "182788c0e554ac3891e88b09f98c6b92ab6cd85f5b1c7c039b1d561049b86d33",
       "archive_format": "zip",
       "size_mb": 89
     },
