@@ -39,6 +39,12 @@ jobs:
         run: |
           python scripts/fetch_models.py --manifest config/models_manifest.json
 
+      - name: Diagnostic — Print Runtime Versions
+        run: |
+          python -c "import onnxruntime; print('ORT_VERSION:', onnxruntime.__version__); print('AVAILABLE_PROVIDERS:', onnxruntime.get_available_providers())"
+          python -c "import numpy; print('NUMPY_VERSION:', numpy.__version__)"
+          python -c "import transformers; print('TRANSFORMERS_VERSION:', transformers.__version__)"
+
       - name: Check model presence
         id: check-model
         run: |
