@@ -905,7 +905,10 @@ fn find_finbert_assets() -> Result<(PathBuf, PathBuf), String> {
         }
     }
 
-    Err("Could not locate models/finbert-finetuned or models/finbert assets in workspace.".to_string())
+    Err(
+        "Could not locate models/finbert-finetuned or models/finbert assets in workspace."
+            .to_string(),
+    )
 }
 
 /// Compute sentiment using the native in-process ONNX Runtime pipeline.
