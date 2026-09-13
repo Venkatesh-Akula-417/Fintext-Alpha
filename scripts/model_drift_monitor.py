@@ -35,6 +35,13 @@ PROJECT_ROOT = Path(__file__).resolve().parent.parent
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
+from scripts.model_drift.alerts import (
+    DriftAlert,
+    append_alert_log,
+    dispatch_alerts,
+    format_alert,
+    post_webhook,
+)
 from scripts.model_drift.baseline import load_baseline, save_baseline
 from scripts.model_drift.drift import DriftThresholds, compute_drift
 from scripts.model_drift.report import (
@@ -113,6 +120,21 @@ def parse_args():
         type=float,
         default=60.0,
         help="Critical threshold for P95 latency percentage increase vs baseline (default: 60.0%%).",
+    )
+    parser.add_argument(
+        "--alert-log",
+        default="data/model-drift/alerts.jsonl",
+        help="Path to JSONL alert log (default: data/model-drift/alerts.jsonl).",
+    )
+    parser.add_argument(
+        "--webhook-url",
+        default=None,
+        help="Optional webhook URL for CRITICAL alerts",
+    )
+    parser.add_argument(
+        "--webhook-on-warn",
+        action="store_true",
+        help="Also fire webhook on WARN severity",
     )
     return parser.parse_args()
 
@@ -368,6 +390,23 @@ def main():
     print(f"  Overall Drift Verdict     : {status}")
     print(f"  JSON Audit Report         : {json_path}")
     print(f"  Markdown Audit Report     : {md_path}")
+
+    if status in ("OK", "WARN", "CRITICAL"):
+        alert = format_alert(drift_results, {"git_commit_sha": run_metadata.get("git_commit_sha", "UNKNOWN")})
+        alert = dispatch_alerts(
+            alert=alert,
+            alert_log_path=Path(args.alert_log) if args.alert_log else None,
+            webhook_url=args.webhook_url,
+            webhook_on_warn=args.webhook_on_warn,
+        )
+        print(f"  Alert Log                 : {args.alert_log}")
+        if alert.webhook_status == "sent":
+            print("  Webhook                   : delivered")
+        elif alert.webhook_status == "failed":
+            print(f"  Webhook                   : FAILED — {alert.webhook_error}")
+        elif alert.webhook_status == "skipped":
+            print("  Webhook                   : skipped")
+
     print("=" * 82)
 
     if status == "CRITICAL":

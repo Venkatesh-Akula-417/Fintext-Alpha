@@ -78,5 +78,6 @@ jobs:
           name: model-drift-report
           path: |
             data/model-drift/*.json
+            data/model-drift/*.jsonl
             docs/MODEL_DRIFT_REPORT.md
           if-no-files-found: warn
