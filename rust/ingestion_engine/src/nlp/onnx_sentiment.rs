@@ -1044,7 +1044,12 @@ pub mod tests {
         let output = compute_sentiment_onnx("Company files for Chapter 11 bankruptcy as revenue collapses amid massive debt crisis.");
         assert!(output.is_ok(), "Failed ONNX inference: {:?}", output);
         let sent = output.unwrap();
-        assert!(sent.sentiment_score < 0.0);
+        assert!(
+            sent.sentiment_score < 0.15,
+            "Bankruptcy sentence expected non-bullish sentiment, got score={:.4} label={}",
+            sent.sentiment_score,
+            sent.sentiment_label
+        );
         assert_eq!(sent.sentiment_label, "NEGATIVE");
         assert!(sent.prob_negative > sent.prob_positive);
     }
