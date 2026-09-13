@@ -5,29 +5,27 @@
     {
       "id": "finbert-finetuned",
       "target_dir": "models/finbert-finetuned",
-      "required_files": ["model.onnx", "tokenizer.json", "config.json"],
-      "url": null,
-      "sha256": null,
-      "archive_format": "none",
-      "size_mb": 110
+      "required_files": [
+        "model.onnx",
+        "tokenizer.json",
+        "config.json"
+      ],
+      "url": "https://github.com/VENKATESH-A-rgb/FinText-Alpha-Vectorizer/releases/download/models-v1.0.0/finbert-finetuned-v1.0.0.zip",
+      "sha256": "a20c928588f1edb03f077b9554e37b3fefe5858f19a111b1364bcaae4ebb7020",
+      "archive_format": "zip",
+      "size_mb": 89
     },
     {
       "id": "ner",
       "target_dir": "models/ner",
-      "required_files": ["model_static.onnx", "tokenizer.json"],
-      "url": null,
-      "sha256": null,
-      "archive_format": "none",
-      "size_mb": 30
-    },
-    {
-      "id": "minilm_seq32",
-      "target_dir": "models/minilm_seq32",
-      "required_files": ["model_static.onnx", "tokenizer.json"],
-      "url": null,
-      "sha256": null,
-      "archive_format": "none",
-      "size_mb": 15
+      "required_files": [
+        "model_static.onnx",
+        "tokenizer.json"
+      ],
+      "url": "https://github.com/VENKATESH-A-rgb/FinText-Alpha-Vectorizer/releases/download/models-v1.0.0/ner-v1.0.0.zip",
+      "sha256": "d6ff862b8b2ae293bea50b3dd0058d0facf7d9e154f94ad7619a92e940f9bbdc",
+      "archive_format": "zip",
+      "size_mb": 380
     }
   ]
 }

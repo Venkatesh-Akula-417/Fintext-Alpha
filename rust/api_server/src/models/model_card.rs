@@ -48,19 +48,19 @@ pub struct LicensingInfo {
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, ToSchema)]
 pub struct ModelCardResponse {
     /// Canonical model identifier
-    #[schema(example = "fintext-sentiment-minilm-l6-v2")]
+    #[schema(example = "fintext-sentiment-finbert")]
     pub model_id: String,
     /// Human-readable model title and task description
-    #[schema(example = "MiniLM-L6-v2 Fine-Tuned for Financial Sentiment")]
+    #[schema(example = "FinBERT (ProsusAI) Fine-Tuned for Financial Sentiment")]
     pub model_name: String,
     /// Neural network architecture family
-    #[schema(example = "transformer_encoder")]
+    #[schema(example = "bert")]
     pub architecture: String,
     /// Upstream foundation model checkpoint
-    #[schema(example = "sentence-transformers/all-MiniLM-L6-v2")]
+    #[schema(example = "ProsusAI/finbert")]
     pub base_model: String,
     /// Dataset used for domain-specific fine-tuning
-    #[schema(example = "proprietary_financial_news_and_filings_corpus")]
+    #[schema(example = "financial_phrasebank_and_fiqa")]
     pub fine_tuning_dataset: String,
     /// Downstream quantitative NLP task
     #[schema(example = "financial_sentiment_classification")]
@@ -72,19 +72,19 @@ pub struct ModelCardResponse {
     #[schema(example = "INT8_dynamic")]
     pub quantization: String,
     /// Maximum sequence length / context window in tokens
-    #[schema(example = 32)]
+    #[schema(example = 512)]
     pub sequence_length: u32,
     /// Document chunking and sliding window strategy
-    #[schema(example = "sliding_window_overlap_8")]
+    #[schema(example = "sliding_window_overlap_16")]
     pub chunking_strategy: String,
     /// Arithmetic mean inference latency in milliseconds
-    #[schema(example = 0.85)]
+    #[schema(example = 4.8)]
     pub mean_latency_ms: f64,
     /// 95th percentile inference latency in milliseconds
-    #[schema(example = 1.2)]
+    #[schema(example = 8.5)]
     pub p95_latency_ms: f64,
     /// 99th percentile inference latency in milliseconds
-    #[schema(example = 1.5)]
+    #[schema(example = 14.2)]
     pub p99_latency_ms: f64,
     /// Minimum and recommended hardware infrastructure
     pub hardware_requirements: HardwareRequirements,
@@ -440,7 +440,7 @@ model_card:
   model_id: "custom-sentiment-v3"
   model_name: "Custom Model"
   architecture: "transformer_encoder"
-  base_model: "sentence-transformers/all-MiniLM-L6-v2"
+  base_model: "ProsusAI/finbert"
   fine_tuning_dataset: "custom_dataset"
   task: "financial_sentiment_classification"
   precision: "FP32"

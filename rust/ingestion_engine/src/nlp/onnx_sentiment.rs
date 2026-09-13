@@ -2,7 +2,7 @@
 //! FinText-Alpha-Vectorizer — Native Rust ONNX Runtime Sentiment Engine
 //! ═══════════════════════════════════════════════════════════════════════════════
 //!
-//! Ultra-low-latency FinBERT sentiment scoring (FinBERT INT8 primary with MiniLM headline fallback),
+//! Ultra-low-latency FinBERT sentiment scoring (FinBERT INT8 primary with base FinBERT fallback),
 //! TensorRT INT8 / FP16 GPU acceleration, and multi-threaded CPU fallback.
 //! ═══════════════════════════════════════════════════════════════════════════════
 
@@ -172,7 +172,7 @@ impl OnnxSentimentPipeline {
         self.has_token_type_ids
     }
 
-    /// Load the FinBERT/MiniLM model with tiered Execution Provider fallback (TensorRT INT8/FP16 -> CUDA -> CPU).
+    /// Load the FinBERT model with tiered Execution Provider fallback (TensorRT INT8/FP16 -> CUDA -> CPU).
     pub fn load_from_paths(model_path: &Path, tokenizer_path: &Path) -> Result<Self, String> {
         if let Ok(dll_path) = find_onnxruntime_dll() {
             info!(
@@ -204,29 +204,21 @@ impl OnnxSentimentPipeline {
             )
         })?;
 
-        // Determine correct pad token id (<pad> for RoBERTa = 1, [PAD] for BERT/MiniLM = 0)
+        // Determine correct pad token id (<pad> for RoBERTa = 1, [PAD] for BERT = 0)
         let pad_token_id: i64 = tokenizer
             .token_to_id("<pad>")
             .or_else(|| tokenizer.token_to_id("[PAD]"))
             .map(|id| id as i64)
             .unwrap_or(0);
 
-        // Detect sequence length: 512 for FinBERT, 32 for ultra-fast headlines, 128 for standard MiniLM
+        // Detect sequence length: 512 for FinBERT
         let seq_len: usize = if let Some(custom_seq) = env::var("SENTIMENT_MAX_TOKENS")
             .ok()
             .and_then(|v| v.parse::<usize>().ok())
         {
             custom_seq
-        } else if model_path
-            .to_string_lossy()
-            .to_lowercase()
-            .contains("finbert")
-        {
-            512
-        } else if model_path.to_string_lossy().contains("seq32") {
-            32
         } else {
-            128
+            512
         };
 
         let has_token_type_ids = session
@@ -536,7 +528,7 @@ fn create_session_with_fallbacks(model_path: &Path) -> Result<(Session, String),
                 .to_string_lossy()
                 .to_string()
         } else {
-            "models/minilm_seq32/trt_cache_static".to_string()
+            "models/finbert-finetuned/trt_cache_static".to_string()
         }
     });
     let _ = fs::create_dir_all(&trt_cache_path);
@@ -548,7 +540,7 @@ fn create_session_with_fallbacks(model_path: &Path) -> Result<(Session, String),
                 .to_string_lossy()
                 .to_string()
         } else {
-            "models/minilm_seq32/trt_calibration.cache".to_string()
+            "models/finbert-finetuned/trt_calibration.cache".to_string()
         }
     });
 
@@ -609,7 +601,7 @@ fn create_session_with_fallbacks(model_path: &Path) -> Result<(Session, String),
         match trt_res {
             Ok(session) => {
                 info!(
-                    "[ONNX Runtime] TensorRT Execution Provider active (MiniLM-FinBERT Static graph + GPU hardware acceleration + FP16 enabled, int8={}).",
+                    "[ONNX Runtime] TensorRT Execution Provider active (FinBERT Static graph + GPU hardware acceleration + FP16 enabled, int8={}).",
                     int8_enabled
                 );
                 return Ok((session, "TensorRT".to_string()));
@@ -913,64 +905,7 @@ fn find_finbert_assets() -> Result<(PathBuf, PathBuf), String> {
         }
     }
 
-    // 4. Fallback: Ultra-fast MiniLM 32-token model (models/minilm_seq32)
-    for candidate in &candidates {
-        let minilm32_static = candidate
-            .join("models")
-            .join("minilm_seq32")
-            .join("model_static.onnx");
-        let minilm32_tokenizer = candidate
-            .join("models")
-            .join("minilm_seq32")
-            .join("tokenizer.json");
-        if minilm32_static.exists() && minilm32_tokenizer.exists() {
-            warn!(
-                "[ONNX Runtime] FinBERT missing; falling back to MiniLM (Seq: 32) at: {:?}",
-                minilm32_static
-            );
-            return Ok((minilm32_static, minilm32_tokenizer));
-        }
-    }
-
-    // 4. Fallback: MiniLM 128-token model (models/minilm)
-    for candidate in &candidates {
-        let minilm_static = candidate
-            .join("models")
-            .join("minilm")
-            .join("model_static.onnx");
-        let minilm_tokenizer = candidate
-            .join("models")
-            .join("minilm")
-            .join("tokenizer.json");
-        if minilm_static.exists() && minilm_tokenizer.exists() {
-            warn!(
-                "[ONNX Runtime] FinBERT missing; falling back to MiniLM (Seq: 128) at: {:?}",
-                minilm_static
-            );
-            return Ok((minilm_static, minilm_tokenizer));
-        }
-    }
-
-    // 5. Fallback: DistilFinBERT (models/distilfinbert)
-    for candidate in &candidates {
-        let distil_static = candidate
-            .join("models")
-            .join("distilfinbert")
-            .join("model_static.onnx");
-        let distil_tokenizer = candidate
-            .join("models")
-            .join("distilfinbert")
-            .join("tokenizer.json");
-        if distil_static.exists() && distil_tokenizer.exists() {
-            warn!(
-                "[ONNX Runtime] Located DistilFinBERT model at: {:?}",
-                distil_static
-            );
-            return Ok((distil_static, distil_tokenizer));
-        }
-    }
-
-    Err("Could not locate models/finbert, models/minilm_seq32, models/minilm, or models/distilfinbert assets in workspace.".to_string())
+    Err("Could not locate models/finbert-finetuned or models/finbert assets in workspace.".to_string())
 }
 
 /// Compute sentiment using the native in-process ONNX Runtime pipeline.
@@ -1233,7 +1168,7 @@ pub mod tests {
 
         println!(
             "\n═══════════════════════════════════════════════════════════════════════════════\n\
-            [Benchmark] Model: MiniLM-FinBERT (Seq: {}) | Provider: {} | Average Latency: {:.2} ms ({:.0} us) over {} iterations\n\
+            [Benchmark] Model: FinBERT (Seq: {}) | Provider: {} | Average Latency: {:.2} ms ({:.0} us) over {} iterations\n\
             ═══════════════════════════════════════════════════════════════════════════════\n",
             seq_len, provider, avg_ms, avg_us, iterations
         );

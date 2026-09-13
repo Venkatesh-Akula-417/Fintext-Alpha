@@ -97,8 +97,6 @@ sentiment_config:
   tokenizer_path: "models/finbert-finetuned"
   fallback_model_path: "models/finbert/finbert.onnx"
   fallback_tokenizer_path: "models/finbert"
-  fallback_headline_model_path: "models/minilm_seq32/model_static.onnx"
-  fallback_headline_tokenizer_path: "models/minilm_seq32"
   max_seq_len: 512
   overlap_tokens: 16
 
