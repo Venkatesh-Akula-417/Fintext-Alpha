@@ -83,6 +83,20 @@ def verify_asset(asset: Dict[str, Any]) -> Tuple[bool, str]:
     return True, "All required files verified"
 
 
+def verify_extracted_files(asset: Dict[str, Any]) -> Tuple[bool, str]:
+    """Verify SHA256 checksums of extracted individual files against manifest expectations."""
+    file_hashes = asset.get("file_sha256", {})
+    target_dir = Path(asset.get("target_dir", "."))
+    for filename, expected_hash in file_hashes.items():
+        filepath = target_dir / filename
+        if not filepath.is_file():
+            return False, f"File missing: {filename}"
+        actual = sha256_file(filepath)
+        if actual.lower() != expected_hash.lower():
+            return False, f"SHA256 mismatch for {filename}: expected {expected_hash}, got {actual}"
+    return True, ""
+
+
 def download_asset(asset: Dict[str, Any], workdir: Path) -> Tuple[bool, str]:
     """
     Download asset URL to a temporary file in workdir and verify SHA256 if configured.
@@ -184,6 +198,12 @@ def process_asset(asset: Dict[str, Any], workdir: Path, force: bool) -> str:
     extracted = extract_archive(downloaded_file, target_dir, fmt)
     if not extracted:
         print(f"FAIL: '{asset_id}' extraction failed for format '{fmt}'")
+        return "error"
+
+    # Verify extracted individual file checksums
+    verified_files, file_err = verify_extracted_files(asset)
+    if not verified_files:
+        print(f"FAIL: '{asset_id}' extracted file verification failed: {file_err}")
         return "error"
 
     # 5. Verify placed files

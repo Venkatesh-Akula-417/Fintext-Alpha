@@ -13,7 +13,13 @@
       "url": "https://github.com/VENKATESH-A-rgb/FinText-Alpha-Vectorizer/releases/download/models-v1.0.0/finbert-finetuned-v1.0.0.zip",
       "sha256": "182788c0e554ac3891e88b09f98c6b92ab6cd85f5b1c7c039b1d561049b86d33",
       "archive_format": "zip",
-      "size_mb": 89
+      "size_mb": 89,
+      "file_sha256": {
+        "finbert.onnx": "e6ad95fb4a89a3bbe8e70b3d3683c0312c301591e366a12ba1467568faade7f8",
+        "tokenizer.json": "cb374d6bc042c22455946f4e09a89d29882a199fdaf8fb25be00dc8b8857a448",
+        "config.json": "a43952e5dab41f2665a0b0dac6e0d51a62b4fa0d194f1c041b911fa2f6d58fde",
+        "tokenizer_config.json": "682a0da63aca4cd80f6b3c4e3a402364e0fd265df64580ce8778bebb8f5c8926"
+      }
     },
     {
       "id": "ner",
@@ -25,7 +31,12 @@
       "url": "https://github.com/VENKATESH-A-rgb/FinText-Alpha-Vectorizer/releases/download/models-v1.0.0/ner-v1.0.0.zip",
       "sha256": "d6ff862b8b2ae293bea50b3dd0058d0facf7d9e154f94ad7619a92e940f9bbdc",
       "archive_format": "zip",
-      "size_mb": 380
+      "size_mb": 380,
+      "file_sha256": {
+        "model_static.onnx": "0afd44d0be37a5000711a2d2eaed2ab00901412cbe4885e3a091ff24bbc29317",
+        "tokenizer.json": "343989712a36cd8b253efeaf8baf6a08b9d2583f78e395e83832e8ee9f8d8ee1",
+        "tokenizer_config.json": "d50873edfa649e9950fbfb196da01d0b2b4470a25e2ac711cf5c7022761b0a04"
+      }
     }
   ]
 }
