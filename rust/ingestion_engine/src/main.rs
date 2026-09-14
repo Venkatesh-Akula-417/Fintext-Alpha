@@ -36,6 +36,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     info!("═══════════════════════════════════════════════════════════════════════════");
     info!(" FinText-Alpha-Vectorizer — High-Performance Native Rust Ingestion Engine");
     info!("═══════════════════════════════════════════════════════════════════════════");
+
+    if let Err(e) = verify_model_weights_at_startup() {
+        eprintln!("{}", e);
+        std::process::exit(1);
+    }
+
     let prod_mode = fintext_ingestion_engine::is_production_mode();
     if prod_mode {
         info!(
@@ -1054,5 +1060,68 @@ async fn process_single_document(
     };
     let _ = sink_ref.append(&record);
 
+    Ok(())
+}
+
+fn verify_model_weights_at_startup() -> Result<(), String> {
+    // Bypass in tests
+    if std::env::var("SKIP_WEIGHT_CHECK").is_ok() {
+        tracing::warn!("SKIP_WEIGHT_CHECK set; bypassing model weight verification.");
+        return Ok(());
+    }
+
+    let model_dir = std::env::var("FINTEXT_MODEL_DIR")
+        .or_else(|_| std::env::var("MODEL_DIR"))
+        .unwrap_or_else(|_| "models".to_string());
+    let base = std::path::PathBuf::from(&model_dir);
+
+    // Candidates for primary FinBERT sentiment (accept either name)
+    let finbert_candidates = [
+        base.join("finbert-finetuned").join("finbert.onnx"),
+        base.join("finbert-finetuned").join("model.onnx"),
+        base.join("finbert-finetuned").join("model_static.onnx"),
+    ];
+    let finbert_ok = finbert_candidates.iter().any(|p| p.is_file());
+
+    // NER model (optional in api_server, required in ingestion)
+    let ner_ok = base.join("ner").join("model_static.onnx").is_file();
+
+    let mut missing = Vec::new();
+    if !finbert_ok {
+        missing.push(format!(
+            "FinBERT weights missing (looked for finbert.onnx / model.onnx / model_static.onnx under {}/finbert-finetuned/)",
+            base.display()
+        ));
+    }
+
+    if !missing.is_empty() {
+        let msg = format!(
+            "\n════════════════════════════════════════════════════════════════\n\
+             STARTUP FAILURE: Required ONNX model weights not found.\n\
+             {}\n\
+             \n\
+             To fix:\n\
+               1. Run: python scripts/fetch_models.py --manifest config/models_manifest.json\n\
+               2. Or set FINTEXT_MODEL_DIR to a directory containing weights.\n\
+               3. Or set SKIP_WEIGHT_CHECK=1 for development-only runs.\n\
+             \n\
+             Weights are distributed via GitHub Release models-v1.0.0.\n\
+             See docs/MODEL_ASSET_DISTRIBUTION.md for details.\n\
+             ════════════════════════════════════════════════════════════════\n",
+            missing.join("\n")
+        );
+        return Err(msg);
+    }
+
+    tracing::info!(
+        "Model weight verification passed: FinBERT present at {}",
+        model_dir
+    );
+    if !ner_ok {
+        tracing::warn!(
+            "NER weights not found under {}/ner/ — NER endpoints will be unavailable.",
+            model_dir
+        );
+    }
     Ok(())
 }
