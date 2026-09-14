@@ -429,7 +429,7 @@ pub async fn log_audit_event(
     entity_id: Option<&str>,
     details: serde_json::Value,
     ip_address: Option<&str>,
-) -> AuditLogEntry {
+) -> Result<AuditLogEntry, String> {
     let entry = AuditLogEntry {
         id: Uuid::new_v4(),
         org_id,
@@ -445,35 +445,40 @@ pub async fn log_audit_event(
     // 1. Insert into in-memory registry (zero-latency durability)
     state.audit_log_registry.insert(entry.clone());
 
-    // 2. Persist to PostgreSQL asynchronously if available
-    if let Some(pool) = state.db_pool.clone() {
-        let entry_clone = entry.clone();
-        tokio::spawn(async move {
-            let res = sqlx::query(
-                r#"
-                INSERT INTO audit_logs (id, org_id, user_id, action, entity_type, entity_id, details, ip_address, created_at)
-                VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-                "#,
-            )
-            .bind(entry_clone.id)
-            .bind(entry_clone.org_id)
-            .bind(entry_clone.user_id)
-            .bind(entry_clone.action)
-            .bind(entry_clone.entity_type)
-            .bind(entry_clone.entity_id)
-            .bind(entry_clone.details)
-            .bind(entry_clone.ip_address)
-            .bind(entry_clone.created_at)
-            .execute(&pool)
-            .await;
+    // 2. Persist to PostgreSQL if configured
+    if let Some(pool) = state.db_pool.as_ref() {
+        let res = sqlx::query(
+            r#"
+            INSERT INTO audit_logs (id, org_id, user_id, action, entity_type, entity_id, details, ip_address, created_at)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+            "#,
+        )
+        .bind(entry.id)
+        .bind(entry.org_id)
+        .bind(&entry.user_id)
+        .bind(&entry.action)
+        .bind(&entry.entity_type)
+        .bind(&entry.entity_id)
+        .bind(&entry.details)
+        .bind(&entry.ip_address)
+        .bind(entry.created_at)
+        .execute(pool)
+        .await;
 
-            if let Err(e) = res {
-                warn!(
-                    "Failed to persist audit log entry {} to PostgreSQL: {}",
-                    entry_clone.id, e
-                );
+        if let Err(e) = res {
+            if !crate::state::allow_in_memory_fallback() {
+                return Err(format!(
+                    "Database unavailable (fail-closed in production mode): {}",
+                    e
+                ));
             }
-        });
+            warn!(
+                "Failed to persist audit log entry {} to PostgreSQL: {}",
+                entry.id, e
+            );
+        }
+    } else if !crate::state::allow_in_memory_fallback() {
+        return Err("Database pool not configured (fail-closed in production mode)".to_string());
     }
 
     info!(
@@ -484,7 +489,7 @@ pub async fn log_audit_event(
         "Compliance audit event logged"
     );
 
-    entry
+    Ok(entry)
 }
 
 /// Initializes the `audit_logs` table and indexes in PostgreSQL if not already present.

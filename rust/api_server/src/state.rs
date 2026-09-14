@@ -45,6 +45,30 @@ pub fn is_production_mode() -> bool {
     read_production_mode_from_config()
 }
 
+/// Returns true if in-memory fallback is permitted in the current mode.
+/// - Dev mode (PRODUCTION_MODE=0): true  (fallback allowed for dev convenience)
+/// - Prod mode (PRODUCTION_MODE=1): false unless FINTEXT_ALLOW_IN_MEMORY_FALLBACK=1
+///   (explicit opt-in escape hatch — logs a WARN every time)
+pub fn allow_in_memory_fallback() -> bool {
+    if !is_production_mode() {
+        return true;
+    }
+    match std::env::var("FINTEXT_ALLOW_IN_MEMORY_FALLBACK") {
+        Ok(v) => {
+            let v = v.trim().to_lowercase();
+            let allowed = v == "1" || v == "true" || v == "yes";
+            if allowed {
+                tracing::warn!(
+                    "FINTEXT_ALLOW_IN_MEMORY_FALLBACK=1 in production mode — \
+                     in-memory fallback enabled (use with extreme caution)."
+                );
+            }
+            allowed
+        }
+        Err(_) => false,
+    }
+}
+
 /// Reads `public_api_version` setting from environment variable or YAML config file (default "v1").
 pub fn read_public_api_version_from_config() -> String {
     if let Ok(val) = env::var("PUBLIC_API_VERSION") {

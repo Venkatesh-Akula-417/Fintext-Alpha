@@ -614,8 +614,31 @@ pub async fn register_user_handler(
         .await;
 
         if let Err(e) = res {
+            if !crate::state::allow_in_memory_fallback() {
+                return (
+                    StatusCode::SERVICE_UNAVAILABLE,
+                    Json(AuthErrorResponse {
+                        error: "Database Unavailable".to_string(),
+                        message: format!(
+                            "Database unavailable (fail-closed in production mode): {}",
+                            e
+                        ),
+                    }),
+                )
+                    .into_response();
+            }
             error!("[Auth] Failed to persist user to PostgreSQL: {}", e);
         }
+    } else if !crate::state::allow_in_memory_fallback() {
+        return (
+            StatusCode::SERVICE_UNAVAILABLE,
+            Json(AuthErrorResponse {
+                error: "Database Unavailable".to_string(),
+                message: "Database pool not configured (fail-closed in production mode)"
+                    .to_string(),
+            }),
+        )
+            .into_response();
     }
 
     // Insert into in-memory registry for fast lookup
@@ -680,18 +703,50 @@ pub async fn login_user_handler(
             .fetch_optional(pool)
             .await;
 
-            if let Ok(Some((id, email, password_hash, role, created_at, is_active))) = row {
-                let u = StoredUser {
-                    id,
-                    email,
-                    password_hash,
-                    role,
-                    created_at,
-                    is_active,
-                };
-                state.user_registry.insert(u.clone());
-                user_opt = Some(u);
+            match row {
+                Ok(Some((id, email, password_hash, role, created_at, is_active))) => {
+                    let u = StoredUser {
+                        id,
+                        email,
+                        password_hash,
+                        role,
+                        created_at,
+                        is_active,
+                    };
+                    state.user_registry.insert(u.clone());
+                    user_opt = Some(u);
+                }
+                Ok(None) => {}
+                Err(e) => {
+                    if !crate::state::allow_in_memory_fallback() {
+                        return (
+                            StatusCode::SERVICE_UNAVAILABLE,
+                            Json(AuthErrorResponse {
+                                error: "Database Unavailable".to_string(),
+                                message: format!(
+                                    "Database unavailable (fail-closed in production mode): {}",
+                                    e
+                                ),
+                            }),
+                        )
+                            .into_response();
+                    }
+                    warn!(
+                        "[Auth] PostgreSQL user lookup failed, falling back to in-memory: {}",
+                        e
+                    );
+                }
             }
+        } else if !crate::state::allow_in_memory_fallback() {
+            return (
+                StatusCode::SERVICE_UNAVAILABLE,
+                Json(AuthErrorResponse {
+                    error: "Database Unavailable".to_string(),
+                    message: "Database pool not configured (fail-closed in production mode)"
+                        .to_string(),
+                }),
+            )
+                .into_response();
         }
     }
 
@@ -909,8 +964,31 @@ pub async fn create_api_key_handler(
         .await;
 
         if let Err(e) = res {
+            if !crate::state::allow_in_memory_fallback() {
+                return (
+                    StatusCode::SERVICE_UNAVAILABLE,
+                    Json(AuthErrorResponse {
+                        error: "Database Unavailable".to_string(),
+                        message: format!(
+                            "Database unavailable (fail-closed in production mode): {}",
+                            e
+                        ),
+                    }),
+                )
+                    .into_response();
+            }
             error!("[Auth] Failed to persist API key to PostgreSQL: {}", e);
         }
+    } else if !crate::state::allow_in_memory_fallback() {
+        return (
+            StatusCode::SERVICE_UNAVAILABLE,
+            Json(AuthErrorResponse {
+                error: "Database Unavailable".to_string(),
+                message: "Database pool not configured (fail-closed in production mode)"
+                    .to_string(),
+            }),
+        )
+            .into_response();
     }
 
     // Insert into in-memory registry
@@ -1219,7 +1297,7 @@ pub async fn rotate_api_key_handler(
 
     // Update PostgreSQL if connected
     if let Some(pool) = &state.db_pool {
-        let _ = sqlx::query(
+        let res1 = sqlx::query(
             r#"
             INSERT INTO api_keys (id, user_id, name, key_hash, prefix, created_at, revoked_at, expires_at, rotated_from, rotation_status)
             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
@@ -1238,13 +1316,60 @@ pub async fn rotate_api_key_handler(
         .execute(pool)
         .await;
 
-        let _ =
+        if let Err(e) = res1 {
+            if !crate::state::allow_in_memory_fallback() {
+                return (
+                    StatusCode::SERVICE_UNAVAILABLE,
+                    Json(AuthErrorResponse {
+                        error: "Database Unavailable".to_string(),
+                        message: format!(
+                            "Database unavailable (fail-closed in production mode): {}",
+                            e
+                        ),
+                    }),
+                )
+                    .into_response();
+            }
+            error!(
+                "[Auth] Failed to persist rotated API key to PostgreSQL: {}",
+                e
+            );
+        }
+
+        let res2 =
             sqlx::query("UPDATE api_keys SET expires_at = $1, rotation_status = $2 WHERE id = $3")
                 .bind(updated_old.expires_at)
                 .bind(&updated_old.rotation_status)
                 .bind(id)
                 .execute(pool)
                 .await;
+
+        if let Err(e) = res2 {
+            if !crate::state::allow_in_memory_fallback() {
+                return (
+                    StatusCode::SERVICE_UNAVAILABLE,
+                    Json(AuthErrorResponse {
+                        error: "Database Unavailable".to_string(),
+                        message: format!(
+                            "Database unavailable (fail-closed in production mode): {}",
+                            e
+                        ),
+                    }),
+                )
+                    .into_response();
+            }
+            error!("[Auth] Failed to update old API key in PostgreSQL: {}", e);
+        }
+    } else if !crate::state::allow_in_memory_fallback() {
+        return (
+            StatusCode::SERVICE_UNAVAILABLE,
+            Json(AuthErrorResponse {
+                error: "Database Unavailable".to_string(),
+                message: "Database pool not configured (fail-closed in production mode)"
+                    .to_string(),
+            }),
+        )
+            .into_response();
     }
 
     info!(
@@ -1328,13 +1453,40 @@ pub async fn delete_api_key_handler(
 
     // Also update PostgreSQL
     if let Some(pool) = &state.db_pool {
-        let _ = sqlx::query(
+        let res = sqlx::query(
             "UPDATE api_keys SET revoked_at = NOW(), rotation_status = 'rotated' WHERE id = $1 AND user_id = $2 AND revoked_at IS NULL",
         )
         .bind(id)
         .bind(user_id)
         .execute(pool)
         .await;
+
+        if let Err(e) = res {
+            if !crate::state::allow_in_memory_fallback() {
+                return (
+                    StatusCode::SERVICE_UNAVAILABLE,
+                    Json(AuthErrorResponse {
+                        error: "Database Unavailable".to_string(),
+                        message: format!(
+                            "Database unavailable (fail-closed in production mode): {}",
+                            e
+                        ),
+                    }),
+                )
+                    .into_response();
+            }
+            error!("[Auth] Failed to revoke API key in PostgreSQL: {}", e);
+        }
+    } else if !crate::state::allow_in_memory_fallback() {
+        return (
+            StatusCode::SERVICE_UNAVAILABLE,
+            Json(AuthErrorResponse {
+                error: "Database Unavailable".to_string(),
+                message: "Database pool not configured (fail-closed in production mode)"
+                    .to_string(),
+            }),
+        )
+            .into_response();
     }
 
     if removed.is_none() {
@@ -1387,13 +1539,31 @@ pub fn spawn_api_key_revocation_worker(state: AppState) -> tokio::task::JoinHand
                 );
 
                 if let Some(pool) = &state.db_pool {
-                    let _ = sqlx::query(
+                    let res = sqlx::query(
                         "UPDATE api_keys SET revoked_at = $1, rotation_status = 'rotated' WHERE id = $2",
                     )
                     .bind(key.revoked_at)
                     .bind(key.id)
                     .execute(pool)
                     .await;
+
+                    if let Err(e) = res {
+                        if !crate::state::allow_in_memory_fallback() {
+                            error!(
+                                "[Auth] Failed to update expired API key in PostgreSQL (fail-closed in production mode): {}",
+                                e
+                            );
+                        } else {
+                            warn!(
+                                "[Auth] Failed to update expired API key in PostgreSQL: {}",
+                                e
+                            );
+                        }
+                    }
+                } else if !crate::state::allow_in_memory_fallback() {
+                    error!(
+                        "[Auth] PostgreSQL pool not configured for API key revocation worker (fail-closed in production mode)"
+                    );
                 }
 
                 log_audit_event(

@@ -79,9 +79,9 @@ pub fn create_metering_channel(capacity: usize) -> (Sender<UsageEvent>, Receiver
 }
 
 /// Bulk inserts a batch of UsageEvents into PostgreSQL using `sqlx::QueryBuilder`.
-pub async fn flush_batch(batch: &mut Vec<UsageEvent>, pool: Option<&PgPool>) {
+pub async fn flush_batch(batch: &mut Vec<UsageEvent>, pool: Option<&PgPool>) -> Result<(), String> {
     if batch.is_empty() {
-        return;
+        return Ok(());
     }
 
     if let Some(pool) = pool {
@@ -100,25 +100,36 @@ pub async fn flush_batch(batch: &mut Vec<UsageEvent>, pool: Option<&PgPool>) {
 
         let query = query_builder.build();
         if let Err(e) = query.execute(pool).await {
-            error!(
-                "[Usage Metering] Failed to bulk insert batch of {} usage events into PostgreSQL: {}",
-                batch.len(),
+            if !crate::state::allow_in_memory_fallback() {
+                return Err(format!(
+                    "Database unavailable (fail-closed in production mode): {}",
+                    e
+                ));
+            }
+            warn!(
+                "[Usage Metering] DB error, falling back to in-memory (dev mode): {}",
                 e
             );
+            batch.clear();
+            Ok(())
         } else {
             debug!(
                 "[Usage Metering] Successfully persisted batch of {} usage events into PostgreSQL",
                 batch.len()
             );
+            batch.clear();
+            Ok(())
         }
+    } else if !crate::state::allow_in_memory_fallback() {
+        Err("Database pool not configured (fail-closed in production mode)".to_string())
     } else {
         trace!(
             "[Usage Metering] Discarded {} usage events (PostgreSQL pool unconfigured)",
             batch.len()
         );
+        batch.clear();
+        Ok(())
     }
-
-    batch.clear();
 }
 
 /// Spawns the background asynchronous metering batch worker.
@@ -144,13 +155,17 @@ pub fn spawn_metering_worker(
                         Some(event) => {
                             batch.push(event);
                             if batch.len() >= config.batch_size {
-                                flush_batch(&mut batch, pool.as_ref()).await;
+                                if let Err(e) = flush_batch(&mut batch, pool.as_ref()).await {
+                                    error!("[Usage Metering] Flush error: {}", e);
+                                }
                             }
                         }
                         None => {
                             // Channel closed during application shutdown
                             if !batch.is_empty() {
-                                flush_batch(&mut batch, pool.as_ref()).await;
+                                if let Err(e) = flush_batch(&mut batch, pool.as_ref()).await {
+                                    error!("[Usage Metering] Flush error: {}", e);
+                                }
                             }
                             info!("[Usage Metering] Background batch worker gracefully stopped");
                             break;
@@ -159,7 +174,9 @@ pub fn spawn_metering_worker(
                 }
                 _ = interval.tick() => {
                     if !batch.is_empty() {
-                        flush_batch(&mut batch, pool.as_ref()).await;
+                        if let Err(e) = flush_batch(&mut batch, pool.as_ref()).await {
+                            error!("[Usage Metering] Flush error: {}", e);
+                        }
                     }
                 }
             }
