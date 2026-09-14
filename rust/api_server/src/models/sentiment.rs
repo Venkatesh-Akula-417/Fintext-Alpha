@@ -1326,10 +1326,7 @@ mod tests {
         }"#;
 
         let modern_resp: SentimentResponse = serde_json::from_str(modern_json).unwrap();
-        assert_eq!(
-            modern_resp.model_version.as_deref(),
-            Some("finbert-v3.1.0")
-        );
+        assert_eq!(modern_resp.model_version.as_deref(), Some("finbert-v3.1.0"));
         assert_eq!(modern_resp.pipeline_version.as_deref(), Some("2.0.0"));
         assert_eq!(
             modern_resp.data_provenance,
