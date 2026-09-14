@@ -33,4 +33,11 @@ regexes = [
   '''c12345testkeyabcdef67890''',
   '''ft_invalid_bogus_api_key_12345''',
   '''verification-test-jwt-secret-99999''',
+  # SHA256 hashes in models_manifest.json (public checksums, not secrets)
+  '''[a-fA-F0-9]{64}''',
 ]
+
+[[allowlists]]
+description = "Model manifest with public SHA256 checksums"
+paths = ['''config/models_manifest\.json$''']
+
