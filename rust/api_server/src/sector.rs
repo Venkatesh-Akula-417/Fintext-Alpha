@@ -24,6 +24,12 @@ pub struct SectorMap {
     pub sectors: Vec<String>,
 }
 
+fn config_dir() -> PathBuf {
+    std::env::var("FINTEXT_CONFIG_DIR")
+        .map(PathBuf::from)
+        .unwrap_or_else(|_| PathBuf::from("config"))
+}
+
 impl SectorMap {
     /// Create an empty sector map.
     pub fn empty() -> Self {
@@ -40,11 +46,10 @@ impl SectorMap {
             vec![PathBuf::from(custom_path)]
         } else {
             vec![
+                config_dir().join("sector_mapping.csv"),
                 PathBuf::from("./config/sector_mapping.csv"),
                 PathBuf::from("../config/sector_mapping.csv"),
                 PathBuf::from("../../config/sector_mapping.csv"),
-                PathBuf::from("d:/FinText-Alpha-Vectorizer/config/sector_mapping.csv"),
-                PathBuf::from("D:\\FinText-Alpha-Vectorizer\\config\\sector_mapping.csv"),
             ]
         };
 

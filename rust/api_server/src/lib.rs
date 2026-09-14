@@ -578,7 +578,6 @@ pub fn public_v1_router(state: AppState) -> Router<AppState> {
         // PIT / Governance core endpoints
         .route("/pit/certificate", get(get_pit_certificate_handler))
         .route("/pit/replay", get(get_pit_replay_handler))
-        .route("/symbol/map", get(get_symbol_map_handler))
         .route("/symbols/map", get(get_symbol_map_handler))
         .route(
             "/universes",
@@ -760,7 +759,7 @@ mod tests {
         assert!(paths.contains_key("/v1/pit/certificate"));
         assert!(paths.contains_key("/v1/pit/replay"));
         assert!(paths.contains_key("/v1/model-card"));
-        assert!(paths.contains_key("/v1/symbol/map"));
+        assert!(paths.contains_key("/v1/symbols/map"));
         assert!(paths.contains_key("/v1/universes"));
         assert!(paths.contains_key("/v1/signals/quality-report"));
         assert!(paths.contains_key("/v1/export/csv"));

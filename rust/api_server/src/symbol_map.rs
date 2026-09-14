@@ -60,6 +60,12 @@ pub struct SymbolMap {
     pub isin_to_ids: HashMap<String, SecurityIdentifiers>,
 }
 
+fn config_dir() -> PathBuf {
+    std::env::var("FINTEXT_CONFIG_DIR")
+        .map(PathBuf::from)
+        .unwrap_or_else(|_| PathBuf::from("config"))
+}
+
 impl SymbolMap {
     /// Create an empty symbol map.
     pub fn empty() -> Self {
@@ -77,11 +83,10 @@ impl SymbolMap {
             vec![PathBuf::from(custom_path)]
         } else {
             vec![
+                config_dir().join("permanent_identifiers.json"),
                 PathBuf::from("./config/permanent_identifiers.json"),
                 PathBuf::from("../config/permanent_identifiers.json"),
                 PathBuf::from("../../config/permanent_identifiers.json"),
-                PathBuf::from("d:/FinText-Alpha-Vectorizer/config/permanent_identifiers.json"),
-                PathBuf::from("D:\\FinText-Alpha-Vectorizer\\config\\permanent_identifiers.json"),
             ]
         };
 

@@ -67,6 +67,12 @@ impl Default for SupplyChainGraph {
     }
 }
 
+fn config_dir() -> PathBuf {
+    std::env::var("FINTEXT_CONFIG_DIR")
+        .map(PathBuf::from)
+        .unwrap_or_else(|_| PathBuf::from("config"))
+}
+
 impl SupplyChainGraph {
     /// Create an empty graph.
     pub fn empty() -> Self {
@@ -100,11 +106,10 @@ impl SupplyChainGraph {
             vec![PathBuf::from(custom_path)]
         } else {
             vec![
+                config_dir().join("supply_chain_map.json"),
                 PathBuf::from("./config/supply_chain_map.json"),
                 PathBuf::from("../config/supply_chain_map.json"),
                 PathBuf::from("../../config/supply_chain_map.json"),
-                PathBuf::from("d:/FinText-Alpha-Vectorizer/config/supply_chain_map.json"),
-                PathBuf::from("D:\\FinText-Alpha-Vectorizer\\config\\supply_chain_map.json"),
             ]
         };
 
@@ -112,11 +117,10 @@ impl SupplyChainGraph {
             vec![PathBuf::from(custom_path)]
         } else {
             vec![
+                config_dir().join("supply_chain_events.json"),
                 PathBuf::from("./config/supply_chain_events.json"),
                 PathBuf::from("../config/supply_chain_events.json"),
                 PathBuf::from("../../config/supply_chain_events.json"),
-                PathBuf::from("d:/FinText-Alpha-Vectorizer/config/supply_chain_events.json"),
-                PathBuf::from("D:\\FinText-Alpha-Vectorizer\\config\\supply_chain_events.json"),
             ]
         };
 

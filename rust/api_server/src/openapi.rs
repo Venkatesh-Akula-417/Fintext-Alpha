@@ -583,7 +583,6 @@ impl Modify for PublicV1PrefixAddon {
                 "/auth/me" => "/v1/users/me".to_string(),
                 "/auth/api-keys" => "/v1/users/api-keys".to_string(),
                 "/auth/api-keys/{id}" => "/v1/users/api-keys/{id}".to_string(),
-                "/symbols/map" => "/v1/symbol/map".to_string(),
                 p if p.starts_with("/v1") => p.to_string(),
                 p => format!("/v1{}", p),
             };

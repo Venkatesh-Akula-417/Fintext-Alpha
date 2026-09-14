@@ -49,3 +49,11 @@ _archive/
 **/.venv/
 **/venv/
 **/__pycache__/
+
+# Whitelist committed config CSVs
+!config/sector_mapping.csv
+
+# Ignore local server logs and dev task files
+server_stdout_*.log
+server_stderr_*.log
+task.md

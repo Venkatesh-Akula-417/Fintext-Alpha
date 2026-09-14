@@ -1,0 +1,17 @@
+ticker,sector,industry
+AAPL,Information Technology,Technology Hardware
+MSFT,Information Technology,Software
+JPM,Financials,Banks
+JNJ,Health Care,Pharmaceuticals
+XOM,Energy,Oil & Gas
+PG,Consumer Staples,Household Products
+HD,Consumer Discretionary,Retailing
+BA,Industrials,Aerospace & Defense
+LIN,Materials,Chemicals
+NEE,Utilities,Electric Utilities
+PLD,Real Estate,REITs
+VZ,Communication Services,Telecommunications
+NVDA,Technology,Semiconductors
+CRM,Technology,Cloud Software
+UNH,Healthcare,Managed Care
+TSLA,Consumer Cyclical,Automotive

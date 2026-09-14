@@ -154,16 +154,21 @@ impl PITDataSnapshot {
             return p;
         }
 
+        fn config_dir() -> PathBuf {
+            std::env::var("FINTEXT_CONFIG_DIR")
+                .map(PathBuf::from)
+                .unwrap_or_else(|_| PathBuf::from("config"))
+        }
+
         // Search directory candidates
         let candidate_dirs = if let Ok(custom_dir) = env::var("PIT_DATA_DIR") {
             vec![PathBuf::from(custom_dir)]
         } else {
             vec![
+                config_dir(),
                 PathBuf::from("./config"),
                 PathBuf::from("../config"),
                 PathBuf::from("../../config"),
-                PathBuf::from("d:/FinText-Alpha-Vectorizer/config"),
-                PathBuf::from("D:\\FinText-Alpha-Vectorizer\\config"),
             ]
         };
 
