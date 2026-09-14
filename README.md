@@ -1,6 +1,6 @@
 # FinText Alpha Vectorizer
 
-> **Last Verified**: 2026-09-10 (Suite #96) | **Audit Readiness**: Certified Clean (Zero In-Repo Contradictions) | **Authoritative Deprecations**: [`docs/DEPRECATED.md`](docs/DEPRECATED.md)
+> **Last Verified**: 2026-09-14 (Suite #96) | **Audit Readiness**: Certified Clean (Zero In-Repo Contradictions) | **Authoritative Deprecations**: [`docs/DEPRECATED.md`](docs/DEPRECATED.md)
 
 [![Rust 1.80.1](https://img.shields.io/badge/rust-1.80+-orange.svg)](https://www.rust-lang.org/)
 [![Axum 0.7](https://img.shields.io/badge/Axum-0.7-blue.svg)](https://github.com/tokio-rs/axum)
@@ -12,7 +12,7 @@
 [![Python SDK](https://img.shields.io/badge/Python%20SDK-308%20Tests%20Passing-3776AB.svg)](./python_sdk)
 [![Certification Suites](https://img.shields.io/badge/Master%20Suites-96%2F96%20Certified-success.svg)](./scripts/run_all_tests.py)
 
-**FinText Alpha Vectorizer** is an ultra-low-latency, institutional-grade quantitative Natural Language Processing (NLP), audio acoustic signal processing, options market microstructure, and alternative data vectorization platform written in **100% native Rust**. Designed for quantitative hedge funds, Tier-1 asset managers, prop trading firms, and automated risk engines, the platform delivers sub-millisecond document normalization, in-process **ONNX FinBERT sentiment classification** (Fine-tuned INT8 v3.1.0 primary with base FinBERT v3.0.0 and MiniLM v2.1.0 fallbacks), **Whisper.cpp Automatic Speech Recognition (ASR)** for earnings calls, **Volume-Synchronized Probability of Informed Trading (VPIN)**, **Black-Scholes Dealer Gamma Exposure (GEX)**, **2-Layer Laplacian Supply Chain Graph Neural Networks (GNN)**, and bi-temporal Point-in-Time (PIT) backtesting at $<437\text{ms}$ tradable SLA.
+**FinText Alpha Vectorizer** is an ultra-low-latency, institutional-grade quantitative Natural Language Processing (NLP), audio acoustic signal processing, options market microstructure, and alternative data vectorization platform written in **100% native Rust**. Designed for quantitative hedge funds, Tier-1 asset managers, prop trading firms, and automated risk engines, the platform delivers sub-millisecond document normalization, in-process **ONNX FinBERT sentiment classification** (2-tier FinBERT chain: Fine-tuned INT8 v3.1.0 primary with base FinBERT v3.0.0 fallback), **Whisper.cpp Automatic Speech Recognition (ASR)** for earnings calls, **Volume-Synchronized Probability of Informed Trading (VPIN)**, **Black-Scholes Dealer Gamma Exposure (GEX)**, **2-Layer Laplacian Supply Chain Graph Neural Networks (GNN)**, and bi-temporal Point-in-Time (PIT) backtesting at $<437\text{ms}$ tradable SLA.
 
 ---
 
@@ -36,7 +36,7 @@ flowchart TB
     end
 
     subgraph MultimodalModels ["3. Multi-Modal Quantitative Alpha Engines"]
-        CLASSIFIER --> SENTIMENT["FinBERT INT8 ONNX (Primary v3.1.0)<br/>Fallback: Base FinBERT + MiniLM Seq32"]
+        CLASSIFIER --> SENTIMENT["FinBERT INT8 ONNX (Primary v3.1.0)<br/>Fallback: Base FinBERT v3.0.0"]
         CLASSIFIER --> NER["Native ONNX NER ([1, 128] Static Shape)"]
         POLLER --> WHISPER["Whisper.cpp ASR Audio Transcription"]
         POLLER --> DSP["DSP Acoustic Features (F0, Energy, Pause, Rate)"]
@@ -188,7 +188,7 @@ cargo run --release -p fintext_observability_anomaly
 
 ## 🧪 Comprehensive Testing Suite
 
-The repository enforces complete multi-layered test coverage certified across 10 native Rust workspace crates, the Python client SDK, and a 96-suite master certification orchestrator:
+The repository enforces complete multi-layered test coverage certified across 10 native Rust workspace crates, the Python client SDK, and 96 master certification orchestrator suites (scripts/run_all_tests.py) plus 112 individual verification scripts:
 
 ### 1. Run Native Rust Workspace Unit & Integration Tests (734 Tests)
 ```bash
@@ -344,12 +344,13 @@ To guarantee that **zero synthetic or mock data** is ever served to customer tra
   ```
   The ingestion engine, API server, and spillover analytics will automatically generate mathematically valid synthetic market data and execute in-memory.
 
-### 3. Docker Compose Quick Deployment
+### 3. Docker Compose Quick Deployment (8 Services)
 ```bash
 docker-compose up -d --build
 ```
-- QuestDB Console: [http://localhost:9000](http://localhost:9000)
-- API Server: [http://localhost:8000](http://localhost:8000)
+- PostgreSQL 16 + TimescaleDB: `localhost:5432` (`fintext-postgres`)
+- QuestDB Console: [http://localhost:9000](http://localhost:9000) (`fintext-questdb`)
+- API Server: [http://localhost:8000](http://localhost:8000) (`fintext-api-gateway`)
 
 ---
 
@@ -358,8 +359,12 @@ docker-compose up -d --build
 ```text
 FinText-Alpha-Vectorizer/
 ├── .github/
-│   └── workflows/
-│       └── ci.yml               # Windows CI/CD pipeline (Rust, Python SDK, Master Suite)
+│   └── workflows/               # 5 automated CI/CD validation workflows
+│       ├── ci.yml               # Rust workspace, clippy, fmt, tests, release build, Python SDK
+│       ├── pit-validation.yml   # PIT correctness on PostgreSQL 16
+│       ├── model-validation.yml # FinBERT model quality & calibration
+│       ├── model-drift.yml      # Model drift monitoring
+│       └── security-scan.yml    # Gitleaks, cargo-audit, pip-audit
 ├── config/
 │   ├── config.yaml              # Core server, database & source weight configuration
 │   ├── feature_flags.yaml       # Microservice & alpha model feature flag governance
@@ -377,7 +382,6 @@ FinText-Alpha-Vectorizer/
 ├── models/
 │   ├── finbert-finetuned/       # Fine-tuned FinBERT INT8 v3.1.0 (Primary)
 │   ├── finbert/                 # Base ProsusAI FinBERT INT8 v3.0.0 (Fallback)
-│   ├── minilm_seq32/            # 32-token headline sentiment v2.1.0 (Fallback)
 │   ├── ner/                     # ONNX NER token classification model
 │   └── whisper/                 # GGML Whisper ASR audio models
 ├── python_sdk/                  # Official Python Client SDK (`fintext`)
@@ -394,7 +398,7 @@ FinText-Alpha-Vectorizer/
 │   ├── spam_detector/           # Sliding-window spam & promotional noise filter
 │   ├── spillover_engine/        # Multi-lag Pearson cross-asset spillover engine
 │   └── ticker_extractor/        # Regex ticker symbol extractor & entity disambiguator
-├── scripts/                     # 112 verification & test suite orchestrators
+├── scripts/                     # 96 master certification orchestrator suites (scripts/run_all_tests.py) plus 112 individual verification scripts
 │   ├── run_all_tests.py         # 96-suite master test certification orchestrator
 │   ├── security_test.py         # Security & penetration audit suite
 │   ├── verify_data_quality.py   # Data quality & PIT enforcement suite
@@ -402,7 +406,7 @@ FinText-Alpha-Vectorizer/
 ├── tools/                       # Performance testing utilities (k6 load generator)
 ├── .env.example                 # Environment configuration template
 ├── Cargo.lock                   # Deterministic Rust dependency lockfile
-├── docker-compose.yml           # 7-service multi-container local orchestrator
+├── docker-compose.yml           # 8-service multi-container local orchestrator (PostgreSQL, QuestDB, Redpanda, Ingestion, API, Spillover, DLQ, Anomaly)
 ├── Dockerfile                   # Multi-stage production container build (Bookworm)
 ├── requirements.txt             # Python test orchestration dependencies
 └── README.md                    # Root project manual and documentation
@@ -423,7 +427,14 @@ FinText-Alpha-Vectorizer/
   - [`rust/api_server/README.md`](rust/api_server/README.md)
   - [`rust/dead_letter_worker/README.md`](rust/dead_letter_worker/README.md)
   - [`rust/observability_anomaly/README.md`](rust/observability_anomaly/README.md)
-- **CI/CD Pipeline**: [`.github/workflows/ci.yml`](.github/workflows/ci.yml)
+- **CI/CD Workflows (5 Automated Pipelines)**:
+  | Workflow | Purpose |
+  | :--- | :--- |
+  | [`.github/workflows/ci.yml`](.github/workflows/ci.yml) | Rust workspace, clippy, fmt, tests, release build, Python SDK |
+  | [`.github/workflows/pit-validation.yml`](.github/workflows/pit-validation.yml) | PIT correctness on PostgreSQL 16 |
+  | [`.github/workflows/model-validation.yml`](.github/workflows/model-validation.yml) | FinBERT model quality & calibration |
+  | [`.github/workflows/model-drift.yml`](.github/workflows/model-drift.yml) | Model drift monitoring |
+  | [`.github/workflows/security-scan.yml`](.github/workflows/security-scan.yml) | Gitleaks, cargo-audit, pip-audit |
 - **Python SDK**: [`python_sdk/README.md`](python_sdk/README.md)
 - **Deprecations Log**: [`docs/DEPRECATED.md`](docs/DEPRECATED.md)
 - **SRE & Operations Manual**: [`docs/OPERATIONS.md`](docs/OPERATIONS.md)
@@ -432,6 +443,6 @@ FinText-Alpha-Vectorizer/
 
 ## 📄 License & Enterprise Inquiries
 
-- **License**: Institutional Proprietary Commercial License
+- **License**: Dual-license: open source (Apache-2.0) for code; model weights and derived data governed by separate terms
 - **Engineering & Architecture**: `engineering@fintext-alpha.internal`
 - **Data Compliance & Governance**: `compliance@fintext-alpha.internal`
