@@ -38,6 +38,8 @@ pub fn is_production_mode() -> bool {
         let val = val.trim().to_lowercase();
         if val == "1" || val == "true" || val == "yes" || val == "on" {
             return true;
+        } else if val == "0" || val == "false" || val == "no" || val == "off" {
+            return false;
         }
     }
     read_production_mode_from_config()

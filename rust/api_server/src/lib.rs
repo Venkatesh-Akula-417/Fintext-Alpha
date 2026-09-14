@@ -85,6 +85,7 @@ pub use digest::{
     compose_digest_email, spawn_digest_worker, validate_digest_request, DigestSubscriptionRegistry,
     EmailSender, MockEmailSender, SentEmailRecord,
 };
+pub use handlers::health::readyz_handler;
 pub use handlers::{
     activate_sandbox_handler, backfill_sentiment_handler, backtest_handler,
     cancel_fix_order_handler, cancel_retraining_job_handler, create_digest_subscription_handler,
@@ -503,6 +504,7 @@ pub fn create_app_with_state(state: AppState) -> Router {
             get(|| async { axum::response::Redirect::temporary("/swagger-ui/") }),
         )
         .route("/health", get(health_check_handler))
+        .route("/readyz", get(readyz_handler))
         .route("/auth/token", post(issue_token_handler))
         .route("/auth/register", post(register_user_handler))
         .route("/auth/login", post(login_user_handler))
@@ -610,6 +612,7 @@ pub fn public_v1_router(state: AppState) -> Router<AppState> {
 
     let v1_public = Router::new()
         .route("/health", get(health_check_handler))
+        .route("/readyz", get(readyz_handler))
         .route("/auth/token", post(issue_token_handler))
         .route("/model-card", get(get_model_card_handler));
 

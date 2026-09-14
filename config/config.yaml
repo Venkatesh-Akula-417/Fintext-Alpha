@@ -3,8 +3,9 @@
 # ══════════════════════════════════════════════════════════════════════════════
 
 # ── Production Mode Guard ──────────────────────────────────────────────────
-# When set to true (or PRODUCTION_MODE=true env var), all synthetic/mock
-# fallbacks are strictly disabled and real external service connections are mandatory.
+# Production Mode Guard — overridden by PRODUCTION_MODE env var if set.
+# true  = fail-closed (503 on DB/Kafka loss, no in-memory fallback)
+# false = development fallbacks allowed (default)
 production_mode: false
 
 # ── Public API Gateway Surface ─────────────────────────────────────────────
