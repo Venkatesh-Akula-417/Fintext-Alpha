@@ -17,7 +17,7 @@ concurrency:
 jobs:
   model-validation:
     name: FinBERT Model Quality & Calibration Validation
-    runs-on: ubuntu-latest
+    runs-on: windows-latest
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -47,39 +47,42 @@ jobs:
 
       - name: Check model presence
         id: check-model
+        shell: pwsh
         run: |
-          if [ ! -f models/finbert-finetuned/model.onnx ] && [ ! -f models/finbert-finetuned/finbert.onnx ]; then
-            echo "::warning::Model artifacts not present; skipping model validation."
-            echo "SKIPPED=true" >> "$GITHUB_ENV"
-          else
-            echo "SKIPPED=false" >> "$GITHUB_ENV"
-          fi
+          if (-not (Test-Path "models/finbert-finetuned/model.onnx") -and -not (Test-Path "models/finbert-finetuned/finbert.onnx")) {
+            Write-Host "::warning::Model artifacts not present; skipping model validation."
+            "SKIPPED=true" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+          } else {
+            "SKIPPED=false" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+          }
 
       # CPU-only GitHub runner: 250 ms threshold accommodates cold-start ONNX Runtime + single-thread tokenizer overhead. See docs/LATENCY_RECONCILIATION.md.
       - name: Run Model Quality Validation
+        shell: pwsh
         run: |
-          if [ "$SKIPPED" = "true" ]; then
-            echo "Running harness in SKIP verification mode..."
-            python scripts/validate_model_quality.py \
-              --dataset config/model_validation_dataset.json \
-              --model-dir models/finbert-finetuned \
-              --output-dir data/model-validation \
-              --report-path docs/MODEL_VALIDATION_REPORT.md || exit_code=$?
-            if [ "${exit_code:-0}" -eq 3 ]; then
-              echo "Harness exited with code 3 (clean SKIP as expected)."
-            else
-              echo "Unexpected exit code: ${exit_code:-0}"
-              exit "${exit_code:-0}"
-            fi
-          else
-            python scripts/validate_model_quality.py \
-              --dataset config/model_validation_dataset.json \
-              --model-dir models/finbert-finetuned \
-              --output-dir data/model-validation \
-              --report-path docs/MODEL_VALIDATION_REPORT.md \
-              --max-latency-p95-ms 250.0 \
+          if ($env:SKIPPED -eq "true") {
+            Write-Host "Running harness in SKIP verification mode..."
+            python scripts/validate_model_quality.py `
+              --dataset config/model_validation_dataset.json `
+              --model-dir models/finbert-finetuned `
+              --output-dir data/model-validation `
+              --report-path docs/MODEL_VALIDATION_REPORT.md
+            $exitCode = $LASTEXITCODE
+            if ($exitCode -eq 3) {
+              Write-Host "Harness exited with code 3 (clean SKIP as expected)."
+            } else {
+              Write-Host "Unexpected exit code: $exitCode"
+              exit $exitCode
+            }
+          } else {
+            python scripts/validate_model_quality.py `
+              --dataset config/model_validation_dataset.json `
+              --model-dir models/finbert-finetuned `
+              --output-dir data/model-validation `
+              --report-path docs/MODEL_VALIDATION_REPORT.md `
+              --max-latency-p95-ms 250.0 `
               --environment cpu-ci
-          fi
+          }
 
       - name: Upload validation reports
         if: always()

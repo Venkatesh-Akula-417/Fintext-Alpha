@@ -19,7 +19,7 @@ concurrency:
 jobs:
   drift-monitor:
     name: Model Drift & Calibration Monitoring
-    runs-on: ubuntu-latest
+    runs-on: windows-latest
     continue-on-error: true  # informational for first release; tighten later
     steps:
       - name: Checkout repository
@@ -50,38 +50,41 @@ jobs:
 
       - name: Check model presence
         id: check-model
+        shell: pwsh
         run: |
-          if [ ! -f models/finbert-finetuned/model.onnx ] && [ ! -f models/finbert-finetuned/finbert.onnx ]; then
-            echo "::warning::Model artifacts not present; skipping model drift monitoring."
-            echo "SKIPPED=true" >> "$GITHUB_ENV"
-          else
-            echo "SKIPPED=false" >> "$GITHUB_ENV"
-          fi
+          if (-not (Test-Path "models/finbert-finetuned/model.onnx") -and -not (Test-Path "models/finbert-finetuned/finbert.onnx")) {
+            Write-Host "::warning::Model artifacts not present; skipping model drift monitoring."
+            "SKIPPED=true" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+          } else {
+            "SKIPPED=false" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+          }
 
       - name: Run Model Drift Monitor
+        shell: pwsh
         run: |
-          if [ "$SKIPPED" = "true" ]; then
-            echo "Running drift monitor in SKIP verification mode..."
-            python scripts/model_drift_monitor.py \
-              --dataset config/model_validation_dataset.json \
-              --model-dir models/finbert-finetuned \
-              --baseline data/model-drift/baseline.json \
-              --output-dir data/model-drift \
-              --report-path docs/MODEL_DRIFT_REPORT.md || exit_code=$?
-            if [ "${exit_code:-0}" -eq 3 ]; then
-              echo "Harness exited with code 3 (clean SKIP as expected)."
-            else
-              echo "Unexpected exit code: ${exit_code:-0}"
-              exit "${exit_code:-0}"
-            fi
-          else
-            python scripts/model_drift_monitor.py \
-              --dataset config/model_validation_dataset.json \
-              --model-dir models/finbert-finetuned \
-              --baseline data/model-drift/baseline.json \
-              --output-dir data/model-drift \
+          if ($env:SKIPPED -eq "true") {
+            Write-Host "Running drift monitor in SKIP verification mode..."
+            python scripts/model_drift_monitor.py `
+              --dataset config/model_validation_dataset.json `
+              --model-dir models/finbert-finetuned `
+              --baseline data/model-drift/baseline.json `
+              --output-dir data/model-drift `
               --report-path docs/MODEL_DRIFT_REPORT.md
-          fi
+            $exitCode = $LASTEXITCODE
+            if ($exitCode -eq 3) {
+              Write-Host "Harness exited with code 3 (clean SKIP as expected)."
+            } else {
+              Write-Host "Unexpected exit code: $exitCode"
+              exit $exitCode
+            }
+          } else {
+            python scripts/model_drift_monitor.py `
+              --dataset config/model_validation_dataset.json `
+              --model-dir models/finbert-finetuned `
+              --baseline data/model-drift/baseline.json `
+              --output-dir data/model-drift `
+              --report-path docs/MODEL_DRIFT_REPORT.md
+          }
 
       - name: Upload drift reports
         if: always()
