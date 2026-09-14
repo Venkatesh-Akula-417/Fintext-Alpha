@@ -21,7 +21,7 @@ class ModelMetadata(BaseModel):
     """Institutional model versioning and data provenance lineage metadata."""
     model_config = ConfigDict(extra="ignore")
 
-    model_version: str = Field(default="finbert-minilm-v2.1", description="ML model version tag")
+    model_version: str = Field(default="finbert-v3.1.0", description="ML model version tag")
     pipeline_version: str = Field(default="2.0.0", description="Feature extraction pipeline version")
     data_provenance: list[str] = Field(default_factory=lambda: ["SEC EDGAR", "Finnhub", "Polygon"], description="Upstream source lineage")
 
@@ -66,7 +66,7 @@ class SentimentResponse(BaseModel):
     signal_available_ts_us: int = Field(description="Point-in-time timestamp in microseconds")
     data_quality_score: float = Field(default=0.80, description="Quantitative data quality and reliability score (0.0 to 1.0)")
     message: str = Field(description="Diagnostic or operational message")
-    model_version: Optional[str] = Field(default=None, description="ML model version tag (e.g., 'finbert-minilm-v2.1')")
+    model_version: Optional[str] = Field(default=None, description="ML model version tag (e.g., 'finbert-v3.1.0')")
     pipeline_version: Optional[str] = Field(default=None, description="Feature extraction pipeline version (e.g., '2.0.0')")
     data_provenance: Optional[list[str]] = Field(default=None, description="Upstream source lineage data providers")
     published_utc: Optional[str] = Field(default=None, description="Original publication timestamp in ISO-8601 UTC")
@@ -2258,7 +2258,7 @@ class LanguageDetectionResponse(BaseModel):
     confidence: float = Field(description="Detection confidence score (0.0 to 1.0)")
     analyzed_chars: int = Field(description="Number of characters analyzed from the input text")
     is_multilingual_model_applied: bool = Field(description="Whether the multilingual inference model was selected for routing")
-    model_version: str = Field(description="Assigned inference model version string (e.g. 'finbert-minilm-v2.1', 'multilingual-minilm-v1.0')")
+    model_version: str = Field(description="Assigned inference model version string (e.g. 'finbert-v3.1.0', 'multilingual-minilm-v1.0')")
     message: str = Field(description="Diagnostic or operational message")
 
 

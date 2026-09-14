@@ -166,7 +166,7 @@ def main():
             and data.get("record_id") == "AAPL_2026-08-30T10:15:00Z"
             and len(entries) >= 1
             and entries[0].get("source_type") == "finnhub"
-            and entries[0].get("model_version") == "finbert-minilm-v2.1"
+            and entries[0].get("model_version") == "finbert-v3.1.0"
             and entries[0].get("pipeline_version") == "2.0.0"
             and entries[0].get("data_quality_score") is not None
         )

@@ -5,7 +5,7 @@
 use once_cell::sync::Lazy;
 use std::collections::HashSet;
 
-pub const DEFAULT_ENGLISH_MODEL: &str = "finbert-minilm-v2.1";
+pub const DEFAULT_ENGLISH_MODEL: &str = "finbert-v3.1.0";
 pub const MULTILINGUAL_MODEL_VERSION: &str = "multilingual-minilm-v1.0";
 pub const MAX_ANALYSIS_CHARS: usize = 500;
 

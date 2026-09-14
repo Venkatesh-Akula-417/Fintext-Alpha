@@ -7,7 +7,7 @@ use uuid::Uuid;
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, ToSchema)]
 pub struct ModelMetadata {
     /// Transformer / Deep Learning inference model version tag
-    #[schema(example = "finbert-minilm-v2.1")]
+    #[schema(example = "finbert-v3.1.0")]
     pub model_version: String,
     /// Quantitative feature engineering & processing pipeline semantic version
     #[schema(example = "2.0.0")]
@@ -21,7 +21,7 @@ pub struct ModelMetadata {
     pub last_trained_at: Option<DateTime<Utc>>,
 }
 
-pub const DEFAULT_MODEL_VERSION: &str = "finbert-minilm-v2.1";
+pub const DEFAULT_MODEL_VERSION: &str = "finbert-v3.1.0";
 pub const DEFAULT_PIPELINE_VERSION: &str = "2.0.0";
 pub const DEFAULT_DATA_PROVENANCE: &[&str] = &["SEC EDGAR", "Finnhub", "Polygon"];
 
@@ -221,9 +221,9 @@ pub struct SentimentResponse {
     /// Status or diagnostic message
     #[schema(example = "Point-in-time sentiment signal retrieved")]
     pub message: String,
-    /// Model version identifier used for inference (e.g., 'finbert-minilm-v2.1')
+    /// Model version identifier used for inference (e.g., 'finbert-v3.1.0')
     #[serde(default, skip_serializing_if = "Option::is_none")]
-    #[schema(example = "finbert-minilm-v2.1")]
+    #[schema(example = "finbert-v3.1.0")]
     pub model_version: Option<String>,
     /// Quantitative feature engineering & processing pipeline semantic version
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -459,7 +459,7 @@ pub struct SentimentRecord {
     pub data_quality_score: f32,
     /// Model version identifier used for inference
     #[serde(default, skip_serializing_if = "Option::is_none")]
-    #[schema(example = "finbert-minilm-v2.1")]
+    #[schema(example = "finbert-v3.1.0")]
     pub model_version: Option<String>,
     /// Pipeline version identifier
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -555,7 +555,7 @@ pub struct SentimentHistoryResponse {
     pub records: Vec<SentimentRecord>,
     /// Model version identifier
     #[serde(default, skip_serializing_if = "Option::is_none")]
-    #[schema(example = "finbert-minilm-v2.1")]
+    #[schema(example = "finbert-v3.1.0")]
     pub model_version: Option<String>,
     /// Pipeline version identifier
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -623,7 +623,7 @@ pub struct SectorSentimentResponse {
     pub generated_at: String,
     /// Model version identifier
     #[serde(default, skip_serializing_if = "Option::is_none")]
-    #[schema(example = "finbert-minilm-v2.1")]
+    #[schema(example = "finbert-v3.1.0")]
     pub model_version: Option<String>,
     /// Pipeline version identifier
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -663,7 +663,7 @@ pub struct BatchSentimentResponse {
     pub results: Vec<SentimentResponse>,
     /// Model version identifier
     #[serde(default, skip_serializing_if = "Option::is_none")]
-    #[schema(example = "finbert-minilm-v2.1")]
+    #[schema(example = "finbert-v3.1.0")]
     pub model_version: Option<String>,
     /// Pipeline version identifier
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -756,7 +756,7 @@ pub struct SentimentFeedItem {
     pub gamma_exposure: f64,
     /// Model version identifier used for inference
     #[serde(default, skip_serializing_if = "Option::is_none")]
-    #[schema(example = "finbert-minilm-v2.1")]
+    #[schema(example = "finbert-v3.1.0")]
     pub model_version: Option<String>,
     /// Pipeline version identifier
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -865,7 +865,7 @@ pub struct SentimentFeedResponse {
     pub records: Vec<SentimentFeedItem>,
     /// Model version identifier
     #[serde(default, skip_serializing_if = "Option::is_none")]
-    #[schema(example = "finbert-minilm-v2.1")]
+    #[schema(example = "finbert-v3.1.0")]
     pub model_version: Option<String>,
     /// Pipeline version identifier
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -935,7 +935,7 @@ pub struct SentimentAnomalyItem {
     pub record_count: usize,
     /// Model version identifier
     #[serde(default, skip_serializing_if = "Option::is_none")]
-    #[schema(example = "finbert-minilm-v2.1")]
+    #[schema(example = "finbert-v3.1.0")]
     pub model_version: Option<String>,
     /// Pipeline version identifier
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -982,7 +982,7 @@ pub struct SentimentAnomaliesResponse {
     pub message: String,
     /// Model version identifier
     #[serde(default, skip_serializing_if = "Option::is_none")]
-    #[schema(example = "finbert-minilm-v2.1")]
+    #[schema(example = "finbert-v3.1.0")]
     pub model_version: Option<String>,
     /// Pipeline version identifier
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -1062,7 +1062,7 @@ pub struct SentimentDisagreementResponse {
     pub generated_at: String,
     /// Model version identifier
     #[serde(default, skip_serializing_if = "Option::is_none")]
-    #[schema(example = "finbert-minilm-v2.1")]
+    #[schema(example = "finbert-v3.1.0")]
     pub model_version: Option<String>,
     /// Pipeline version identifier
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -1123,7 +1123,7 @@ pub struct EntitySentimentItem {
     pub latest_mention_date: String,
     /// Model version identifier used for entity extraction & sentiment inference
     #[serde(default, skip_serializing_if = "Option::is_none")]
-    #[schema(example = "finbert-minilm-v2.1")]
+    #[schema(example = "finbert-v3.1.0")]
     pub model_version: Option<String>,
     /// Pipeline version identifier
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -1160,7 +1160,7 @@ pub struct EntitySentimentResponse {
     pub generated_at: String,
     /// Model version identifier
     #[serde(default, skip_serializing_if = "Option::is_none")]
-    #[schema(example = "finbert-minilm-v2.1")]
+    #[schema(example = "finbert-v3.1.0")]
     pub model_version: Option<String>,
     /// Pipeline version identifier
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -1320,7 +1320,7 @@ mod tests {
             "signal_available_ts_us": 1725024000000000,
             "data_quality_score": 0.95,
             "message": "Sentiment signal retrieved successfully",
-            "model_version": "finbert-minilm-v2.1",
+            "model_version": "finbert-v3.1.0",
             "pipeline_version": "2.0.0",
             "data_provenance": ["SEC EDGAR", "Finnhub"]
         }"#;
@@ -1328,7 +1328,7 @@ mod tests {
         let modern_resp: SentimentResponse = serde_json::from_str(modern_json).unwrap();
         assert_eq!(
             modern_resp.model_version.as_deref(),
-            Some("finbert-minilm-v2.1")
+            Some("finbert-v3.1.0")
         );
         assert_eq!(modern_resp.pipeline_version.as_deref(), Some("2.0.0"));
         assert_eq!(

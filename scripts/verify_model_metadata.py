@@ -132,13 +132,13 @@ def run_tests():
             r = http.get("/sentiment?ticker=AAPL", headers=headers1)
             check("GET /sentiment returns 200 OK", r.status_code == 200)
             data = r.json()
-            check("model_version is 'finbert-minilm-v2.1'", data.get("model_version") == "finbert-minilm-v2.1", str(data))
+            check("model_version is 'finbert-v3.1.0'", data.get("model_version") == "finbert-v3.1.0", str(data))
             check("pipeline_version is '2.0.0'", data.get("pipeline_version") == "2.0.0", str(data))
             check("data_provenance contains expected sources", data.get("data_provenance") == ["SEC EDGAR", "Finnhub", "Polygon"], str(data))
 
             # SDK Deserialization
             sdk_sentiment = client1.sentiment(ticker="AAPL")
-            check("SDK SentimentResponse has model_version", sdk_sentiment.model_version == "finbert-minilm-v2.1")
+            check("SDK SentimentResponse has model_version", sdk_sentiment.model_version == "finbert-v3.1.0")
             check("SDK SentimentResponse has pipeline_version", sdk_sentiment.pipeline_version == "2.0.0")
             check("SDK SentimentResponse has data_provenance", sdk_sentiment.data_provenance == ["SEC EDGAR", "Finnhub", "Polygon"])
 
@@ -147,7 +147,7 @@ def run_tests():
             r = http.get("/sentiment/history?ticker=AAPL&start_date=2026-08-01&end_date=2026-08-30&limit=5", headers=headers1)
             check("GET /sentiment/history returns 200 OK", r.status_code == 200)
             hist_data = r.json()
-            check("History envelope has model_version", hist_data.get("model_version") == "finbert-minilm-v2.1")
+            check("History envelope has model_version", hist_data.get("model_version") == "finbert-v3.1.0")
             check("History envelope has pipeline_version", hist_data.get("pipeline_version") == "2.0.0")
             check("History envelope has data_provenance", hist_data.get("data_provenance") == ["SEC EDGAR", "Finnhub", "Polygon"])
 
@@ -155,12 +155,12 @@ def run_tests():
             check("History returns non-empty records", len(records) > 0)
             if records:
                 first_rec = records[0]
-                check("Individual record has model_version", first_rec.get("model_version") == "finbert-minilm-v2.1")
+                check("Individual record has model_version", first_rec.get("model_version") == "finbert-v3.1.0")
                 check("Individual record has pipeline_version", first_rec.get("pipeline_version") == "2.0.0")
                 check("Individual record has data_provenance", bool(first_rec.get("data_provenance")))
 
             sdk_hist = client1.sentiment_history(ticker="AAPL", start_date="2026-08-01", end_date="2026-08-30", limit=5)
-            check("SDK SentimentHistoryResponse has model_version", sdk_hist.model_version == "finbert-minilm-v2.1")
+            check("SDK SentimentHistoryResponse has model_version", sdk_hist.model_version == "finbert-v3.1.0")
             check("SDK SentimentHistoryResponse record has data_provenance", len(sdk_hist.records) > 0 and bool(sdk_hist.records[0].data_provenance))
 
             # Phase 3: Real-Time News Sentiment Feed (/sentiment/feed)
@@ -168,7 +168,7 @@ def run_tests():
             r = http.get("/sentiment/feed?limit=5", headers=headers1)
             check("GET /sentiment/feed returns 200 OK", r.status_code == 200)
             feed_data = r.json()
-            check("Feed envelope has model_version", feed_data.get("model_version") == "finbert-minilm-v2.1")
+            check("Feed envelope has model_version", feed_data.get("model_version") == "finbert-v3.1.0")
             check("Feed envelope has pipeline_version", feed_data.get("pipeline_version") == "2.0.0")
             check("Feed envelope has data_provenance", feed_data.get("data_provenance") == ["SEC EDGAR", "Finnhub", "Polygon"])
 
@@ -176,88 +176,88 @@ def run_tests():
             check("Feed returns non-empty records", len(feed_items) > 0)
             if feed_items:
                 first_item = feed_items[0]
-                check("Feed item has model_version", first_item.get("model_version") == "finbert-minilm-v2.1")
+                check("Feed item has model_version", first_item.get("model_version") == "finbert-v3.1.0")
                 check("Feed item has pipeline_version", first_item.get("pipeline_version") == "2.0.0")
                 check("Feed item has data_provenance", bool(first_item.get("data_provenance")))
 
             sdk_feed = client1.sentiment_feed(limit=5)
-            check("SDK SentimentFeedResponse has model_version", sdk_feed.model_version == "finbert-minilm-v2.1")
-            check("SDK SentimentFeedItem has model_version", len(sdk_feed.records) > 0 and sdk_feed.records[0].model_version == "finbert-minilm-v2.1")
+            check("SDK SentimentFeedResponse has model_version", sdk_feed.model_version == "finbert-v3.1.0")
+            check("SDK SentimentFeedItem has model_version", len(sdk_feed.records) > 0 and sdk_feed.records[0].model_version == "finbert-v3.1.0")
 
             # Phase 4: GICS Sector Aggregate Sentiment (/sentiment/sector)
             print("\n--- PHASE 4: GICS Sector Aggregate Sentiment Metadata ---")
             r = http.get("/sentiment/sector?sector=Technology&start_date=2026-08-01&end_date=2026-08-30", headers=headers1)
             check("GET /sentiment/sector returns 200 OK", r.status_code == 200)
             sec_data = r.json()
-            check("Sector envelope has model_version", sec_data.get("model_version") == "finbert-minilm-v2.1")
+            check("Sector envelope has model_version", sec_data.get("model_version") == "finbert-v3.1.0")
             check("Sector envelope has pipeline_version", sec_data.get("pipeline_version") == "2.0.0")
             check("Sector envelope has data_provenance", sec_data.get("data_provenance") == ["SEC EDGAR", "Finnhub", "Polygon"])
 
             sdk_sec = client1.sector_sentiment(sector="Technology", start_date="2026-08-01", end_date="2026-08-30")
-            check("SDK SectorSentimentResponse has model_version", sdk_sec.model_version == "finbert-minilm-v2.1")
+            check("SDK SectorSentimentResponse has model_version", sdk_sec.model_version == "finbert-v3.1.0")
 
             # Phase 5: Batch Multi-Ticker Sentiment (/sentiment/batch)
             print("\n--- PHASE 5: Batch Multi-Ticker Sentiment Metadata ---")
             r = http.get("/sentiment/batch?tickers=AAPL,MSFT,NVDA", headers=headers1)
             check("GET /sentiment/batch returns 200 OK", r.status_code == 200)
             batch_data = r.json()
-            check("Batch envelope has model_version", batch_data.get("model_version") == "finbert-minilm-v2.1")
+            check("Batch envelope has model_version", batch_data.get("model_version") == "finbert-v3.1.0")
             check("Batch envelope has pipeline_version", batch_data.get("pipeline_version") == "2.0.0")
             check("Batch envelope has data_provenance", batch_data.get("data_provenance") == ["SEC EDGAR", "Finnhub", "Polygon"])
 
             batch_results = batch_data.get("results", [])
             check("Batch returns 3 results", len(batch_results) == 3)
             if batch_results:
-                check("Batch item has model_version", batch_results[0].get("model_version") == "finbert-minilm-v2.1")
+                check("Batch item has model_version", batch_results[0].get("model_version") == "finbert-v3.1.0")
 
             sdk_batch = client1.batch_sentiment(tickers=["AAPL", "MSFT", "NVDA"])
-            check("SDK BatchSentimentResponse has model_version", sdk_batch.model_version == "finbert-minilm-v2.1")
-            check("SDK BatchSentimentResponse result has model_version", len(sdk_batch.results) == 3 and sdk_batch.results[0].model_version == "finbert-minilm-v2.1")
+            check("SDK BatchSentimentResponse has model_version", sdk_batch.model_version == "finbert-v3.1.0")
+            check("SDK BatchSentimentResponse result has model_version", len(sdk_batch.results) == 3 and sdk_batch.results[0].model_version == "finbert-v3.1.0")
 
             # Phase 6: Statistical Sentiment Anomalies Scanner (/sentiment/anomalies)
             print("\n--- PHASE 6: Statistical Sentiment Anomalies Scanner Metadata ---")
             r = http.get("/sentiment/anomalies?lookback_days=30&limit=5", headers=headers1)
             check("GET /sentiment/anomalies returns 200 OK", r.status_code == 200)
             anom_data = r.json()
-            check("Anomalies envelope has model_version", anom_data.get("model_version") == "finbert-minilm-v2.1")
+            check("Anomalies envelope has model_version", anom_data.get("model_version") == "finbert-v3.1.0")
             check("Anomalies envelope has pipeline_version", anom_data.get("pipeline_version") == "2.0.0")
             check("Anomalies envelope has data_provenance", anom_data.get("data_provenance") == ["SEC EDGAR", "Finnhub", "Polygon"])
 
             anom_items = anom_data.get("items", [])
             if anom_items:
-                check("Anomaly item has model_version", anom_items[0].get("model_version") == "finbert-minilm-v2.1")
+                check("Anomaly item has model_version", anom_items[0].get("model_version") == "finbert-v3.1.0")
 
             sdk_anom = client1.sentiment_anomalies(lookback_days=30, limit=5)
-            check("SDK SentimentAnomaliesResponse has model_version", sdk_anom.model_version == "finbert-minilm-v2.1")
+            check("SDK SentimentAnomaliesResponse has model_version", sdk_anom.model_version == "finbert-v3.1.0")
 
             # Phase 7: Multi-Source Sentiment Disagreement Index (/sentiment/disagreement)
             print("\n--- PHASE 7: Sentiment Disagreement Index Metadata ---")
             r = http.get("/sentiment/disagreement?ticker=AAPL&start_date=2025-01-01&end_date=2025-03-31&aggregation=stddev", headers=headers1)
             check("GET /sentiment/disagreement returns 200 OK", r.status_code == 200)
             dis_data = r.json()
-            check("Disagreement envelope has model_version", dis_data.get("model_version") == "finbert-minilm-v2.1")
+            check("Disagreement envelope has model_version", dis_data.get("model_version") == "finbert-v3.1.0")
             check("Disagreement envelope has pipeline_version", dis_data.get("pipeline_version") == "2.0.0")
             check("Disagreement envelope has data_provenance", dis_data.get("data_provenance") == ["SEC EDGAR", "Finnhub", "Polygon"])
 
             sdk_dis = client1.sentiment_disagreement(ticker="AAPL", start_date="2025-01-01", end_date="2025-03-31")
-            check("SDK SentimentDisagreementResponse has model_version", sdk_dis.model_version == "finbert-minilm-v2.1")
+            check("SDK SentimentDisagreementResponse has model_version", sdk_dis.model_version == "finbert-v3.1.0")
 
             # Phase 8: Entity Sentiment Breakdown Analytics (/sentiment/entities)
             print("\n--- PHASE 8: Entity Sentiment Breakdown Metadata ---")
             r = http.get("/sentiment/entities?limit=5", headers=headers1)
             check("GET /sentiment/entities returns 200 OK", r.status_code == 200)
             ent_data = r.json()
-            check("Entities envelope has model_version", ent_data.get("model_version") == "finbert-minilm-v2.1")
+            check("Entities envelope has model_version", ent_data.get("model_version") == "finbert-v3.1.0")
             check("Entities envelope has pipeline_version", ent_data.get("pipeline_version") == "2.0.0")
             check("Entities envelope has data_provenance", ent_data.get("data_provenance") == ["SEC EDGAR", "Finnhub", "Polygon"])
 
             ent_items = ent_data.get("entities", [])
             check("Entities returns valid list", isinstance(ent_items, list))
             if ent_items:
-                check("Entity item has model_version", ent_items[0].get("model_version") == "finbert-minilm-v2.1")
+                check("Entity item has model_version", ent_items[0].get("model_version") == "finbert-v3.1.0")
 
             sdk_ent = client1.sentiment_entities(limit=5)
-            check("SDK EntitySentimentResponse has model_version", sdk_ent.model_version == "finbert-minilm-v2.1")
+            check("SDK EntitySentimentResponse has model_version", sdk_ent.model_version == "finbert-v3.1.0")
 
             # Phase 9: OpenAPI 3.0 Component Schemas & Property Registration
             print("\n--- PHASE 9: OpenAPI 3.0 Documentation Registration ---")
@@ -381,14 +381,14 @@ def run_tests():
         async def async_test():
             async with FinTextAsyncClient(base_url=BASE_URL_3, api_token=token3) as async_client:
                 sent = await async_client.sentiment(ticker="MSFT")
-                check("Async client sentiment has model_version", sent.model_version == "finbert-minilm-v2.1")
+                check("Async client sentiment has model_version", sent.model_version == "finbert-v3.1.0")
                 check("Async client sentiment has data_provenance", sent.data_provenance == ["SEC EDGAR", "Finnhub", "Polygon"])
 
                 batch = await async_client.batch_sentiment(tickers=["AAPL", "GOOGL"])
-                check("Async client batch_sentiment has model_version", batch.model_version == "finbert-minilm-v2.1")
+                check("Async client batch_sentiment has model_version", batch.model_version == "finbert-v3.1.0")
 
                 feed = await async_client.sentiment_feed(limit=3)
-                check("Async client sentiment_feed has model_version", feed.model_version == "finbert-minilm-v2.1")
+                check("Async client sentiment_feed has model_version", feed.model_version == "finbert-v3.1.0")
 
         anyio.run(async_test)
 

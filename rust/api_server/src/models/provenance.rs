@@ -42,7 +42,7 @@ pub struct DataProvenanceItem {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub source_id: Option<String>,
     /// Machine learning / Transformer model version tag
-    #[schema(example = "finbert-minilm-v2.1")]
+    #[schema(example = "finbert-v3.1.0")]
     pub model_version: String,
     /// Feature extraction and processing pipeline semantic version
     #[schema(example = "2.0.0")]

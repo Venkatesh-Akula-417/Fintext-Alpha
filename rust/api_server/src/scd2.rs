@@ -109,7 +109,7 @@ impl Scd2RevisionRegistry {
             vpin: 0.48,
             gamma_exposure: 150000.0,
             data_quality_score: 0.92,
-            model_version: Some("finbert-minilm-v2.1".to_string()),
+            model_version: Some("finbert-v3.1.0".to_string()),
             pipeline_version: Some("2.0.0".to_string()),
             data_provenance: Some(vec![
                 "SEC EDGAR".to_string(),
@@ -134,7 +134,7 @@ impl Scd2RevisionRegistry {
             vpin: 0.52,
             gamma_exposure: 220000.0,
             data_quality_score: 0.95,
-            model_version: Some("finbert-minilm-v2.1".to_string()),
+            model_version: Some("finbert-v3.1.0".to_string()),
             pipeline_version: Some("2.0.0".to_string()),
             data_provenance: Some(vec![
                 "SEC EDGAR".to_string(),
@@ -164,7 +164,7 @@ impl Scd2RevisionRegistry {
             vpin: 0.42,
             gamma_exposure: 180000.0,
             data_quality_score: 0.90,
-            model_version: Some("finbert-minilm-v2.1".to_string()),
+            model_version: Some("finbert-v3.1.0".to_string()),
             pipeline_version: Some("2.0.0".to_string()),
             data_provenance: Some(vec![
                 "SEC EDGAR".to_string(),
@@ -295,7 +295,7 @@ impl Scd2RevisionRegistry {
             vpin: 0.50,
             gamma_exposure: 100000.0,
             data_quality_score: 0.90,
-            model_version: Some("finbert-minilm-v2.1".to_string()),
+            model_version: Some("finbert-v3.1.0".to_string()),
             pipeline_version: Some("2.0.0".to_string()),
             data_provenance: Some(vec![source]),
             language: "english".to_string(),

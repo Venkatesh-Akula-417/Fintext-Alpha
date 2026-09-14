@@ -13,7 +13,7 @@ Verifies:
   6.  French text correctly detected and multilingual model applied
   7.  Japanese text correctly detected via Unicode range analysis
   8.  Mixed English-dominant text defaults to English
-  9.  Model routing: English uses 'finbert-minilm-v2.1', non-English uses 'multilingual-minilm-v1.0'
+  9.  Model routing: English uses 'finbert-v3.1.0', non-English uses 'multilingual-minilm-v1.0'
   10. Analyzed chars are capped at 500 characters for performance
   11. Confidence scores are in valid range [0.0, 1.0]
   12. Python SDK Sync Client integration (client.detect_language)

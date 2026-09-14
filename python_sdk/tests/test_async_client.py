@@ -3495,7 +3495,7 @@ def create_async_mock_transport() -> httpx.MockTransport:
                             "record_id": rec_id,
                             "source_type": "finnhub" if rec_type == "sentiment" else "sec_edgar",
                             "source_id": "art_123456",
-                            "model_version": "finbert-minilm-v2.1",
+                            "model_version": "finbert-v3.1.0",
                             "pipeline_version": "2.0.0",
                             "data_quality_score": 0.98,
                             "processing_steps": [
@@ -6454,7 +6454,7 @@ async def test_async_provenance():
     assert resp_sent.record_id == "AAPL_2026-08-30T10:15:00Z"
     assert len(resp_sent.provenance_entries) == 1
     assert resp_sent.provenance_entries[0].source_type == "finnhub"
-    assert resp_sent.provenance_entries[0].model_version == "finbert-minilm-v2.1"
+    assert resp_sent.provenance_entries[0].model_version == "finbert-v3.1.0"
     assert len(resp_sent.provenance_entries[0].processing_steps) == 5
     assert resp_sent.provenance_entries[0].processing_steps[0].step == "fetch_article"
     assert resp_sent.provenance_entries[0].processing_steps[3].step == "infer_sentiment"

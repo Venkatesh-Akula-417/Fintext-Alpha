@@ -3572,7 +3572,7 @@ def create_mock_transport() -> httpx.MockTransport:
                             "record_id": rec_id,
                             "source_type": "finnhub" if rec_type == "sentiment" else "sec_edgar",
                             "source_id": "art_123456",
-                            "model_version": "finbert-minilm-v2.1",
+                            "model_version": "finbert-v3.1.0",
                             "pipeline_version": "2.0.0",
                             "data_quality_score": 0.98,
                             "processing_steps": [
@@ -5985,7 +5985,7 @@ def test_model_metadata_and_provenance_models():
 
     # 1. Test ModelMetadata defaults
     meta = ModelMetadata()
-    assert meta.model_version == "finbert-minilm-v2.1"
+    assert meta.model_version == "finbert-v3.1.0"
     assert meta.pipeline_version == "2.0.0"
     assert meta.data_provenance == ["SEC EDGAR", "Finnhub", "Polygon"]
 
@@ -6009,12 +6009,12 @@ def test_model_metadata_and_provenance_models():
     # 3. Test deserialization of payload with metadata
     modern_payload = {
         **legacy_payload,
-        "model_version": "finbert-minilm-v2.1",
+        "model_version": "finbert-v3.1.0",
         "pipeline_version": "2.0.0",
         "data_provenance": ["SEC EDGAR", "Finnhub", "Polygon"],
     }
     resp_modern = SentimentResponse.model_validate(modern_payload)
-    assert resp_modern.model_version == "finbert-minilm-v2.1"
+    assert resp_modern.model_version == "finbert-v3.1.0"
     assert resp_modern.pipeline_version == "2.0.0"
     assert resp_modern.data_provenance == ["SEC EDGAR", "Finnhub", "Polygon"]
 
@@ -6030,12 +6030,12 @@ def test_model_metadata_and_provenance_models():
         "data_quality_score": 0.92,
         "vpin": 0.25,
         "gamma_exposure": 150000.0,
-        "model_version": "finbert-minilm-v2.1",
+        "model_version": "finbert-v3.1.0",
         "pipeline_version": "2.0.0",
         "data_provenance": ["Bloomberg"],
     }
     item = SentimentFeedItem.model_validate(item_payload)
-    assert item.model_version == "finbert-minilm-v2.1"
+    assert item.model_version == "finbert-v3.1.0"
     assert item.data_provenance == ["Bloomberg"]
 
 
@@ -6652,7 +6652,7 @@ def test_provenance_sync_client():
     assert resp_sent.record_id == "AAPL_2026-08-30T10:15:00Z"
     assert len(resp_sent.provenance_entries) == 1
     assert resp_sent.provenance_entries[0].source_type == "finnhub"
-    assert resp_sent.provenance_entries[0].model_version == "finbert-minilm-v2.1"
+    assert resp_sent.provenance_entries[0].model_version == "finbert-v3.1.0"
     assert len(resp_sent.provenance_entries[0].processing_steps) == 5
     assert resp_sent.provenance_entries[0].processing_steps[0].step == "fetch_article"
     assert resp_sent.provenance_entries[0].processing_steps[3].step == "infer_sentiment"

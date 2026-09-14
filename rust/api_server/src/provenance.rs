@@ -42,7 +42,7 @@ impl ProvenanceRegistry {
             let item = Self::generate_deterministic_mock_provenance(
                 "sentiment",
                 &record_id,
-                "finbert-minilm-v2.1",
+                "finbert-v3.1.0",
                 "2.0.0",
             );
             registry.record_provenance(item);
@@ -58,7 +58,7 @@ impl ProvenanceRegistry {
             let item = Self::generate_deterministic_mock_provenance(
                 "news",
                 art_id,
-                "finbert-minilm-v2.1",
+                "finbert-v3.1.0",
                 "2.0.0",
             );
             registry.record_provenance(item);
@@ -318,13 +318,13 @@ mod tests {
         let p1 = ProvenanceRegistry::generate_deterministic_mock_provenance(
             "sentiment",
             "NVDA_2026-08-30T10:15:00Z",
-            "finbert-minilm-v2.1",
+            "finbert-v3.1.0",
             "2.0.0",
         );
         let p2 = ProvenanceRegistry::generate_deterministic_mock_provenance(
             "sentiment",
             "NVDA_2026-08-30T10:15:00Z",
-            "finbert-minilm-v2.1",
+            "finbert-v3.1.0",
             "2.0.0",
         );
 
@@ -340,7 +340,7 @@ mod tests {
         let news_prov = ProvenanceRegistry::generate_deterministic_mock_provenance(
             "news",
             "550e8400-e29b-41d4-a716-446655440000",
-            "finbert-minilm-v2.1",
+            "finbert-v3.1.0",
             "2.0.0",
         );
 
