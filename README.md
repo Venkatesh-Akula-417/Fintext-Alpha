@@ -230,6 +230,103 @@ cargo test --workspace --manifest-path rust/Cargo.toml -- --test-threads=2
 
 ---
 
+## 🛡️ Validation, Monitoring & Operations
+
+Institutional-grade validation, drift detection, and operational tooling that runs both locally and in CI.
+
+### PIT Correctness Validation (Bi-Temporal)
+
+**Script**: [`scripts/validate_pit_correctness.py`](scripts/validate_pit_correctness.py)  
+**Package**: [`scripts/pit_validation/`](scripts/pit_validation/)  
+**Report**: [`docs/PIT_VALIDATION_REPORT.md`](docs/PIT_VALIDATION_REPORT.md)  
+
+Verifies zero look-ahead bias on a live PostgreSQL 16 + TimescaleDB instance through 8 as-of scenarios (S1–S8) plus a negative-control sensitivity check (N1):
+- **S1**: as-of before revision (rev1 only)
+- **S2**: as-of after revision (rev2 current)
+- **S3**: late-arriving event isolation ($T_p < T_a < T_i$)
+- **S4**: restated earnings revision
+- **S5**: ticker symbol change lineage (FB → META)
+- **S6**: delisting resolution + delisting return
+- **S7**: corporate action split adjustment
+- **S8**: index membership point-in-time (survivorship bias prevention)
+- **N1**: negative control — naive query must leak future revisions
+
+**Run locally**:
+```bash
+python scripts/validate_pit_correctness.py \
+  --database-url "postgres://fintext:fintext@localhost:5432/fintext_metadata"
+```
+
+**CI**: [`.github/workflows/pit-validation.yml`](.github/workflows/pit-validation.yml) on every push.
+
+### Model Quality & Calibration Validation
+
+**Script**: [`scripts/validate_model_quality.py`](scripts/validate_model_quality.py)  
+**Package**: [`scripts/model_validation/`](scripts/model_validation/)  
+**Report**: [`docs/MODEL_VALIDATION_REPORT.md`](docs/MODEL_VALIDATION_REPORT.md)  
+
+Evaluates the FinBERT INT8 model on 105 labeled financial samples and computes Accuracy, Per-class PRF, Macro F1, Weighted F1, ECE (10 bins), confusion matrix, and P50/P95/P99 latency.
+
+**Institutional thresholds**:
+- Macro F1 $\ge 0.75$
+- Expected Calibration Error $\le 0.15$
+- P95 latency $\le 250\text{ ms}$ (CPU runner)
+
+**CI**: [`.github/workflows/model-validation.yml`](.github/workflows/model-validation.yml)  
+**Status**: Informational (P1 — INT8 environment divergence; see [`docs/P1_MODEL_VALIDATION_ENVIRONMENT.md`](docs/P1_MODEL_VALIDATION_ENVIRONMENT.md))
+
+### Model Drift Monitoring
+
+**Script**: [`scripts/model_drift_monitor.py`](scripts/model_drift_monitor.py)  
+**Package**: [`scripts/model_drift/`](scripts/model_drift/)  
+**Baseline**: [`data/model-drift/baseline.json`](data/model-drift/baseline.json)  
+**Report**: [`docs/MODEL_DRIFT_REPORT.md`](docs/MODEL_DRIFT_REPORT.md)  
+
+Compares current evaluation against a committed baseline snapshot and applies threshold-based alerts:
+- Macro F1 drop $\ge 0.03$ (warning) / $\ge 0.07$ (critical)
+- ECE increase $\ge 0.02$ (warning) / $\ge 0.05$ (critical)
+- P95 latency increase $\ge 30\%$ (warning) / $\ge 60\%$ (critical)
+
+**CI**: [`.github/workflows/model-drift.yml`](.github/workflows/model-drift.yml) — weekly schedule (Mondays 06:00 UTC) + push + manual dispatch.  
+**Status**: Informational (P1)
+
+### Alert Dispatcher (JSONL + Webhooks)
+
+**Module**: [`scripts/model_drift/alerts.py`](scripts/model_drift/alerts.py)  
+
+Every drift evaluation emits a compact JSONL entry to `data/model-drift/alerts.jsonl` with severity, breaches, deltas, and git commit SHA. Optional webhook dispatch (Slack, PagerDuty, Teams) is triggered for CRITICAL alerts when `--webhook-url` is configured.
+
+**Env vars** (see [`.env.example`](.env.example)):
+- `MODEL_DRIFT_WEBHOOK_URL` — optional POST endpoint
+- `DRIFT_ALERT_LOG_PATH` — defaults to `data/model-drift/alerts.jsonl`
+
+### Model Asset Distribution
+
+**Script**: [`scripts/fetch_models.py`](scripts/fetch_models.py)  
+**Manifest**: [`config/models_manifest.json`](config/models_manifest.json)  
+**Docs**: [`docs/MODEL_ASSET_DISTRIBUTION.md`](docs/MODEL_ASSET_DISTRIBUTION.md)  
+
+Large ONNX models (~470 MB) are **not** stored in git. They are distributed via GitHub Release assets and fetched on demand:
+- Manifest declares `url`, `sha256` (archive-level), and `file_sha256` (per-extracted-file) for each asset
+- CI runs `fetch_models.py` before model-dependent tests
+- Verified via SHA256 both at download and after extraction
+- Fallback: SKIP mode when URLs are not configured
+
+### PostgreSQL 16 + TimescaleDB (Docker Compose)
+
+- **Service**: `postgres` in [`docker-compose.yml`](docker-compose.yml)
+- **Port**: `5432`
+- **Container**: `fintext-postgres`
+- **Image**: `timescale/timescaledb:latest-pg16`
+
+Auto-applies schema on first startup:
+- [`config/timescale/init.sql`](config/timescale/init.sql) → `sentiment_records` hypertable
+- [`config/pit_reference_schema.sql`](config/pit_reference_schema.sql) → bi-temporal PIT tables
+
+**Healthcheck**: `pg_isready -U fintext -d fintext_metadata`
+
+---
+
 ## 📡 Key API Endpoints & Capabilities
 
 The API server provides over 120 production REST and WebSocket endpoints, including the standardized versioned public API surface (`/v1`, 32 core endpoints):
