@@ -18,7 +18,6 @@ jobs:
   model-validation:
     name: FinBERT Model Quality & Calibration Validation
     runs-on: windows-latest
-    continue-on-error: true  # P1: Python 3.11 ONNX INT8 kernel divergence — see docs
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -60,6 +59,7 @@ jobs:
       # CPU-only GitHub runner: 250 ms threshold accommodates cold-start ONNX Runtime + single-thread tokenizer overhead. See docs/LATENCY_RECONCILIATION.md.
       - name: Run Model Quality Validation
         shell: pwsh
+        continue-on-error: true  # P1: Python 3.11 vs 3.14 ONNX INT8 divergence — see docs
         run: |
           if ($env:SKIPPED -eq "true") {
             Write-Host "Running harness in SKIP verification mode..."

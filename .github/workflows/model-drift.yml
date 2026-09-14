@@ -20,7 +20,6 @@ jobs:
   drift-monitor:
     name: Model Drift & Calibration Monitoring
     runs-on: windows-latest
-    continue-on-error: true  # P1: Python 3.11 ONNX INT8 kernel divergence — see docs
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -61,6 +60,7 @@ jobs:
 
       - name: Run Model Drift Monitor
         shell: pwsh
+        continue-on-error: true  # P1: Python 3.11 vs 3.14 ONNX INT8 divergence — see docs
         run: |
           if ($env:SKIPPED -eq "true") {
             Write-Host "Running drift monitor in SKIP verification mode..."
