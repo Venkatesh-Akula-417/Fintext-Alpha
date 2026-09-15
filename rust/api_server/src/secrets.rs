@@ -487,22 +487,66 @@ mod tests {
 
     #[test]
     fn test_strict_validation_missing_key() {
+        let orig_admin = std::env::var("ADMIN_TOKEN").ok();
+        let orig_jwt = std::env::var("JWT_SECRET").ok();
+        let orig_db = std::env::var("DATABASE_URL").ok();
+        let orig_strict = std::env::var("STRICT_SECRETS_CHECK").ok();
+
+        std::env::remove_var("ADMIN_TOKEN");
+        std::env::remove_var("JWT_SECRET");
+        std::env::remove_var("DATABASE_URL");
+        std::env::remove_var("STRICT_SECRETS_CHECK");
+
         let mut map = HashMap::new();
         map.insert("JWT_SECRET".to_string(), "jwt_ok".to_string());
         // Missing ADMIN_TOKEN and DATABASE_URL
         let provider = EnvSecretsProvider::with_overrides(map);
 
         let res = validate_required_secrets(&provider, "aws_secrets_manager", false);
+
+        if let Some(v) = orig_admin {
+            std::env::set_var("ADMIN_TOKEN", v);
+        }
+        if let Some(v) = orig_jwt {
+            std::env::set_var("JWT_SECRET", v);
+        }
+        if let Some(v) = orig_db {
+            std::env::set_var("DATABASE_URL", v);
+        }
+        if let Some(v) = orig_strict {
+            std::env::set_var("STRICT_SECRETS_CHECK", v);
+        }
+
         assert!(res.is_err());
         assert!(res.unwrap_err().contains("ADMIN_TOKEN"));
     }
 
     #[test]
     fn test_dev_validation_fallback_defaults() {
+        let orig_admin = std::env::var("ADMIN_TOKEN").ok();
+        let orig_jwt = std::env::var("JWT_SECRET").ok();
+        let orig_db = std::env::var("DATABASE_URL").ok();
+
+        std::env::remove_var("ADMIN_TOKEN");
+        std::env::remove_var("JWT_SECRET");
+        std::env::remove_var("DATABASE_URL");
+
         let map = HashMap::new();
         let provider = EnvSecretsProvider::with_overrides(map);
 
-        let res = validate_required_secrets(&provider, "env", false).unwrap();
+        let res = validate_required_secrets(&provider, "env", false);
+
+        if let Some(v) = orig_admin {
+            std::env::set_var("ADMIN_TOKEN", v);
+        }
+        if let Some(v) = orig_jwt {
+            std::env::set_var("JWT_SECRET", v);
+        }
+        if let Some(v) = orig_db {
+            std::env::set_var("DATABASE_URL", v);
+        }
+
+        let res = res.unwrap();
         assert_eq!(res.jwt_secret, crate::DEFAULT_DEV_JWT_SECRET);
         assert_eq!(res.admin_token, crate::DEFAULT_DEV_ADMIN_TOKEN);
         assert!(res.database_url.contains("postgres://"));
