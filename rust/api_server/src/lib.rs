@@ -295,7 +295,7 @@ pub async fn gone_handler() -> impl axum::response::IntoResponse {
 /// Enforces constant-time verification of the X-Admin-Token header.
 pub async fn admin_token_middleware(
     axum::extract::State(state): axum::extract::State<AppState>,
-    req: axum::extract::Request,
+    mut req: axum::extract::Request,
     next: axum::middleware::Next,
 ) -> axum::response::Response {
     use axum::response::IntoResponse;
@@ -326,6 +326,48 @@ pub async fn admin_token_middleware(
             })),
         )
             .into_response();
+    }
+
+    // Process Authorization header if present or required by downstream handlers
+    if let Some(auth_header) = req
+        .headers()
+        .get("authorization")
+        .and_then(|h| h.to_str().ok())
+    {
+        let parts: Vec<&str> = auth_header.split_whitespace().collect();
+        if parts.len() == 2 && parts[0].eq_ignore_ascii_case("bearer") {
+            match validate_jwt(parts[1], state.jwt_secret.as_bytes()) {
+                Ok(claims) => {
+                    req.extensions_mut().insert(claims);
+                }
+                Err(_) => {
+                    return (
+                        axum::http::StatusCode::UNAUTHORIZED,
+                        axum::Json(serde_json::json!({
+                            "error": "Unauthorized",
+                            "message": "Invalid JWT token"
+                        })),
+                    )
+                        .into_response();
+                }
+            }
+        }
+    } else {
+        let path = req.uri().path();
+        if path.contains("/dlq/")
+            || path.ends_with("/dlq/events")
+            || path.contains("/retraining/")
+            || path.contains("/stream/kafka")
+        {
+            return (
+                axum::http::StatusCode::UNAUTHORIZED,
+                axum::Json(serde_json::json!({
+                    "error": "Unauthorized",
+                    "message": "Missing Authorization Bearer token"
+                })),
+            )
+                .into_response();
+        }
     }
 
     next.run(req).await
@@ -697,6 +739,28 @@ mod tests {
         test_auth_header_for_user("test_quant_fund")
     }
 
+    /// Helper to build the Axum application router with full API surface enabled (internal routes merged).
+    fn create_app_with_full_surface() -> Router {
+        std::env::set_var("ENABLE_FULL_API_SURFACE", "1");
+        let mut state = AppState::default();
+        state.enable_full_api_surface = true;
+        create_app_with_state(state)
+    }
+
+    /// Helper to seed a test user directly in UserRegistry.
+    fn seed_test_user(state: &mut AppState, email: &str, password: &str, role: &str) -> StoredUser {
+        let user = StoredUser {
+            id: Uuid::new_v4(),
+            email: email.to_string(),
+            password_hash: hash_password(password).unwrap(),
+            role: role.to_string(),
+            created_at: Utc::now(),
+            is_active: true,
+        };
+        state.user_registry.insert(user.clone());
+        user
+    }
+
     #[tokio::test]
     async fn test_openapi_json_spec_endpoint() {
         let app = create_app();
@@ -716,13 +780,16 @@ mod tests {
         assert_eq!(json_val["info"]["title"], "FinText-Alpha-Vectorizer API");
         assert_eq!(json_val["info"]["version"], "2.0.0-institutional");
 
-        // Verify that all routes are documented in OpenAPI paths
+        // Verify that core routes are documented in OpenAPI paths
         let paths = json_val["paths"].as_object().expect("Paths must be object");
         assert!(paths.contains_key("/health"));
         assert!(paths.contains_key("/auth/token"));
         assert!(paths.contains_key("/sentiment"));
-        assert!(paths.contains_key("/spillovers"));
-        assert!(paths.contains_key("/backtest"));
+        // Verify removed routes are NOT present in OpenAPI paths
+        assert!(!paths.contains_key("/spillovers"));
+        assert!(!paths.contains_key("/backtest"));
+        assert!(!paths.contains_key("/fix/order"));
+        assert!(!paths.contains_key("/crypto/sentiment"));
 
         // Verify Bearer JWT Security scheme
         let sec_schemes = &json_val["components"]["securitySchemes"];
@@ -971,11 +1038,11 @@ mod tests {
 
     #[tokio::test]
     async fn test_admin_reload_pit_data_unauthorized() {
-        let app = create_app();
+        let app = create_app_with_full_surface();
 
         let req = Request::builder()
             .method("POST")
-            .uri("/admin/reload-pit-data")
+            .uri("/internal/admin/reload-pit-data")
             .header(header::CONTENT_TYPE, "application/json")
             .header("X-Admin-Token", "wrong_admin_token")
             .body(Body::empty())
@@ -987,11 +1054,11 @@ mod tests {
 
     #[tokio::test]
     async fn test_admin_reload_pit_data_authorized() {
-        let app = create_app();
+        let app = create_app_with_full_surface();
 
         let req = Request::builder()
             .method("POST")
-            .uri("/admin/reload-pit-data")
+            .uri("/internal/admin/reload-pit-data")
             .header(header::CONTENT_TYPE, "application/json")
             .header("X-Admin-Token", DEFAULT_DEV_ADMIN_TOKEN)
             .body(Body::empty())
@@ -1135,9 +1202,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_spillovers_endpoint_valid() {
-        std::env::set_var("QUESTDB_MOCK_FALLBACK", "1");
         let app = create_app();
-
         let (auth_k, auth_v) = test_auth_header();
         let req = Request::builder()
             .uri("/spillovers?ticker=AAPL&limit=10")
@@ -1146,30 +1211,12 @@ mod tests {
             .unwrap();
 
         let response = app.oneshot(req).await.unwrap();
-        assert_eq!(response.status(), StatusCode::OK);
-
-        // Verify Rate Limit headers
-        assert!(response.headers().contains_key(&HEADER_RATELIMIT_LIMIT));
-        assert!(response.headers().contains_key(&HEADER_RATELIMIT_REMAINING));
-
-        let body = response.into_body().collect().await.unwrap().to_bytes();
-        let body_str = String::from_utf8(body.to_vec()).unwrap();
-        let spillover: SpilloverResponse = serde_json::from_str(&body_str).unwrap();
-
-        assert_eq!(spillover.ticker, "AAPL");
-        assert_eq!(spillover.status, "ok");
-        assert!(spillover.count >= 2);
-        assert_eq!(spillover.spillovers[0].related_ticker, "MSFT");
-        assert_eq!(spillover.spillovers[0].lag_hours, 1);
-        assert!(spillover.spillovers[0]
-            .relationship
-            .contains("AAPL LEADS MSFT"));
+        assert_eq!(response.status(), StatusCode::NOT_FOUND);
     }
 
     #[tokio::test]
     async fn test_spillovers_endpoint_missing_ticker() {
         let app = create_app();
-
         let (auth_k, auth_v) = test_auth_header();
         let req = Request::builder()
             .uri("/spillovers?ticker=")
@@ -1178,13 +1225,12 @@ mod tests {
             .unwrap();
 
         let response = app.oneshot(req).await.unwrap();
-        assert_eq!(response.status(), StatusCode::BAD_REQUEST);
+        assert_eq!(response.status(), StatusCode::NOT_FOUND);
     }
 
     #[tokio::test]
     async fn test_spillovers_endpoint_invalid_ticker() {
         let app = create_app();
-
         let (auth_k, auth_v) = test_auth_header();
         let req = Request::builder()
             .uri("/spillovers?ticker=TOOLONGTICKERNAMEEXCEEDSLIMIT")
@@ -1193,14 +1239,12 @@ mod tests {
             .unwrap();
 
         let response = app.oneshot(req).await.unwrap();
-        assert_eq!(response.status(), StatusCode::BAD_REQUEST);
+        assert_eq!(response.status(), StatusCode::NOT_FOUND);
     }
 
     #[tokio::test]
     async fn test_backtest_endpoint_valid() {
-        std::env::set_var("QUESTDB_MOCK_FALLBACK", "1");
         let app = create_app();
-
         let payload = serde_json::json!({
             "ticker": "AAPL",
             "start_date": "2025-01-01",
@@ -1221,28 +1265,12 @@ mod tests {
             .unwrap();
 
         let response = app.oneshot(req).await.unwrap();
-        assert_eq!(response.status(), StatusCode::OK);
-
-        // Verify Rate Limit headers
-        assert!(response.headers().contains_key(&HEADER_RATELIMIT_LIMIT));
-        assert!(response.headers().contains_key(&HEADER_RATELIMIT_REMAINING));
-
-        let body = response.into_body().collect().await.unwrap().to_bytes();
-        let body_str = String::from_utf8(body.to_vec()).unwrap();
-        let bt: BacktestResponse = serde_json::from_str(&body_str).unwrap();
-
-        assert_eq!(bt.ticker, "AAPL");
-        assert_eq!(bt.start_date, "2025-01-01");
-        assert_eq!(bt.end_date, "2025-03-31");
-        assert!(bt.equity_curve.len() >= 30);
-        assert!(bt.num_trades > 0);
-        assert!(bt.max_drawdown >= 0.0);
+        assert_eq!(response.status(), StatusCode::NOT_FOUND);
     }
 
     #[tokio::test]
     async fn test_backtest_endpoint_missing_ticker() {
         let app = create_app();
-
         let payload = serde_json::json!({
             "ticker": "",
             "start_date": "2025-01-01",
@@ -1259,13 +1287,12 @@ mod tests {
             .unwrap();
 
         let response = app.oneshot(req).await.unwrap();
-        assert_eq!(response.status(), StatusCode::BAD_REQUEST);
+        assert_eq!(response.status(), StatusCode::NOT_FOUND);
     }
 
     #[tokio::test]
     async fn test_backtest_endpoint_invalid_date_range() {
         let app = create_app();
-
         let payload = serde_json::json!({
             "ticker": "AAPL",
             "start_date": "2025-06-01",
@@ -1282,13 +1309,12 @@ mod tests {
             .unwrap();
 
         let response = app.oneshot(req).await.unwrap();
-        assert_eq!(response.status(), StatusCode::BAD_REQUEST);
+        assert_eq!(response.status(), StatusCode::NOT_FOUND);
     }
 
     #[tokio::test]
     async fn test_backtest_endpoint_invalid_thresholds() {
         let app = create_app();
-
         let payload = serde_json::json!({
             "ticker": "AAPL",
             "start_date": "2025-01-01",
@@ -1307,14 +1333,12 @@ mod tests {
             .unwrap();
 
         let response = app.oneshot(req).await.unwrap();
-        assert_eq!(response.status(), StatusCode::BAD_REQUEST);
+        assert_eq!(response.status(), StatusCode::NOT_FOUND);
     }
 
     #[tokio::test]
     async fn test_backtest_endpoint_multi_asset_portfolio() {
-        std::env::set_var("QUESTDB_MOCK_FALLBACK", "1");
         let app = create_app();
-
         let payload = serde_json::json!({
             "tickers": ["AAPL", "NVDA", "MSFT"],
             "weights": [0.5, 0.3, 0.2],
@@ -1338,27 +1362,12 @@ mod tests {
             .unwrap();
 
         let response = app.oneshot(req).await.unwrap();
-        assert_eq!(response.status(), StatusCode::OK);
-
-        let body = response.into_body().collect().await.unwrap().to_bytes();
-        let body_str = String::from_utf8(body.to_vec()).unwrap();
-        let bt: BacktestResponse = serde_json::from_str(&body_str).unwrap();
-
-        assert_eq!(bt.tickers, vec!["AAPL", "NVDA", "MSFT"]);
-        assert_eq!(bt.weights, vec![0.5, 0.3, 0.2]);
-        assert_eq!(bt.benchmark_ticker, "SPY");
-        assert_eq!(bt.transaction_cost_bps, 10.0);
-        assert!(bt.equity_curve.len() >= 30);
-        assert_eq!(bt.equity_points.len(), bt.equity_curve.len());
-        assert!(bt.sortino_ratio != 0.0);
-        assert!(bt.profit_factor > 0.0);
-        assert!(bt.benchmark_total_return != 0.0);
+        assert_eq!(response.status(), StatusCode::NOT_FOUND);
     }
 
     #[tokio::test]
     async fn test_backtest_endpoint_invalid_weights() {
         let app = create_app();
-
         let payload = serde_json::json!({
             "tickers": ["AAPL", "NVDA"],
             "weights": [0.5, 0.1], // sum is 0.6 != 1.0
@@ -1376,7 +1385,7 @@ mod tests {
             .unwrap();
 
         let response = app.oneshot(req).await.unwrap();
-        assert_eq!(response.status(), StatusCode::BAD_REQUEST);
+        assert_eq!(response.status(), StatusCode::NOT_FOUND);
     }
 
     #[tokio::test]
@@ -2183,9 +2192,16 @@ mod tests {
 
     #[tokio::test]
     async fn test_user_register_and_login_flow() {
-        let app = create_app();
+        let mut state = AppState::default();
+        seed_test_user(
+            &mut state,
+            "lead.quant@citadel.com",
+            "SuperSecretPass2026!",
+            "user",
+        );
+        let app = create_app_with_state(state);
 
-        // 1. Register
+        // 1. Register -> 410 Gone with RFC 8594 Sunset header
         let reg_payload = serde_json::json!({
             "email": "lead.quant@citadel.com",
             "password": "SuperSecretPass2026!"
@@ -2199,14 +2215,19 @@ mod tests {
             .unwrap();
 
         let reg_resp = app.clone().oneshot(reg_req).await.unwrap();
-        assert_eq!(reg_resp.status(), StatusCode::CREATED);
-
+        assert_eq!(reg_resp.status(), StatusCode::GONE);
+        assert_eq!(
+            reg_resp
+                .headers()
+                .get("sunset")
+                .and_then(|h| h.to_str().ok()),
+            Some("Wed, 11 Nov 2026 00:00:00 GMT")
+        );
         let reg_body = reg_resp.into_body().collect().await.unwrap().to_bytes();
-        let reg_data: RegisterResponse = serde_json::from_slice(&reg_body).unwrap();
-        assert_eq!(reg_data.email, "lead.quant@citadel.com");
-        assert_eq!(reg_data.status, "created");
+        let reg_json: serde_json::Value = serde_json::from_slice(&reg_body).unwrap();
+        assert_eq!(reg_json["error"], "Gone");
 
-        // 2. Login
+        // 2. Login with seeded user
         let login_payload = serde_json::json!({
             "email": "lead.quant@citadel.com",
             "password": "SuperSecretPass2026!"
@@ -2250,7 +2271,7 @@ mod tests {
     async fn test_user_register_invalid_email_and_password() {
         let app = create_app();
 
-        // Invalid Email
+        // Invalid Email -> 410 Gone (endpoint permanently removed in v1.0)
         let bad_email_payload = serde_json::json!({
             "email": "not-an-email",
             "password": "ValidPass2026!"
@@ -2261,12 +2282,14 @@ mod tests {
             .header(header::CONTENT_TYPE, "application/json")
             .body(Body::from(bad_email_payload.to_string()))
             .unwrap();
+        let resp1 = app.clone().oneshot(req1).await.unwrap();
+        assert_eq!(resp1.status(), StatusCode::GONE);
         assert_eq!(
-            app.clone().oneshot(req1).await.unwrap().status(),
-            StatusCode::BAD_REQUEST
+            resp1.headers().get("sunset").and_then(|h| h.to_str().ok()),
+            Some("Wed, 11 Nov 2026 00:00:00 GMT")
         );
 
-        // Weak Password (no uppercase)
+        // Weak Password -> 410 Gone
         let weak_pass_payload = serde_json::json!({
             "email": "user@quant.com",
             "password": "lowercaseonly123"
@@ -2277,10 +2300,8 @@ mod tests {
             .header(header::CONTENT_TYPE, "application/json")
             .body(Body::from(weak_pass_payload.to_string()))
             .unwrap();
-        assert_eq!(
-            app.clone().oneshot(req2).await.unwrap().status(),
-            StatusCode::BAD_REQUEST
-        );
+        let resp2 = app.clone().oneshot(req2).await.unwrap();
+        assert_eq!(resp2.status(), StatusCode::GONE);
     }
 
     #[tokio::test]
@@ -2292,34 +2313,36 @@ mod tests {
             "password": "Password123!"
         });
 
-        // 1. First register -> 201 Created
+        // Register is permanently removed in v1.0 -> 410 Gone
         let req1 = Request::builder()
             .method("POST")
             .uri("/auth/register")
             .header(header::CONTENT_TYPE, "application/json")
             .body(Body::from(payload.to_string()))
             .unwrap();
-        assert_eq!(
-            app.clone().oneshot(req1).await.unwrap().status(),
-            StatusCode::CREATED
-        );
+        let resp1 = app.clone().oneshot(req1).await.unwrap();
+        assert_eq!(resp1.status(), StatusCode::GONE);
 
-        // 2. Duplicate register -> 409 Conflict
         let req2 = Request::builder()
             .method("POST")
             .uri("/auth/register")
             .header(header::CONTENT_TYPE, "application/json")
             .body(Body::from(payload.to_string()))
             .unwrap();
-        assert_eq!(
-            app.oneshot(req2).await.unwrap().status(),
-            StatusCode::CONFLICT
-        );
+        let resp2 = app.oneshot(req2).await.unwrap();
+        assert_eq!(resp2.status(), StatusCode::GONE);
     }
 
     #[tokio::test]
     async fn test_user_login_invalid_credentials_rejected() {
-        let app = create_app();
+        let mut state = AppState::default();
+        seed_test_user(
+            &mut state,
+            "registered@fund.com",
+            "CorrectPass2026!",
+            "user",
+        );
+        let app = create_app_with_state(state);
 
         // Non-existent user
         let payload1 = serde_json::json!({
@@ -2337,23 +2360,7 @@ mod tests {
             StatusCode::UNAUTHORIZED
         );
 
-        // Register valid user
-        let reg_payload = serde_json::json!({
-            "email": "registered@fund.com",
-            "password": "CorrectPass2026!"
-        });
-        let reg_req = Request::builder()
-            .method("POST")
-            .uri("/auth/register")
-            .header(header::CONTENT_TYPE, "application/json")
-            .body(Body::from(reg_payload.to_string()))
-            .unwrap();
-        assert_eq!(
-            app.clone().oneshot(reg_req).await.unwrap().status(),
-            StatusCode::CREATED
-        );
-
-        // Try wrong password
+        // Try registered user with wrong password
         let payload2 = serde_json::json!({
             "email": "registered@fund.com",
             "password": "WrongPassword123!"
@@ -2373,23 +2380,14 @@ mod tests {
     #[tokio::test]
     async fn test_api_key_lifecycle_and_x_api_key_authentication() {
         std::env::set_var("QUESTDB_MOCK_FALLBACK", "1");
-        let app = create_app();
-
-        // 1. Register & Login
-        let reg_payload = serde_json::json!({
-            "email": "trader.bot@fund.com",
-            "password": "BotPassword2026!"
-        });
-        let reg_req = Request::builder()
-            .method("POST")
-            .uri("/auth/register")
-            .header(header::CONTENT_TYPE, "application/json")
-            .body(Body::from(reg_payload.to_string()))
-            .unwrap();
-        assert_eq!(
-            app.clone().oneshot(reg_req).await.unwrap().status(),
-            StatusCode::CREATED
+        let mut state = AppState::default();
+        seed_test_user(
+            &mut state,
+            "trader.bot@fund.com",
+            "BotPassword2026!",
+            "user",
         );
+        let app = create_app_with_state(state);
 
         let login_payload = serde_json::json!({
             "email": "trader.bot@fund.com",
@@ -2636,7 +2634,6 @@ mod tests {
 
     #[tokio::test]
     async fn test_spillover_matrix_endpoint_valid() {
-        std::env::set_var("QUESTDB_MOCK_FALLBACK", "1");
         let app = create_app();
         let (auth_k, auth_v) = test_auth_header();
 
@@ -2647,24 +2644,11 @@ mod tests {
             .unwrap();
 
         let resp = app.oneshot(req).await.unwrap();
-        assert_eq!(resp.status(), StatusCode::OK);
-
-        let body = resp.into_body().collect().await.unwrap().to_bytes();
-        let data: SpilloverMatrixResponse = serde_json::from_slice(&body).unwrap();
-        assert_eq!(data.tickers, vec!["AAPL", "MSFT", "NVDA"]);
-        assert_eq!(data.start_date, "2025-01-01");
-        assert_eq!(data.end_date, "2025-03-31");
-        assert_eq!(data.min_correlation, 0.5);
-        assert_eq!(data.max_lag_hours, 24);
-        assert!(!data.matrix.is_empty());
-        for item in &data.matrix {
-            assert!(item.correlation.abs() >= 0.5);
-        }
+        assert_eq!(resp.status(), StatusCode::NOT_FOUND);
     }
 
     #[tokio::test]
     async fn test_spillover_matrix_endpoint_default_universe() {
-        std::env::set_var("QUESTDB_MOCK_FALLBACK", "1");
         let app = create_app();
         let (auth_k, auth_v) = test_auth_header();
 
@@ -2675,13 +2659,7 @@ mod tests {
             .unwrap();
 
         let resp = app.oneshot(req).await.unwrap();
-        assert_eq!(resp.status(), StatusCode::OK);
-
-        let body = resp.into_body().collect().await.unwrap().to_bytes();
-        let data: SpilloverMatrixResponse = serde_json::from_slice(&body).unwrap();
-        assert_eq!(data.tickers.len(), 8); // DEFAULT_TICKER_UNIVERSE length
-        assert!(data.tickers.contains(&"AAPL".to_string()));
-        assert!(data.tickers.contains(&"NVDA".to_string()));
+        assert_eq!(resp.status(), StatusCode::NOT_FOUND);
     }
 
     #[tokio::test]
@@ -2697,7 +2675,7 @@ mod tests {
             .unwrap();
         assert_eq!(
             app.clone().oneshot(req1).await.unwrap().status(),
-            StatusCode::BAD_REQUEST
+            StatusCode::NOT_FOUND
         );
 
         // Invalid min_correlation > 1.0
@@ -2708,7 +2686,7 @@ mod tests {
             .unwrap();
         assert_eq!(
             app.clone().oneshot(req2).await.unwrap().status(),
-            StatusCode::BAD_REQUEST
+            StatusCode::NOT_FOUND
         );
 
         // Invalid max_lag_hours > 168
@@ -2719,7 +2697,7 @@ mod tests {
             .unwrap();
         assert_eq!(
             app.oneshot(req3).await.unwrap().status(),
-            StatusCode::BAD_REQUEST
+            StatusCode::NOT_FOUND
         );
     }
 
@@ -2733,7 +2711,7 @@ mod tests {
             .unwrap();
 
         let resp = app.oneshot(req).await.unwrap();
-        assert_eq!(resp.status(), StatusCode::UNAUTHORIZED);
+        assert_eq!(resp.status(), StatusCode::NOT_FOUND);
     }
 
     #[tokio::test]
@@ -2796,12 +2774,9 @@ mod tests {
 
     #[tokio::test]
     async fn test_pit_spillover_matrix_excludes_invalid_tickers() {
-        std::env::set_var("QUESTDB_MOCK_FALLBACK", "1");
-        std::env::set_var("PIT_DATA_ENABLED", "1");
         let app = create_app();
         let (auth_k, auth_v) = test_auth_header();
 
-        // Requesting AAPL, FB, META in 2021 -> META should be filtered out, leaving AAPL, FB
         let req = Request::builder()
             .uri(
                 "/spillovers/matrix?tickers=AAPL,FB,META&start_date=2021-01-01&end_date=2021-03-31",
@@ -2811,11 +2786,7 @@ mod tests {
             .unwrap();
 
         let resp = app.oneshot(req).await.unwrap();
-        assert_eq!(resp.status(), StatusCode::OK);
-        let body = resp.into_body().collect().await.unwrap().to_bytes();
-        let data: SpilloverMatrixResponse = serde_json::from_slice(&body).unwrap();
-        assert_eq!(data.tickers, vec!["AAPL", "FB"]);
-        assert!(!data.tickers.contains(&"META".to_string()));
+        assert_eq!(resp.status(), StatusCode::NOT_FOUND);
     }
 
     #[tokio::test]
@@ -3821,18 +3792,7 @@ mod tests {
             .body(Body::empty())
             .unwrap();
         let resp = app.oneshot(req).await.unwrap();
-        assert_eq!(resp.status(), StatusCode::OK);
-
-        let body_bytes = resp.into_body().collect().await.unwrap().to_bytes();
-        let res: EventStudyResponse = serde_json::from_slice(&body_bytes).unwrap();
-        assert_eq!(res.ticker, "AAPL");
-        assert_eq!(res.event_date, "2025-06-15");
-        assert_eq!(res.event_window, 5);
-        assert_eq!(res.estimation_window, 60);
-        assert_eq!(res.benchmark_ticker, "SPY");
-        assert_eq!(res.count, 11);
-        assert_eq!(res.abnormal_returns.len(), 11);
-        assert!(res.abnormal_returns.iter().any(|p| p.day_offset == 0));
+        assert_eq!(resp.status(), StatusCode::NOT_FOUND);
     }
 
     #[tokio::test]
@@ -3847,7 +3807,7 @@ mod tests {
             .body(Body::empty())
             .unwrap();
         let resp1 = app.clone().oneshot(req1).await.unwrap();
-        assert_eq!(resp1.status(), StatusCode::BAD_REQUEST);
+        assert_eq!(resp1.status(), StatusCode::NOT_FOUND);
 
         // 2. Invalid date format
         let req2 = Request::builder()
@@ -3856,7 +3816,7 @@ mod tests {
             .body(Body::empty())
             .unwrap();
         let resp2 = app.clone().oneshot(req2).await.unwrap();
-        assert_eq!(resp2.status(), StatusCode::BAD_REQUEST);
+        assert_eq!(resp2.status(), StatusCode::NOT_FOUND);
 
         // 3. Event window out of bounds (> 20)
         let req3 = Request::builder()
@@ -3865,7 +3825,7 @@ mod tests {
             .body(Body::empty())
             .unwrap();
         let resp3 = app.clone().oneshot(req3).await.unwrap();
-        assert_eq!(resp3.status(), StatusCode::BAD_REQUEST);
+        assert_eq!(resp3.status(), StatusCode::NOT_FOUND);
 
         // 4. Estimation window out of bounds (< 10)
         let req4 = Request::builder()
@@ -3874,7 +3834,7 @@ mod tests {
             .body(Body::empty())
             .unwrap();
         let resp4 = app.oneshot(req4).await.unwrap();
-        assert_eq!(resp4.status(), StatusCode::BAD_REQUEST);
+        assert_eq!(resp4.status(), StatusCode::NOT_FOUND);
     }
 
     #[tokio::test]
@@ -3886,7 +3846,7 @@ mod tests {
             .body(Body::empty())
             .unwrap();
         let resp = app.oneshot(req).await.unwrap();
-        assert_eq!(resp.status(), StatusCode::UNAUTHORIZED);
+        assert_eq!(resp.status(), StatusCode::NOT_FOUND);
     }
 
     #[tokio::test]
@@ -4488,55 +4448,19 @@ mod tests {
         let app = create_app();
         let (auth_k, auth_v) = test_auth_header();
 
-        // Synthetic valid WAV header + samples
-        let boundary = "------------------------boundary123456";
-        let mut body_bytes = Vec::new();
-        body_bytes.extend_from_slice(format!("--{}\r\n", boundary).as_bytes());
-        body_bytes.extend_from_slice(
-            b"Content-Disposition: form-data; name=\"audio\"; filename=\"test_call.wav\"\r\n",
-        );
-        body_bytes.extend_from_slice(b"Content-Type: audio/wav\r\n\r\n");
-
-        // Simple valid WAV data using hound
-        let spec = hound::WavSpec {
-            channels: 1,
-            sample_rate: 16000,
-            bits_per_sample: 16,
-            sample_format: hound::SampleFormat::Int,
-        };
-        let mut wav_cursor = std::io::Cursor::new(Vec::new());
-        {
-            let mut writer = hound::WavWriter::new(&mut wav_cursor, spec).unwrap();
-            for i in 0..8000 {
-                let sample = ((i as f32 * 0.05).sin() * 10000.0) as i16;
-                writer.write_sample(sample).unwrap();
-            }
-            writer.finalize().unwrap();
-        }
-        body_bytes.extend_from_slice(&wav_cursor.into_inner());
-        body_bytes.extend_from_slice(format!("\r\n--{}--\r\n", boundary).as_bytes());
-
         let req = Request::builder()
             .method("POST")
             .uri("/audio/transcribe")
             .header(auth_k, auth_v)
-            .header(
-                "Content-Type",
-                format!("multipart/form-data; boundary={}", boundary),
-            )
-            .body(Body::from(body_bytes))
+            .body(Body::empty())
             .unwrap();
 
         let resp = app.oneshot(req).await.unwrap();
-        assert_eq!(resp.status(), StatusCode::OK);
-
-        let body = resp.into_body().collect().await.unwrap().to_bytes();
-        let json_resp: AudioTranscriptionResponse = serde_json::from_slice(&body).unwrap();
-        assert_eq!(json_resp.language, "en");
-        assert!(json_resp.duration_seconds > 0.0);
-        assert!(!json_resp.transcription.is_empty());
-        assert!(json_resp.acoustic_features.energy_rms > 0.0);
-        assert!(!json_resp.sentiment.label.is_empty());
+        assert_eq!(resp.status(), StatusCode::GONE);
+        assert_eq!(
+            resp.headers().get("sunset").and_then(|h| h.to_str().ok()),
+            Some("Wed, 11 Nov 2026 00:00:00 GMT")
+        );
     }
 
     #[tokio::test]
@@ -4544,29 +4468,19 @@ mod tests {
         let app = create_app();
         let (auth_k, auth_v) = test_auth_header();
 
-        let boundary = "------------------------boundary999999";
-        let mut body_bytes = Vec::new();
-        body_bytes.extend_from_slice(format!("--{}\r\n", boundary).as_bytes());
-        body_bytes.extend_from_slice(
-            b"Content-Disposition: form-data; name=\"audio\"; filename=\"document.pdf\"\r\n",
-        );
-        body_bytes.extend_from_slice(b"Content-Type: application/pdf\r\n\r\n");
-        body_bytes.extend_from_slice(b"%PDF-1.4 dummy content");
-        body_bytes.extend_from_slice(format!("\r\n--{}--\r\n", boundary).as_bytes());
-
         let req = Request::builder()
             .method("POST")
             .uri("/audio/transcribe")
             .header(auth_k, auth_v)
-            .header(
-                "Content-Type",
-                format!("multipart/form-data; boundary={}", boundary),
-            )
-            .body(Body::from(body_bytes))
+            .body(Body::empty())
             .unwrap();
 
         let resp = app.oneshot(req).await.unwrap();
-        assert_eq!(resp.status(), StatusCode::BAD_REQUEST);
+        assert_eq!(resp.status(), StatusCode::GONE);
+        assert_eq!(
+            resp.headers().get("sunset").and_then(|h| h.to_str().ok()),
+            Some("Wed, 11 Nov 2026 00:00:00 GMT")
+        );
     }
 
     #[tokio::test]
@@ -4574,29 +4488,19 @@ mod tests {
         let app = create_app();
         let (auth_k, auth_v) = test_auth_header();
 
-        let boundary = "------------------------boundary888888";
-        let mut body_bytes = Vec::new();
-        body_bytes.extend_from_slice(format!("--{}\r\n", boundary).as_bytes());
-        body_bytes.extend_from_slice(
-            b"Content-Disposition: form-data; name=\"not_audio\"; filename=\"test.wav\"\r\n",
-        );
-        body_bytes.extend_from_slice(b"Content-Type: audio/wav\r\n\r\n");
-        body_bytes.extend_from_slice(b"dummy wav data");
-        body_bytes.extend_from_slice(format!("\r\n--{}--\r\n", boundary).as_bytes());
-
         let req = Request::builder()
             .method("POST")
             .uri("/audio/transcribe")
             .header(auth_k, auth_v)
-            .header(
-                "Content-Type",
-                format!("multipart/form-data; boundary={}", boundary),
-            )
-            .body(Body::from(body_bytes))
+            .body(Body::empty())
             .unwrap();
 
         let resp = app.oneshot(req).await.unwrap();
-        assert_eq!(resp.status(), StatusCode::BAD_REQUEST);
+        assert_eq!(resp.status(), StatusCode::GONE);
+        assert_eq!(
+            resp.headers().get("sunset").and_then(|h| h.to_str().ok()),
+            Some("Wed, 11 Nov 2026 00:00:00 GMT")
+        );
     }
 
     #[tokio::test]
@@ -4609,7 +4513,11 @@ mod tests {
             .body(Body::empty())
             .unwrap();
         let resp = app.oneshot(req).await.unwrap();
-        assert_eq!(resp.status(), StatusCode::UNAUTHORIZED);
+        assert_eq!(resp.status(), StatusCode::GONE);
+        assert_eq!(
+            resp.headers().get("sunset").and_then(|h| h.to_str().ok()),
+            Some("Wed, 11 Nov 2026 00:00:00 GMT")
+        );
     }
 
     #[tokio::test]
@@ -4757,66 +4665,19 @@ mod tests {
         let app = create_app();
         let (auth_k, auth_v) = test_auth_header();
 
-        let boundary = "------------------------boundaryStore99";
-        let mut body_bytes = Vec::new();
-        body_bytes.extend_from_slice(format!("--{}\r\n", boundary).as_bytes());
-        body_bytes
-            .extend_from_slice(b"Content-Disposition: form-data; name=\"ticker\"\r\n\r\nAAPL\r\n");
-        body_bytes.extend_from_slice(format!("--{}\r\n", boundary).as_bytes());
-        body_bytes
-            .extend_from_slice(b"Content-Disposition: form-data; name=\"store\"\r\n\r\ntrue\r\n");
-        body_bytes.extend_from_slice(format!("--{}\r\n", boundary).as_bytes());
-        body_bytes.extend_from_slice(
-            b"Content-Disposition: form-data; name=\"audio\"; filename=\"test_store.wav\"\r\n",
-        );
-        body_bytes.extend_from_slice(b"Content-Type: audio/wav\r\n\r\n");
-
-        let spec = hound::WavSpec {
-            channels: 1,
-            sample_rate: 16000,
-            bits_per_sample: 16,
-            sample_format: hound::SampleFormat::Int,
-        };
-        let mut wav_cursor = std::io::Cursor::new(Vec::new());
-        {
-            let mut writer = hound::WavWriter::new(&mut wav_cursor, spec).unwrap();
-            for i in 0..8000 {
-                let sample = ((i as f32 * 0.05).sin() * 10000.0) as i16;
-                writer.write_sample(sample).unwrap();
-            }
-            writer.finalize().unwrap();
-        }
-        body_bytes.extend_from_slice(&wav_cursor.into_inner());
-        body_bytes.extend_from_slice(format!("\r\n--{}--\r\n", boundary).as_bytes());
-
         let req = Request::builder()
             .method("POST")
             .uri("/audio/transcribe")
             .header(auth_k.clone(), auth_v.clone())
-            .header(
-                "Content-Type",
-                format!("multipart/form-data; boundary={}", boundary),
-            )
-            .body(Body::from(body_bytes))
-            .unwrap();
-
-        let resp = app.clone().oneshot(req).await.unwrap();
-        assert_eq!(resp.status(), StatusCode::OK);
-
-        let body = resp.into_body().collect().await.unwrap().to_bytes();
-        let json_resp: AudioTranscriptionResponse = serde_json::from_slice(&body).unwrap();
-        assert!(json_resp.transcript_id.is_some());
-
-        // Verify stored transcript exists via GET /transcripts/{id}
-        let stored_id = json_resp.transcript_id.unwrap();
-        let req_get = Request::builder()
-            .uri(format!("/transcripts/{}", stored_id))
-            .header(auth_k.clone(), auth_v.clone())
             .body(Body::empty())
             .unwrap();
 
-        let resp_get = app.clone().oneshot(req_get).await.unwrap();
-        assert_eq!(resp_get.status(), StatusCode::OK);
+        let resp = app.clone().oneshot(req).await.unwrap();
+        assert_eq!(resp.status(), StatusCode::GONE);
+        assert_eq!(
+            resp.headers().get("sunset").and_then(|h| h.to_str().ok()),
+            Some("Wed, 11 Nov 2026 00:00:00 GMT")
+        );
     }
 
     #[tokio::test]
@@ -4831,17 +4692,7 @@ mod tests {
             .unwrap();
 
         let resp = app.clone().oneshot(req).await.unwrap();
-        assert_eq!(resp.status(), StatusCode::OK);
-
-        let body = resp.into_body().collect().await.unwrap().to_bytes();
-        let regime_resp: MarketRegimeResponse = serde_json::from_slice(&body).unwrap();
-        assert!(["Bullish", "Bearish", "Neutral", "High Volatility"]
-            .contains(&regime_resp.regime.as_str()));
-        assert!(regime_resp.confidence >= 0.20 && regime_resp.confidence <= 1.0);
-        assert!(regime_resp.breadth >= 0.0 && regime_resp.breadth <= 1.0);
-        assert!(regime_resp.volatility_proxy >= 0.0);
-        assert_eq!(regime_resp.lookback_days, 5);
-        assert!(!regime_resp.components.sector_sentiments.is_empty());
+        assert_eq!(resp.status(), StatusCode::NOT_FOUND);
     }
 
     #[tokio::test]
@@ -4856,11 +4707,7 @@ mod tests {
             .unwrap();
 
         let resp = app.clone().oneshot(req).await.unwrap();
-        assert_eq!(resp.status(), StatusCode::OK);
-
-        let body = resp.into_body().collect().await.unwrap().to_bytes();
-        let regime_resp: MarketRegimeResponse = serde_json::from_slice(&body).unwrap();
-        assert_eq!(regime_resp.lookback_days, 7);
+        assert_eq!(resp.status(), StatusCode::NOT_FOUND);
     }
 
     #[tokio::test]
@@ -4875,7 +4722,7 @@ mod tests {
             .body(Body::empty())
             .unwrap();
         let resp = app.clone().oneshot(req_bad_lookback).await.unwrap();
-        assert_eq!(resp.status(), StatusCode::BAD_REQUEST);
+        assert_eq!(resp.status(), StatusCode::NOT_FOUND);
 
         // min_data_points == 0
         let req_bad_pts = Request::builder()
@@ -4884,7 +4731,7 @@ mod tests {
             .body(Body::empty())
             .unwrap();
         let resp = app.clone().oneshot(req_bad_pts).await.unwrap();
-        assert_eq!(resp.status(), StatusCode::BAD_REQUEST);
+        assert_eq!(resp.status(), StatusCode::NOT_FOUND);
     }
 
     #[tokio::test]
@@ -4896,7 +4743,7 @@ mod tests {
             .unwrap();
 
         let resp = app.clone().oneshot(req).await.unwrap();
-        assert_eq!(resp.status(), StatusCode::UNAUTHORIZED);
+        assert_eq!(resp.status(), StatusCode::NOT_FOUND);
     }
 
     #[tokio::test]
@@ -4911,22 +4758,7 @@ mod tests {
             .unwrap();
 
         let resp = app.clone().oneshot(req).await.unwrap();
-        assert_eq!(resp.status(), StatusCode::OK);
-
-        let body = resp.into_body().collect().await.unwrap().to_bytes();
-        let corr_resp: ReturnCorrelationResponse = serde_json::from_slice(&body).unwrap();
-        assert_eq!(corr_resp.tickers, vec!["AAPL", "MSFT", "NVDA"]);
-        assert_eq!(corr_resp.start_date, "2025-01-01");
-        assert_eq!(corr_resp.end_date, "2025-03-31");
-        assert_eq!(corr_resp.min_periods, 15);
-        // N=3 => 3 pairwise combinations: (AAPL, MSFT), (AAPL, NVDA), (MSFT, NVDA)
-        assert_eq!(corr_resp.matrix.len(), 3);
-        for item in &corr_resp.matrix {
-            assert!(item.periods >= 15);
-            assert!(item.correlation.is_some());
-            let c = item.correlation.unwrap();
-            assert!((-1.0..=1.0).contains(&c));
-        }
+        assert_eq!(resp.status(), StatusCode::NOT_FOUND);
     }
 
     #[tokio::test]
@@ -4941,18 +4773,7 @@ mod tests {
             .unwrap();
 
         let resp = app.clone().oneshot(req).await.unwrap();
-        assert_eq!(resp.status(), StatusCode::OK);
-
-        let body = resp.into_body().collect().await.unwrap().to_bytes();
-        let corr_resp: ReturnCorrelationResponse = serde_json::from_slice(&body).unwrap();
-        // N=2 with include_self => (AAPL, AAPL), (AAPL, NVDA), (NVDA, NVDA) => 3 entries
-        assert_eq!(corr_resp.matrix.len(), 3);
-        let self_aapl = corr_resp
-            .matrix
-            .iter()
-            .find(|i| i.ticker_a == "AAPL" && i.ticker_b == "AAPL")
-            .unwrap();
-        assert_eq!(self_aapl.correlation, Some(1.0));
+        assert_eq!(resp.status(), StatusCode::NOT_FOUND);
     }
 
     #[tokio::test]
@@ -4967,7 +4788,7 @@ mod tests {
             .body(Body::empty())
             .unwrap();
         let resp = app.clone().oneshot(req_empty).await.unwrap();
-        assert_eq!(resp.status(), StatusCode::BAD_REQUEST);
+        assert_eq!(resp.status(), StatusCode::NOT_FOUND);
 
         // start_date > end_date
         let req_inv_dates = Request::builder()
@@ -4976,7 +4797,7 @@ mod tests {
             .body(Body::empty())
             .unwrap();
         let resp = app.clone().oneshot(req_inv_dates).await.unwrap();
-        assert_eq!(resp.status(), StatusCode::BAD_REQUEST);
+        assert_eq!(resp.status(), StatusCode::NOT_FOUND);
 
         // min_periods < 10
         let req_bad_min = Request::builder()
@@ -4985,7 +4806,7 @@ mod tests {
             .body(Body::empty())
             .unwrap();
         let resp = app.clone().oneshot(req_bad_min).await.unwrap();
-        assert_eq!(resp.status(), StatusCode::BAD_REQUEST);
+        assert_eq!(resp.status(), StatusCode::NOT_FOUND);
     }
 
     #[tokio::test]
@@ -4997,7 +4818,7 @@ mod tests {
             .unwrap();
 
         let resp = app.clone().oneshot(req).await.unwrap();
-        assert_eq!(resp.status(), StatusCode::UNAUTHORIZED);
+        assert_eq!(resp.status(), StatusCode::NOT_FOUND);
     }
 
     #[tokio::test]
@@ -5535,14 +5356,7 @@ mod tests {
             .unwrap();
 
         let resp = app.clone().oneshot(req).await.unwrap();
-        assert_eq!(resp.status(), StatusCode::OK);
-
-        let body = resp.into_body().collect().await.unwrap().to_bytes();
-        let rumors_resp: MARumorsResponse = serde_json::from_slice(&body).unwrap();
-        assert_eq!(rumors_resp.ticker.as_deref(), Some("NVDA"));
-        assert!(!rumors_resp.items.is_empty());
-        assert_eq!(rumors_resp.items[0].ticker, "NVDA");
-        assert!(rumors_resp.items[0].rumor_score >= 0.4);
+        assert_eq!(resp.status(), StatusCode::NOT_FOUND);
     }
 
     #[tokio::test]
@@ -5557,16 +5371,7 @@ mod tests {
             .unwrap();
 
         let resp = app.clone().oneshot(req).await.unwrap();
-        assert_eq!(resp.status(), StatusCode::OK);
-
-        let body = resp.into_body().collect().await.unwrap().to_bytes();
-        let rumors_resp: MARumorsResponse = serde_json::from_slice(&body).unwrap();
-        assert!(rumors_resp.ticker.is_none());
-        assert!(rumors_resp.items.len() <= 5);
-        for item in &rumors_resp.items {
-            assert!(item.rumor_score >= 0.3);
-            assert!(!item.supply_chain_related_tickers.is_empty());
-        }
+        assert_eq!(resp.status(), StatusCode::NOT_FOUND);
     }
 
     #[tokio::test]
@@ -5581,7 +5386,7 @@ mod tests {
             .body(Body::empty())
             .unwrap();
         let resp = app.clone().oneshot(req_score).await.unwrap();
-        assert_eq!(resp.status(), StatusCode::BAD_REQUEST);
+        assert_eq!(resp.status(), StatusCode::NOT_FOUND);
 
         // lookback_days > 30
         let req_days = Request::builder()
@@ -5590,7 +5395,7 @@ mod tests {
             .body(Body::empty())
             .unwrap();
         let resp = app.clone().oneshot(req_days).await.unwrap();
-        assert_eq!(resp.status(), StatusCode::BAD_REQUEST);
+        assert_eq!(resp.status(), StatusCode::NOT_FOUND);
     }
 
     #[tokio::test]
@@ -5602,7 +5407,7 @@ mod tests {
             .unwrap();
 
         let resp = app.clone().oneshot(req).await.unwrap();
-        assert_eq!(resp.status(), StatusCode::UNAUTHORIZED);
+        assert_eq!(resp.status(), StatusCode::NOT_FOUND);
     }
 
     #[tokio::test]
@@ -5617,17 +5422,7 @@ mod tests {
             .unwrap();
 
         let resp = app.clone().oneshot(req).await.unwrap();
-        assert_eq!(resp.status(), StatusCode::OK);
-
-        let body = resp.into_body().collect().await.unwrap().to_bytes();
-        let filings_resp: RegulatoryFilingsResponse = serde_json::from_slice(&body).unwrap();
-        assert_eq!(filings_resp.ticker.as_deref(), Some("AAPL"));
-        assert!(!filings_resp.filings.is_empty());
-        for f in &filings_resp.filings {
-            assert_eq!(f.ticker, "AAPL");
-            assert!(!f.event_category.is_empty());
-            assert!(!f.accession_number.is_empty());
-        }
+        assert_eq!(resp.status(), StatusCode::NOT_FOUND);
     }
 
     #[tokio::test]
@@ -5642,16 +5437,7 @@ mod tests {
             .unwrap();
 
         let resp = app.clone().oneshot(req).await.unwrap();
-        assert_eq!(resp.status(), StatusCode::OK);
-
-        let body = resp.into_body().collect().await.unwrap().to_bytes();
-        let filings_resp: RegulatoryFilingsResponse = serde_json::from_slice(&body).unwrap();
-        assert_eq!(filings_resp.form_type.as_deref(), Some("10-K"));
-        assert!(filings_resp.filings.len() <= 5);
-        for f in &filings_resp.filings {
-            assert_eq!(f.form_type, "10-K");
-            assert_eq!(f.event_category, "Annual Report");
-        }
+        assert_eq!(resp.status(), StatusCode::NOT_FOUND);
     }
 
     #[tokio::test]
@@ -5666,7 +5452,7 @@ mod tests {
             .body(Body::empty())
             .unwrap();
         let resp = app.clone().oneshot(req_dates).await.unwrap();
-        assert_eq!(resp.status(), StatusCode::BAD_REQUEST);
+        assert_eq!(resp.status(), StatusCode::NOT_FOUND);
 
         // limit > 100
         let req_lim = Request::builder()
@@ -5675,7 +5461,7 @@ mod tests {
             .body(Body::empty())
             .unwrap();
         let resp = app.clone().oneshot(req_lim).await.unwrap();
-        assert_eq!(resp.status(), StatusCode::BAD_REQUEST);
+        assert_eq!(resp.status(), StatusCode::NOT_FOUND);
     }
 
     #[tokio::test]
@@ -5687,7 +5473,7 @@ mod tests {
             .unwrap();
 
         let resp = app.clone().oneshot(req).await.unwrap();
-        assert_eq!(resp.status(), StatusCode::UNAUTHORIZED);
+        assert_eq!(resp.status(), StatusCode::NOT_FOUND);
     }
 
     #[tokio::test]
@@ -6367,7 +6153,7 @@ mod tests {
             assert_eq!(a["ticker"].as_str().unwrap(), "AAPL");
         }
 
-        // 4. Retrieve single full article by ID /news/articles/{id} -> 200 OK with full_text
+        // 4. Retrieve single full article by ID /news/articles/{id} -> 410 Gone with Sunset header
         let get_req = Request::builder()
             .method("GET")
             .uri(format!("/news/articles/{}", first_id))
@@ -6375,13 +6161,16 @@ mod tests {
             .body(Body::empty())
             .unwrap();
         let get_resp = app.clone().oneshot(get_req).await.unwrap();
-        assert_eq!(get_resp.status(), StatusCode::OK);
-        let get_bytes = get_resp.into_body().collect().await.unwrap().to_bytes();
-        let get_json: serde_json::Value = serde_json::from_slice(&get_bytes).unwrap();
-        assert_eq!(get_json["id"].as_str().unwrap(), first_id);
-        assert!(get_json["full_text"].as_str().unwrap().len() > 100);
+        assert_eq!(get_resp.status(), StatusCode::GONE);
+        assert_eq!(
+            get_resp
+                .headers()
+                .get("sunset")
+                .and_then(|h| h.to_str().ok()),
+            Some("Wed, 11 Nov 2026 00:00:00 GMT")
+        );
 
-        // 5. Retrieve non-existent ID -> 404 Not Found
+        // 5. Retrieve non-existent ID -> 410 Gone (route itself is permanently removed)
         let not_found_req = Request::builder()
             .method("GET")
             .uri("/news/articles/00000000-0000-0000-0000-000000000000")
@@ -6389,7 +6178,7 @@ mod tests {
             .body(Body::empty())
             .unwrap();
         let not_found_resp = app.clone().oneshot(not_found_req).await.unwrap();
-        assert_eq!(not_found_resp.status(), StatusCode::NOT_FOUND);
+        assert_eq!(not_found_resp.status(), StatusCode::GONE);
     }
 
     #[tokio::test]
@@ -6634,20 +6423,7 @@ mod tests {
             .unwrap();
 
         let resp = app.clone().oneshot(req).await.unwrap();
-        assert_eq!(resp.status(), StatusCode::OK);
-
-        let body = resp.into_body().collect().await.unwrap().to_bytes();
-        let json: serde_json::Value = serde_json::from_slice(&body).unwrap();
-
-        assert_eq!(json["lookback_days"].as_i64().unwrap(), 30);
-        assert_eq!(json["include_momentum"].as_bool().unwrap(), true);
-        assert_eq!(json["top_n"].as_u64().unwrap(), 3);
-        let sectors = json["sectors"].as_array().unwrap();
-        assert!(!sectors.is_empty());
-        assert!(json["outperform_sectors"].as_array().unwrap().len() <= 3);
-        assert!(json["underperform_sectors"].as_array().unwrap().len() <= 3);
-        let signal = json["market_signal"].as_str().unwrap();
-        assert!(signal == "risk-on" || signal == "risk-off" || signal == "neutral");
+        assert_eq!(resp.status(), StatusCode::NOT_FOUND);
     }
 
     #[tokio::test]
@@ -6655,7 +6431,6 @@ mod tests {
         let app = create_app();
         let (auth_k, auth_v) = test_auth_header_for_user("digest_quant_tester");
 
-        // 1. Initial GET should be 404 (no subscription yet)
         let get_req1 = Request::builder()
             .method("GET")
             .uri("/digest/subscription")
@@ -6664,112 +6439,18 @@ mod tests {
             .unwrap();
         let get_resp1 = app.clone().oneshot(get_req1).await.unwrap();
         assert_eq!(get_resp1.status(), StatusCode::NOT_FOUND);
-
-        // 2. Create subscription via POST /digest/subscription
-        let create_body = serde_json::json!({
-            "frequency": "daily",
-            "tickers": ["AAPL", "NVDA"],
-            "sectors": ["Technology"],
-            "event_types": ["earnings", "insider", "8k", "news"],
-            "is_active": true
-        });
-        let create_req = Request::builder()
-            .method("POST")
-            .uri("/digest/subscription")
-            .header(auth_k.clone(), auth_v.clone())
-            .header("Content-Type", "application/json")
-            .body(Body::from(serde_json::to_vec(&create_body).unwrap()))
-            .unwrap();
-        let create_resp = app.clone().oneshot(create_req).await.unwrap();
-        assert_eq!(create_resp.status(), StatusCode::OK);
-        let create_json: serde_json::Value =
-            serde_json::from_slice(&create_resp.into_body().collect().await.unwrap().to_bytes())
-                .unwrap();
-        assert_eq!(create_json["status"].as_str().unwrap(), "ok");
-        assert_eq!(
-            create_json["subscription"]["frequency"].as_str().unwrap(),
-            "daily"
-        );
-        assert_eq!(
-            create_json["subscription"]["tickers"]
-                .as_array()
-                .unwrap()
-                .len(),
-            2
-        );
-
-        // 3. GET should now return 200 OK
-        let get_req2 = Request::builder()
-            .method("GET")
-            .uri("/digest/subscription")
-            .header(auth_k.clone(), auth_v.clone())
-            .body(Body::empty())
-            .unwrap();
-        let get_resp2 = app.clone().oneshot(get_req2).await.unwrap();
-        assert_eq!(get_resp2.status(), StatusCode::OK);
-
-        // 4. Trigger on-demand digest delivery POST /digest/trigger
-        let trigger_req = Request::builder()
-            .method("POST")
-            .uri("/digest/trigger")
-            .header(auth_k.clone(), auth_v.clone())
-            .header("Content-Type", "application/json")
-            .body(Body::from(
-                serde_json::to_vec(&serde_json::json!({
-                    "recipient_email": "quant.tester@hedgefund.com"
-                }))
-                .unwrap(),
-            ))
-            .unwrap();
-        let trigger_resp = app.clone().oneshot(trigger_req).await.unwrap();
-        assert_eq!(trigger_resp.status(), StatusCode::OK);
-        let trigger_json: serde_json::Value =
-            serde_json::from_slice(&trigger_resp.into_body().collect().await.unwrap().to_bytes())
-                .unwrap();
-        assert_eq!(trigger_json["status"].as_str().unwrap(), "sent");
-        assert_eq!(
-            trigger_json["recipient"].as_str().unwrap(),
-            "quant.tester@hedgefund.com"
-        );
-        assert!(trigger_json["subject"]
-            .as_str()
-            .unwrap()
-            .contains("Daily Market Digest"));
-        assert!(trigger_json["preview_html"]
-            .as_str()
-            .unwrap()
-            .contains("FinText Alpha Daily Digest"));
-
-        // 5. DELETE subscription
-        let del_req = Request::builder()
-            .method("DELETE")
-            .uri("/digest/subscription")
-            .header(auth_k.clone(), auth_v.clone())
-            .body(Body::empty())
-            .unwrap();
-        let del_resp = app.clone().oneshot(del_req).await.unwrap();
-        assert_eq!(del_resp.status(), StatusCode::OK);
-
-        // 6. GET should now return 404
-        let get_req3 = Request::builder()
-            .method("GET")
-            .uri("/digest/subscription")
-            .header(auth_k.clone(), auth_v.clone())
-            .body(Body::empty())
-            .unwrap();
-        let get_resp3 = app.clone().oneshot(get_req3).await.unwrap();
-        assert_eq!(get_resp3.status(), StatusCode::NOT_FOUND);
     }
 
     #[tokio::test]
     async fn test_kafka_streaming_endpoints() {
-        let app = create_app();
+        let app = create_app_with_full_surface();
         let (auth_k, auth_v) = test_auth_header();
 
         // 1. GET /stream/kafka/topics
         let topics_req = Request::builder()
             .method("GET")
-            .uri("/stream/kafka/topics")
+            .uri("/internal/stream/kafka/topics")
+            .header("X-Admin-Token", DEFAULT_DEV_ADMIN_TOKEN)
             .header(auth_k.clone(), auth_v.clone())
             .body(Body::empty())
             .unwrap();
@@ -6784,7 +6465,8 @@ mod tests {
         // 2. GET /stream/kafka/credentials with valid topic
         let creds_req = Request::builder()
             .method("GET")
-            .uri("/stream/kafka/credentials?topic=sentiment-events&ttl_minutes=30&consumer_group=test-group-01")
+            .uri("/internal/stream/kafka/credentials?topic=sentiment-events&ttl_minutes=30&consumer_group=test-group-01")
+            .header("X-Admin-Token", DEFAULT_DEV_ADMIN_TOKEN)
             .header(auth_k.clone(), auth_v.clone())
             .body(Body::empty())
             .unwrap();
@@ -6804,7 +6486,8 @@ mod tests {
         // 3. GET /stream/kafka/credentials with invalid topic -> 400
         let bad_topic_req = Request::builder()
             .method("GET")
-            .uri("/stream/kafka/credentials?topic=non_existent_stream")
+            .uri("/internal/stream/kafka/credentials?topic=non_existent_stream")
+            .header("X-Admin-Token", DEFAULT_DEV_ADMIN_TOKEN)
             .header(auth_k.clone(), auth_v.clone())
             .body(Body::empty())
             .unwrap();
@@ -6814,7 +6497,8 @@ mod tests {
         // 4. GET /stream/kafka/credentials with invalid TTL -> 400
         let bad_ttl_req = Request::builder()
             .method("GET")
-            .uri("/stream/kafka/credentials?topic=sentiment-events&ttl_minutes=999999")
+            .uri("/internal/stream/kafka/credentials?topic=sentiment-events&ttl_minutes=999999")
+            .header("X-Admin-Token", DEFAULT_DEV_ADMIN_TOKEN)
             .header(auth_k.clone(), auth_v.clone())
             .body(Body::empty())
             .unwrap();
@@ -6824,7 +6508,8 @@ mod tests {
         // 5. DELETE /stream/kafka/credentials/:id -> 200 OK
         let del_req = Request::builder()
             .method("DELETE")
-            .uri(format!("/stream/kafka/credentials/{}", cred_id))
+            .uri(format!("/internal/stream/kafka/credentials/{}", cred_id))
+            .header("X-Admin-Token", DEFAULT_DEV_ADMIN_TOKEN)
             .header(auth_k.clone(), auth_v.clone())
             .body(Body::empty())
             .unwrap();
@@ -6835,9 +6520,10 @@ mod tests {
         let del_404_req = Request::builder()
             .method("DELETE")
             .uri(format!(
-                "/stream/kafka/credentials/{}",
+                "/internal/stream/kafka/credentials/{}",
                 uuid::Uuid::new_v4()
             ))
+            .header("X-Admin-Token", DEFAULT_DEV_ADMIN_TOKEN)
             .header(auth_k.clone(), auth_v.clone())
             .body(Body::empty())
             .unwrap();
@@ -6961,50 +6647,14 @@ mod tests {
         let app = create_app();
         let (auth_k, auth_v) = test_auth_header();
 
-        // 1. Missing ticker -> 400
-        let req_bad = Request::builder()
-            .method("GET")
-            .uri("/risk/factor-exposure?start_date=2025-01-01&end_date=2025-06-30")
-            .header(auth_k.clone(), auth_v.clone())
-            .body(Body::empty())
-            .unwrap();
-        let resp_bad = app.clone().oneshot(req_bad).await.unwrap();
-        assert_eq!(resp_bad.status(), StatusCode::BAD_REQUEST);
-
-        // 2. Invalid date range -> 400
-        let req_bad_date = Request::builder()
-            .method("GET")
-            .uri("/risk/factor-exposure?ticker=AAPL&start_date=2025-06-30&end_date=2025-01-01")
-            .header(auth_k.clone(), auth_v.clone())
-            .body(Body::empty())
-            .unwrap();
-        let resp_bad_date = app.clone().oneshot(req_bad_date).await.unwrap();
-        assert_eq!(resp_bad_date.status(), StatusCode::BAD_REQUEST);
-
-        // 3. Valid factor exposure query -> 200 OK
-        let req_ok = Request::builder()
+        let req = Request::builder()
             .method("GET")
             .uri("/risk/factor-exposure?ticker=AAPL&start_date=2025-01-01&end_date=2025-06-30&benchmark_ticker=SPY")
             .header(auth_k.clone(), auth_v.clone())
             .body(Body::empty())
             .unwrap();
-        let resp_ok = app.clone().oneshot(req_ok).await.unwrap();
-        assert_eq!(resp_ok.status(), StatusCode::OK);
-
-        let body_json: serde_json::Value =
-            serde_json::from_slice(&resp_ok.into_body().collect().await.unwrap().to_bytes())
-                .unwrap();
-
-        assert_eq!(body_json["ticker"], "AAPL");
-        assert_eq!(body_json["benchmark_ticker"], "SPY");
-        assert!(body_json["factors_included"].as_array().unwrap().len() >= 4);
-        assert!(body_json["exposures"].as_array().unwrap().len() >= 4);
-        assert!(
-            body_json["ols_summary"]["num_observations"]
-                .as_u64()
-                .unwrap()
-                >= 10
-        );
+        let resp = app.clone().oneshot(req).await.unwrap();
+        assert_eq!(resp.status(), StatusCode::NOT_FOUND);
     }
 
     #[tokio::test]
@@ -7012,71 +6662,14 @@ mod tests {
         let app = create_app();
         let (auth_k, auth_v) = test_auth_header();
 
-        // 1. Invalid sector -> 400
-        let req_bad_sector = Request::builder()
-            .method("GET")
-            .uri("/esg/scores?sector=NonExistentSectorName123")
-            .header(auth_k.clone(), auth_v.clone())
-            .body(Body::empty())
-            .unwrap();
-        let resp_bad_sector = app.clone().oneshot(req_bad_sector).await.unwrap();
-        assert_eq!(resp_bad_sector.status(), StatusCode::BAD_REQUEST);
-
-        // 2. Invalid date range -> 400
-        let req_bad_date = Request::builder()
-            .method("GET")
-            .uri("/esg/scores?ticker=AAPL&start_date=2025-08-30&end_date=2025-06-01")
-            .header(auth_k.clone(), auth_v.clone())
-            .body(Body::empty())
-            .unwrap();
-        let resp_bad_date = app.clone().oneshot(req_bad_date).await.unwrap();
-        assert_eq!(resp_bad_date.status(), StatusCode::BAD_REQUEST);
-
-        // 3. Valid ticker query -> 200 OK
-        let req_ticker = Request::builder()
+        let req = Request::builder()
             .method("GET")
             .uri("/esg/scores?ticker=AAPL&start_date=2025-06-01&end_date=2025-08-30")
             .header(auth_k.clone(), auth_v.clone())
             .body(Body::empty())
             .unwrap();
-        let resp_ticker = app.clone().oneshot(req_ticker).await.unwrap();
-        assert_eq!(resp_ticker.status(), StatusCode::OK);
-
-        let body_json: serde_json::Value =
-            serde_json::from_slice(&resp_ticker.into_body().collect().await.unwrap().to_bytes())
-                .unwrap();
-
-        assert_eq!(body_json["ticker"], "AAPL");
-        assert!(body_json["overall_esg_score"].as_f64().unwrap() >= 0.0);
-        assert!(body_json["overall_esg_score"].as_f64().unwrap() <= 100.0);
-        assert!(
-            body_json["dimensions"]["environmental"]["mention_count"]
-                .as_u64()
-                .unwrap()
-                > 0
-        );
-        assert!(
-            body_json["dimensions"]["social"]["mention_count"]
-                .as_u64()
-                .unwrap()
-                > 0
-        );
-        assert!(
-            body_json["dimensions"]["governance"]["mention_count"]
-                .as_u64()
-                .unwrap()
-                > 0
-        );
-
-        // 4. Valid sector query -> 200 OK
-        let req_sector = Request::builder()
-            .method("GET")
-            .uri("/esg/scores?sector=Technology")
-            .header(auth_k.clone(), auth_v.clone())
-            .body(Body::empty())
-            .unwrap();
-        let resp_sector = app.clone().oneshot(req_sector).await.unwrap();
-        assert_eq!(resp_sector.status(), StatusCode::OK);
+        let resp = app.clone().oneshot(req).await.unwrap();
+        assert_eq!(resp.status(), StatusCode::NOT_FOUND);
     }
 
     #[tokio::test]
@@ -7084,74 +6677,14 @@ mod tests {
         let app = create_app();
         let (auth_k, auth_v) = test_auth_header();
 
-        // 1. Missing ticker -> 400
-        let req_no_ticker = Request::builder()
-            .method("GET")
-            .uri("/risk/bankruptcy")
-            .header(auth_k.clone(), auth_v.clone())
-            .body(Body::empty())
-            .unwrap();
-        let resp_no_ticker = app.clone().oneshot(req_no_ticker).await.unwrap();
-        assert_eq!(resp_no_ticker.status(), StatusCode::BAD_REQUEST);
-
-        // 2. Invalid lookback_days -> 400
-        let req_bad_lookback = Request::builder()
-            .method("GET")
-            .uri("/risk/bankruptcy?ticker=AAPL&lookback_days=150")
-            .header(auth_k.clone(), auth_v.clone())
-            .body(Body::empty())
-            .unwrap();
-        let resp_bad_lookback = app.clone().oneshot(req_bad_lookback).await.unwrap();
-        assert_eq!(resp_bad_lookback.status(), StatusCode::BAD_REQUEST);
-
-        // 3. Valid ticker query -> 200 OK
-        let req_ok = Request::builder()
+        let req = Request::builder()
             .method("GET")
             .uri("/risk/bankruptcy?ticker=AAPL&lookback_days=30&include_components=true")
             .header(auth_k.clone(), auth_v.clone())
             .body(Body::empty())
             .unwrap();
-        let resp_ok = app.clone().oneshot(req_ok).await.unwrap();
-        assert_eq!(resp_ok.status(), StatusCode::OK);
-
-        let body_json: serde_json::Value =
-            serde_json::from_slice(&resp_ok.into_body().collect().await.unwrap().to_bytes())
-                .unwrap();
-
-        assert_eq!(body_json["ticker"], "AAPL");
-        assert_eq!(body_json["lookback_days"], 30);
-        let score = body_json["bankruptcy_risk_score"].as_f64().unwrap();
-        assert!((0.0..=100.0).contains(&score));
-        assert!(body_json["components"].is_object());
-        assert!(body_json["components"]["eight_k_distress_score"].is_number());
-        assert!(body_json["components"]["sentiment_deterioration_score"].is_number());
-        assert!(body_json["components"]["put_call_ratio_score"].is_number());
-        assert!(body_json["components"]["implied_volatility_score"].is_number());
-        assert!(body_json["components"]["supply_chain_risk_score"].is_number());
-        assert!(body_json["components"]["insider_selling_score"].is_number());
-
-        // 4. Distressed ticker query -> 200 OK with HIGH/CRITICAL category
-        let req_distressed = Request::builder()
-            .method("GET")
-            .uri("/risk/bankruptcy?ticker=BBBY")
-            .header(auth_k.clone(), auth_v.clone())
-            .body(Body::empty())
-            .unwrap();
-        let resp_distressed = app.clone().oneshot(req_distressed).await.unwrap();
-        assert_eq!(resp_distressed.status(), StatusCode::OK);
-
-        let body_distressed: serde_json::Value = serde_json::from_slice(
-            &resp_distressed
-                .into_body()
-                .collect()
-                .await
-                .unwrap()
-                .to_bytes(),
-        )
-        .unwrap();
-
-        assert!(body_distressed["bankruptcy_risk_score"].as_f64().unwrap() >= 70.0);
-        assert_eq!(body_distressed["risk_category"], "CRITICAL");
+        let resp = app.clone().oneshot(req).await.unwrap();
+        assert_eq!(resp.status(), StatusCode::NOT_FOUND);
     }
 
     #[tokio::test]
@@ -7159,46 +6692,14 @@ mod tests {
         let app = create_app();
         let (auth_k, auth_v) = test_auth_header();
 
-        // 1. Invalid currency pair -> 400
-        let req_bad_pair = Request::builder()
-            .method("GET")
-            .uri("/fx/sentiment?currency_pair=BTC/USD")
-            .header(auth_k.clone(), auth_v.clone())
-            .body(Body::empty())
-            .unwrap();
-        let resp_bad_pair = app.clone().oneshot(req_bad_pair).await.unwrap();
-        assert_eq!(resp_bad_pair.status(), StatusCode::BAD_REQUEST);
-
-        // 2. Invalid date range (start > end) -> 400
-        let req_bad_dates = Request::builder()
-            .method("GET")
-            .uri("/fx/sentiment?currency_pair=EUR/USD&start_date=2025-08-30&end_date=2025-08-01")
-            .header(auth_k.clone(), auth_v.clone())
-            .body(Body::empty())
-            .unwrap();
-        let resp_bad_dates = app.clone().oneshot(req_bad_dates).await.unwrap();
-        assert_eq!(resp_bad_dates.status(), StatusCode::BAD_REQUEST);
-
-        // 3. Valid default query -> 200 OK
-        let req_ok = Request::builder()
+        let req = Request::builder()
             .method("GET")
             .uri("/fx/sentiment?currency_pair=EUR/USD&min_confidence=0.5&limit=10")
             .header(auth_k.clone(), auth_v.clone())
             .body(Body::empty())
             .unwrap();
-        let resp_ok = app.clone().oneshot(req_ok).await.unwrap();
-        assert_eq!(resp_ok.status(), StatusCode::OK);
-
-        let body_json: serde_json::Value =
-            serde_json::from_slice(&resp_ok.into_body().collect().await.unwrap().to_bytes())
-                .unwrap();
-
-        assert_eq!(body_json["currency_pair"], "EUR/USD");
-        assert!(body_json["summary"]["mention_count"].as_u64().unwrap() > 0);
-        let avg_sent = body_json["summary"]["avg_sentiment"].as_f64().unwrap();
-        assert!((-1.0..=1.0).contains(&avg_sent));
-        assert!(body_json["top_articles"].is_array());
-        assert!(!body_json["top_articles"].as_array().unwrap().is_empty());
+        let resp = app.clone().oneshot(req).await.unwrap();
+        assert_eq!(resp.status(), StatusCode::NOT_FOUND);
     }
 
     #[tokio::test]
@@ -7206,46 +6707,14 @@ mod tests {
         let app = create_app();
         let (auth_k, auth_v) = test_auth_header();
 
-        // 1. Invalid commodity -> 400
-        let req_bad_comm = Request::builder()
-            .method("GET")
-            .uri("/commodities/sentiment?commodity=uranium")
-            .header(auth_k.clone(), auth_v.clone())
-            .body(Body::empty())
-            .unwrap();
-        let resp_bad_comm = app.clone().oneshot(req_bad_comm).await.unwrap();
-        assert_eq!(resp_bad_comm.status(), StatusCode::BAD_REQUEST);
-
-        // 2. Invalid date range (start > end) -> 400
-        let req_bad_dates = Request::builder()
-            .method("GET")
-            .uri("/commodities/sentiment?commodity=crude_oil&start_date=2025-08-30&end_date=2025-08-01")
-            .header(auth_k.clone(), auth_v.clone())
-            .body(Body::empty())
-            .unwrap();
-        let resp_bad_dates = app.clone().oneshot(req_bad_dates).await.unwrap();
-        assert_eq!(resp_bad_dates.status(), StatusCode::BAD_REQUEST);
-
-        // 3. Valid default query -> 200 OK
-        let req_ok = Request::builder()
+        let req = Request::builder()
             .method("GET")
             .uri("/commodities/sentiment?commodity=crude_oil&min_confidence=0.5&limit=10")
             .header(auth_k.clone(), auth_v.clone())
             .body(Body::empty())
             .unwrap();
-        let resp_ok = app.clone().oneshot(req_ok).await.unwrap();
-        assert_eq!(resp_ok.status(), StatusCode::OK);
-
-        let body_json: serde_json::Value =
-            serde_json::from_slice(&resp_ok.into_body().collect().await.unwrap().to_bytes())
-                .unwrap();
-
-        assert_eq!(body_json["commodity"], "crude_oil");
-        assert!(body_json["summary"]["mention_count"].as_u64().unwrap() > 0);
-        let avg_sent = body_json["summary"]["avg_sentiment"].as_f64().unwrap();
-        assert!((-1.0..=1.0).contains(&avg_sent));
-        assert!(body_json["top_articles"].is_array());
-        assert!(!body_json["top_articles"].as_array().unwrap().is_empty());
+        let resp = app.clone().oneshot(req).await.unwrap();
+        assert_eq!(resp.status(), StatusCode::NOT_FOUND);
     }
 
     #[tokio::test]
@@ -7253,18 +6722,6 @@ mod tests {
         let app = create_app();
         let (auth_k, auth_v) = test_auth_header();
 
-        // 1. Invalid payload (bad URL) -> 400
-        let req_bad_url = Request::builder()
-            .method("POST")
-            .uri("/polling-webhooks")
-            .header(auth_k.clone(), auth_v.clone())
-            .header("Content-Type", "application/json")
-            .body(Body::from(r#"{"name":"test","url":"http://insecure.fund.com/poll","interval_seconds":300,"query_type":"sentiment"}"#))
-            .unwrap();
-        let resp_bad_url = app.clone().oneshot(req_bad_url).await.unwrap();
-        assert_eq!(resp_bad_url.status(), StatusCode::BAD_REQUEST);
-
-        // 2. Valid creation -> 201 Created
         let req_create = Request::builder()
             .method("POST")
             .uri("/polling-webhooks")
@@ -7273,49 +6730,7 @@ mod tests {
             .body(Body::from(r#"{"name":"Tech Sentiment Poll","url":"https://quant.fund.com/poll","interval_seconds":300,"query_type":"sentiment","query_params":{"tickers":["AAPL","MSFT"]}}"#))
             .unwrap();
         let resp_create = app.clone().oneshot(req_create).await.unwrap();
-        assert_eq!(resp_create.status(), StatusCode::CREATED);
-
-        let created_json: serde_json::Value =
-            serde_json::from_slice(&resp_create.into_body().collect().await.unwrap().to_bytes())
-                .unwrap();
-        let webhook_id = created_json["id"].as_str().unwrap();
-        assert_eq!(created_json["name"], "Tech Sentiment Poll");
-        assert_eq!(created_json["secret"].as_str().unwrap().len(), 64);
-
-        // 3. List webhooks -> 200 OK
-        let req_list = Request::builder()
-            .method("GET")
-            .uri("/polling-webhooks")
-            .header(auth_k.clone(), auth_v.clone())
-            .body(Body::empty())
-            .unwrap();
-        let resp_list = app.clone().oneshot(req_list).await.unwrap();
-        assert_eq!(resp_list.status(), StatusCode::OK);
-
-        let list_json: serde_json::Value =
-            serde_json::from_slice(&resp_list.into_body().collect().await.unwrap().to_bytes())
-                .unwrap();
-        assert!(list_json["total"].as_u64().unwrap() >= 1);
-
-        // 4. Delete webhook -> 200 OK
-        let req_del = Request::builder()
-            .method("DELETE")
-            .uri(format!("/polling-webhooks/{}", webhook_id))
-            .header(auth_k.clone(), auth_v.clone())
-            .body(Body::empty())
-            .unwrap();
-        let resp_del = app.clone().oneshot(req_del).await.unwrap();
-        assert_eq!(resp_del.status(), StatusCode::OK);
-
-        // 5. Delete again -> 404 Not Found
-        let req_del_404 = Request::builder()
-            .method("DELETE")
-            .uri(format!("/polling-webhooks/{}", webhook_id))
-            .header(auth_k.clone(), auth_v.clone())
-            .body(Body::empty())
-            .unwrap();
-        let resp_del_404 = app.clone().oneshot(req_del_404).await.unwrap();
-        assert_eq!(resp_del_404.status(), StatusCode::NOT_FOUND);
+        assert_eq!(resp_create.status(), StatusCode::NOT_FOUND);
     }
 
     #[tokio::test]
@@ -7323,34 +6738,13 @@ mod tests {
         let app = create_app();
         let (auth_k, auth_v) = test_auth_header();
 
-        // 1. Invalid cryptocurrency asset -> 400
-        let req_invalid = Request::builder()
-            .uri("/crypto/sentiment?asset=DOGE")
-            .header(auth_k.clone(), auth_v.clone())
-            .body(Body::empty())
-            .unwrap();
-        let resp_invalid = app.clone().oneshot(req_invalid).await.unwrap();
-        assert_eq!(resp_invalid.status(), StatusCode::BAD_REQUEST);
-
-        // 2. Valid default BTC sentiment -> 200 OK
         let req_ok = Request::builder()
             .uri("/crypto/sentiment?asset=BTC&min_confidence=0.5&limit=5")
             .header(auth_k.clone(), auth_v.clone())
             .body(Body::empty())
             .unwrap();
         let resp_ok = app.clone().oneshot(req_ok).await.unwrap();
-        assert_eq!(resp_ok.status(), StatusCode::OK);
-
-        let body_json: serde_json::Value =
-            serde_json::from_slice(&resp_ok.into_body().collect().await.unwrap().to_bytes())
-                .unwrap();
-
-        assert_eq!(body_json["asset"], "BTC");
-        assert!(body_json["summary"]["mention_count"].as_u64().unwrap() > 0);
-        let avg_sent = body_json["summary"]["avg_sentiment"].as_f64().unwrap();
-        assert!((-1.0..=1.0).contains(&avg_sent));
-        assert!(body_json["top_articles"].is_array());
-        assert!(!body_json["top_articles"].as_array().unwrap().is_empty());
+        assert_eq!(resp_ok.status(), StatusCode::NOT_FOUND);
     }
 
     #[tokio::test]
@@ -7396,38 +6790,13 @@ mod tests {
         let app = create_app();
         let (auth_k, auth_v) = test_auth_header();
 
-        // 1. Invalid date range -> 400
-        let req_invalid = Request::builder()
-            .uri("/market/breadth?start_date=2025-03-31&end_date=2025-01-01")
-            .header(auth_k.clone(), auth_v.clone())
-            .body(Body::empty())
-            .unwrap();
-        let resp_invalid = app.clone().oneshot(req_invalid).await.unwrap();
-        assert_eq!(resp_invalid.status(), StatusCode::BAD_REQUEST);
-
-        // 2. Valid market breadth query -> 200 OK
-        let req_ok = Request::builder()
+        let req = Request::builder()
             .uri("/market/breadth?start_date=2025-01-01&end_date=2025-01-15&universe=all&limit=10&include_new_highs_lows=true")
             .header(auth_k.clone(), auth_v.clone())
             .body(Body::empty())
             .unwrap();
-        let resp_ok = app.clone().oneshot(req_ok).await.unwrap();
-        assert_eq!(resp_ok.status(), StatusCode::OK);
-
-        let body_json: serde_json::Value =
-            serde_json::from_slice(&resp_ok.into_body().collect().await.unwrap().to_bytes())
-                .unwrap();
-
-        assert_eq!(body_json["universe"], "all");
-        assert!(body_json["total_tickers"].as_u64().unwrap() > 0);
-        assert!(body_json["count"].as_u64().unwrap() > 0);
-        assert!(body_json["points"].is_array());
-        let pts = body_json["points"].as_array().unwrap();
-        assert!(!pts.is_empty());
-        assert!(pts[0]["advancers"].is_number());
-        assert!(pts[0]["decliners"].is_number());
-        assert!(pts[0]["advance_decline_ratio"].is_number());
-        assert!(pts[0]["breadth_index"].is_number());
+        let resp = app.clone().oneshot(req).await.unwrap();
+        assert_eq!(resp.status(), StatusCode::NOT_FOUND);
     }
 
     #[tokio::test]
@@ -7435,7 +6804,6 @@ mod tests {
         let app = create_app();
         let (auth_k, auth_v) = test_auth_header();
 
-        // 1. Create Telegram chat alert subscription
         let req_tg = Request::builder()
             .method("POST")
             .uri("/chat-alerts")
@@ -7451,38 +6819,7 @@ mod tests {
             ))
             .unwrap();
         let resp_tg = app.clone().oneshot(req_tg).await.unwrap();
-        assert_eq!(resp_tg.status(), StatusCode::CREATED);
-
-        let tg_json: serde_json::Value =
-            serde_json::from_slice(&resp_tg.into_body().collect().await.unwrap().to_bytes())
-                .unwrap();
-        let sub_id = tg_json["id"].as_str().unwrap().to_string();
-        assert_eq!(tg_json["channel_type"], "telegram");
-        assert_eq!(tg_json["channel_target"], "123456789");
-
-        // 2. List chat alerts
-        let req_list = Request::builder()
-            .uri("/chat-alerts")
-            .header(auth_k.clone(), auth_v.clone())
-            .body(Body::empty())
-            .unwrap();
-        let resp_list = app.clone().oneshot(req_list).await.unwrap();
-        assert_eq!(resp_list.status(), StatusCode::OK);
-
-        let list_json: serde_json::Value =
-            serde_json::from_slice(&resp_list.into_body().collect().await.unwrap().to_bytes())
-                .unwrap();
-        assert!(list_json["total"].as_u64().unwrap() >= 1);
-
-        // 3. Delete subscription
-        let req_del = Request::builder()
-            .method("DELETE")
-            .uri(format!("/chat-alerts/{}", sub_id))
-            .header(auth_k.clone(), auth_v.clone())
-            .body(Body::empty())
-            .unwrap();
-        let resp_del = app.clone().oneshot(req_del).await.unwrap();
-        assert_eq!(resp_del.status(), StatusCode::OK);
+        assert_eq!(resp_tg.status(), StatusCode::NOT_FOUND);
     }
 
     #[tokio::test]
@@ -7496,28 +6833,18 @@ mod tests {
             .body(Body::empty())
             .unwrap();
         let resp = app.clone().oneshot(req).await.unwrap();
-        assert_eq!(resp.status(), StatusCode::OK);
-
-        let json_body: serde_json::Value =
-            serde_json::from_slice(&resp.into_body().collect().await.unwrap().to_bytes()).unwrap();
-
-        assert_eq!(json_body["ticker"], "AAPL");
-        assert_eq!(json_body["lookback_days"], 30);
-        assert!(json_body["credit_sentiment_score"].is_number());
-        assert!(json_body["news_sentiment_avg"].is_number());
-        assert!(json_body["eight_k_distress_count"].is_number());
-        assert!(json_body["put_call_ratio"].is_number());
-        assert!(json_body["implied_volatility"].is_number());
+        assert_eq!(resp.status(), StatusCode::NOT_FOUND);
     }
 
     #[tokio::test]
     async fn test_backfill_sentiment_endpoint() {
-        let app = create_app();
+        let app = create_app_with_full_surface();
         let (auth_k, auth_v) = test_auth_header();
 
         let req = Request::builder()
             .method("POST")
-            .uri("/sentiment/backfill")
+            .uri("/internal/sentiment/backfill")
+            .header("X-Admin-Token", DEFAULT_DEV_ADMIN_TOKEN)
             .header(auth_k.clone(), auth_v.clone())
             .header(header::CONTENT_TYPE, "application/json")
             .body(Body::from(
@@ -7568,18 +6895,7 @@ mod tests {
             ))
             .unwrap();
         let resp = app.clone().oneshot(req).await.unwrap();
-        assert_eq!(resp.status(), StatusCode::OK);
-
-        let json_body: serde_json::Value =
-            serde_json::from_slice(&resp.into_body().collect().await.unwrap().to_bytes()).unwrap();
-
-        assert_eq!(json_body["tickers"].as_array().unwrap().len(), 3);
-        assert_eq!(json_body["optimization_type"], "max_sharpe");
-        assert_eq!(json_body["risk_free_rate"], 0.05);
-        assert!(json_body["weights"].is_array());
-        assert!(json_body["expected_annual_return"].is_number());
-        assert!(json_body["expected_annual_volatility"].is_number());
-        assert!(json_body["sharpe_ratio"].is_number());
+        assert_eq!(resp.status(), StatusCode::NOT_FOUND);
     }
 
     #[tokio::test]
@@ -7605,30 +6921,19 @@ mod tests {
             ))
             .unwrap();
         let resp = app.clone().oneshot(req).await.unwrap();
-        assert_eq!(resp.status(), StatusCode::OK);
-
-        let json_body: serde_json::Value =
-            serde_json::from_slice(&resp.into_body().collect().await.unwrap().to_bytes()).unwrap();
-
-        assert_eq!(
-            json_body["tickers"],
-            serde_json::json!(["AAPL", "MSFT", "NVDA"])
-        );
-        assert_eq!(json_body["benchmark_ticker"], "SPY");
-        assert!(json_body["exposures"].is_array());
-        assert_eq!(json_body["exposures"].as_array().unwrap().len(), 4);
-        assert!(json_body["ols_summary"]["r_squared"].is_number());
+        assert_eq!(resp.status(), StatusCode::NOT_FOUND);
     }
 
     #[tokio::test]
     async fn test_retraining_endpoints() {
-        let app = create_app();
+        let app = create_app_with_full_surface();
         let (auth_k, auth_v) = test_auth_header();
 
         // 1. Create retraining job
         let req = Request::builder()
             .method("POST")
-            .uri("/retraining/jobs")
+            .uri("/internal/retraining/jobs")
+            .header("X-Admin-Token", DEFAULT_DEV_ADMIN_TOKEN)
             .header(auth_k.clone(), auth_v.clone())
             .header(header::CONTENT_TYPE, "application/json")
             .body(Body::from(
@@ -7657,7 +6962,8 @@ mod tests {
         // 2. Get retraining job by ID
         let req2 = Request::builder()
             .method("GET")
-            .uri(&format!("/retraining/jobs/{}", job_id_str))
+            .uri(&format!("/internal/retraining/jobs/{}", job_id_str))
+            .header("X-Admin-Token", DEFAULT_DEV_ADMIN_TOKEN)
             .header(auth_k.clone(), auth_v.clone())
             .body(Body::empty())
             .unwrap();
@@ -7667,7 +6973,8 @@ mod tests {
         // 3. List retraining jobs
         let req3 = Request::builder()
             .method("GET")
-            .uri("/retraining/jobs?limit=10")
+            .uri("/internal/retraining/jobs?limit=10")
+            .header("X-Admin-Token", DEFAULT_DEV_ADMIN_TOKEN)
             .header(auth_k.clone(), auth_v.clone())
             .body(Body::empty())
             .unwrap();
@@ -7695,23 +7002,7 @@ mod tests {
             .unwrap();
 
         let resp = app.clone().oneshot(req).await.unwrap();
-        assert_eq!(resp.status(), StatusCode::OK);
-
-        let body_bytes = resp.into_body().collect().await.unwrap().to_bytes();
-        let fix_resp: FIXOrderResponse = serde_json::from_slice(&body_bytes).unwrap();
-
-        assert_eq!(fix_resp.cl_ord_id, "CL-MKT-01");
-        assert_eq!(fix_resp.symbol, "AAPL");
-        assert_eq!(fix_resp.side, "1");
-        assert_eq!(fix_resp.order_type, "1");
-        assert_eq!(fix_resp.status, "filled");
-        assert_eq!(fix_resp.exec_type, "2");
-        assert_eq!(fix_resp.qty, 100.0);
-        assert_eq!(fix_resp.filled_qty, 100.0);
-        assert!(fix_resp.avg_price.is_some());
-        assert!(fix_resp.fix_message.contains("35=8|"));
-        assert!(fix_resp.fix_message.contains("150=2|39=2|"));
-        assert!(fix_resp.fix_message.contains("11=CL-MKT-01|"));
+        assert_eq!(resp.status(), StatusCode::NOT_FOUND);
     }
 
     #[tokio::test]
@@ -7719,7 +7010,6 @@ mod tests {
         let app = create_app();
         let (auth_k, auth_v) = test_auth_header_with_role("fix_trader_02", "enterprise");
 
-        // Market price for MSFT is between 50 and 100. Setting Buy limit at 10.0 guarantees it remains open.
         let fix_limit_msg =
             "8=FIX.4.4|9=70|35=D|11=CL-LMT-01|55=MSFT|54=1|38=50|40=2|44=10.00|10=000|";
         let req_order = Request::builder()
@@ -7736,38 +7026,7 @@ mod tests {
             .unwrap();
 
         let resp_order = app.clone().oneshot(req_order).await.unwrap();
-        assert_eq!(resp_order.status(), StatusCode::OK);
-
-        let body_bytes = resp_order.into_body().collect().await.unwrap().to_bytes();
-        let order_resp: FIXOrderResponse = serde_json::from_slice(&body_bytes).unwrap();
-        assert_eq!(order_resp.status, "open");
-        assert_eq!(order_resp.exec_type, "0");
-        assert_eq!(order_resp.filled_qty, 0.0);
-
-        // Cancel the open order
-        let fix_cancel_msg =
-            "8=FIX.4.4|9=60|35=F|11=CANC-01|41=CL-LMT-01|55=MSFT|54=1|38=50|10=000|";
-        let req_cancel = Request::builder()
-            .method("POST")
-            .uri("/fix/cancel")
-            .header(auth_k.clone(), auth_v.clone())
-            .header(header::CONTENT_TYPE, "application/json")
-            .body(Body::from(
-                serde_json::to_vec(&serde_json::json!({
-                    "fix_message": fix_cancel_msg
-                }))
-                .unwrap(),
-            ))
-            .unwrap();
-
-        let resp_cancel = app.clone().oneshot(req_cancel).await.unwrap();
-        assert_eq!(resp_cancel.status(), StatusCode::OK);
-
-        let cancel_bytes = resp_cancel.into_body().collect().await.unwrap().to_bytes();
-        let cancel_resp: FIXOrderResponse = serde_json::from_slice(&cancel_bytes).unwrap();
-        assert_eq!(cancel_resp.status, "cancelled");
-        assert_eq!(cancel_resp.exec_type, "4");
-        assert!(cancel_resp.fix_message.contains("150=4|39=4|"));
+        assert_eq!(resp_order.status(), StatusCode::NOT_FOUND);
     }
 
     #[tokio::test]
@@ -7775,43 +7034,6 @@ mod tests {
         let app = create_app();
         let (auth_k, auth_v) = test_auth_header_with_role("fix_trader_03", "enterprise");
 
-        // Submit 2 orders: 1 Market (filled), 1 Limit (open)
-        let mkt_msg = "8=FIX.4.4|9=60|35=D|11=LIST-01|55=NVDA|54=1|38=25|40=1|10=000|";
-        let lmt_msg = "8=FIX.4.4|9=70|35=D|11=LIST-02|55=NVDA|54=1|38=25|40=2|44=5.00|10=000|";
-
-        let _ = app
-            .clone()
-            .oneshot(
-                Request::builder()
-                    .method("POST")
-                    .uri("/fix/order")
-                    .header(auth_k.clone(), auth_v.clone())
-                    .header(header::CONTENT_TYPE, "application/json")
-                    .body(Body::from(
-                        serde_json::to_vec(&serde_json::json!({ "fix_message": mkt_msg })).unwrap(),
-                    ))
-                    .unwrap(),
-            )
-            .await
-            .unwrap();
-
-        let _ = app
-            .clone()
-            .oneshot(
-                Request::builder()
-                    .method("POST")
-                    .uri("/fix/order")
-                    .header(auth_k.clone(), auth_v.clone())
-                    .header(header::CONTENT_TYPE, "application/json")
-                    .body(Body::from(
-                        serde_json::to_vec(&serde_json::json!({ "fix_message": lmt_msg })).unwrap(),
-                    ))
-                    .unwrap(),
-            )
-            .await
-            .unwrap();
-
-        // Query all orders
         let req_all = Request::builder()
             .method("GET")
             .uri("/fix/orders?limit=10")
@@ -7819,26 +7041,7 @@ mod tests {
             .body(Body::empty())
             .unwrap();
         let resp_all = app.clone().oneshot(req_all).await.unwrap();
-        assert_eq!(resp_all.status(), StatusCode::OK);
-        let list_all: FIXOrdersListResponse =
-            serde_json::from_slice(&resp_all.into_body().collect().await.unwrap().to_bytes())
-                .unwrap();
-        assert_eq!(list_all.total, 2);
-
-        // Query status=filled
-        let req_filled = Request::builder()
-            .method("GET")
-            .uri("/fix/orders?status=filled")
-            .header(auth_k.clone(), auth_v.clone())
-            .body(Body::empty())
-            .unwrap();
-        let resp_filled = app.clone().oneshot(req_filled).await.unwrap();
-        assert_eq!(resp_filled.status(), StatusCode::OK);
-        let list_filled: FIXOrdersListResponse =
-            serde_json::from_slice(&resp_filled.into_body().collect().await.unwrap().to_bytes())
-                .unwrap();
-        assert_eq!(list_filled.total, 1);
-        assert_eq!(list_filled.orders[0].cl_ord_id, "LIST-01");
+        assert_eq!(resp_all.status(), StatusCode::NOT_FOUND);
     }
 
     #[tokio::test]
@@ -7862,11 +7065,7 @@ mod tests {
             .unwrap();
 
         let resp = app.clone().oneshot(req).await.unwrap();
-        assert_eq!(resp.status(), StatusCode::BAD_REQUEST);
-
-        let json_err: serde_json::Value =
-            serde_json::from_slice(&resp.into_body().collect().await.unwrap().to_bytes()).unwrap();
-        assert!(json_err["fix_message"].as_str().unwrap().contains("35=3|"));
+        assert_eq!(resp.status(), StatusCode::NOT_FOUND);
     }
 
     #[tokio::test]
@@ -7889,41 +7088,7 @@ mod tests {
             .unwrap();
 
         let resp = app.clone().oneshot(req).await.unwrap();
-        assert_eq!(resp.status(), StatusCode::FORBIDDEN);
-
-        let body_bytes = resp.into_body().collect().await.unwrap().to_bytes();
-        let err_json: serde_json::Value = serde_json::from_slice(&body_bytes).unwrap();
-        assert_eq!(err_json["error"], "Forbidden");
-        assert!(err_json["message"]
-            .as_str()
-            .unwrap()
-            .contains("enterprise-only"));
-
-        // Verify GET /fix/orders returns 403
-        let req_list = Request::builder()
-            .method("GET")
-            .uri("/fix/orders")
-            .header(auth_k.clone(), auth_v.clone())
-            .body(Body::empty())
-            .unwrap();
-        let resp_list = app.clone().oneshot(req_list).await.unwrap();
-        assert_eq!(resp_list.status(), StatusCode::FORBIDDEN);
-
-        // Verify POST /fix/cancel returns 403
-        let req_cancel = Request::builder()
-            .method("POST")
-            .uri("/fix/cancel")
-            .header(auth_k.clone(), auth_v.clone())
-            .header(header::CONTENT_TYPE, "application/json")
-            .body(Body::from(
-                serde_json::to_vec(&serde_json::json!({
-                    "fix_message": "8=FIX.4.4|9=60|35=F|11=CANC-01|41=CL-01|55=AAPL|54=1|38=50|10=000|"
-                }))
-                .unwrap(),
-            ))
-            .unwrap();
-        let resp_cancel = app.clone().oneshot(req_cancel).await.unwrap();
-        assert_eq!(resp_cancel.status(), StatusCode::FORBIDDEN);
+        assert_eq!(resp.status(), StatusCode::NOT_FOUND);
     }
 
     #[tokio::test]
@@ -7953,18 +7118,35 @@ mod tests {
 
     #[tokio::test]
     async fn test_dlq_endpoints_auth_and_rbac() {
-        let app = create_app();
+        let app = create_app_with_full_surface();
 
-        // 1. Unauthenticated GET /dlq/events -> 401
+        // 1. Unauthenticated GET /internal/dlq/events -> 401
         let req_unauth = Request::builder()
             .method("GET")
-            .uri("/dlq/events")
+            .uri("/internal/dlq/events")
             .body(Body::empty())
             .unwrap();
         let resp_unauth = app.clone().oneshot(req_unauth).await.unwrap();
         assert_eq!(resp_unauth.status(), StatusCode::UNAUTHORIZED);
 
-        // 2. Retail user (non-admin) GET /dlq/events -> 403 Forbidden
+        // 1b. Missing X-Admin-Token with valid admin JWT -> 401 Unauthorized
+        let admin_token = generate_jwt(
+            "admin_user",
+            DEFAULT_JWT_EXPIRY_SECS,
+            Some("admin"),
+            DEFAULT_DEV_JWT_SECRET.as_bytes(),
+        )
+        .unwrap();
+        let req_no_admin_tok = Request::builder()
+            .method("GET")
+            .uri("/internal/dlq/events")
+            .header(header::AUTHORIZATION, format!("Bearer {}", admin_token))
+            .body(Body::empty())
+            .unwrap();
+        let resp_no_admin_tok = app.clone().oneshot(req_no_admin_tok).await.unwrap();
+        assert_eq!(resp_no_admin_tok.status(), StatusCode::UNAUTHORIZED);
+
+        // 2. Retail user (non-admin) GET /internal/dlq/events with valid admin token -> 403 Forbidden
         let retail_token = generate_jwt(
             "retail_trader_01",
             DEFAULT_JWT_EXPIRY_SECS,
@@ -7974,24 +7156,19 @@ mod tests {
         .unwrap();
         let req_retail = Request::builder()
             .method("GET")
-            .uri("/dlq/events")
+            .uri("/internal/dlq/events")
+            .header("X-Admin-Token", DEFAULT_DEV_ADMIN_TOKEN)
             .header(header::AUTHORIZATION, format!("Bearer {}", retail_token))
             .body(Body::empty())
             .unwrap();
         let resp_retail = app.clone().oneshot(req_retail).await.unwrap();
         assert_eq!(resp_retail.status(), StatusCode::FORBIDDEN);
 
-        // 3. Admin user GET /dlq/events -> 200 OK
-        let admin_token = generate_jwt(
-            "admin_user",
-            DEFAULT_JWT_EXPIRY_SECS,
-            Some("admin"),
-            DEFAULT_DEV_JWT_SECRET.as_bytes(),
-        )
-        .unwrap();
+        // 3. Admin user GET /internal/dlq/events with admin token -> 200 OK
         let req_admin = Request::builder()
             .method("GET")
-            .uri("/dlq/events")
+            .uri("/internal/dlq/events")
+            .header("X-Admin-Token", DEFAULT_DEV_ADMIN_TOKEN)
             .header(header::AUTHORIZATION, format!("Bearer {}", admin_token))
             .body(Body::empty())
             .unwrap();
@@ -8002,11 +7179,22 @@ mod tests {
             serde_json::from_slice(&resp_admin.into_body().collect().await.unwrap().to_bytes())
                 .unwrap();
         assert!(list_resp.total >= 4);
+
+        // 4. Old un-prefixed /dlq/events endpoint -> 404 Not Found
+        let req_old = Request::builder()
+            .method("GET")
+            .uri("/dlq/events")
+            .header("X-Admin-Token", DEFAULT_DEV_ADMIN_TOKEN)
+            .header(header::AUTHORIZATION, format!("Bearer {}", admin_token))
+            .body(Body::empty())
+            .unwrap();
+        let resp_old = app.oneshot(req_old).await.unwrap();
+        assert_eq!(resp_old.status(), StatusCode::NOT_FOUND);
     }
 
     #[tokio::test]
     async fn test_dlq_list_filtering_and_pagination() {
-        let app = create_app();
+        let app = create_app_with_full_surface();
         let admin_token = generate_jwt(
             "admin_user",
             DEFAULT_JWT_EXPIRY_SECS,
@@ -8019,7 +7207,8 @@ mod tests {
         // Filter by source=sentiment
         let req_sent = Request::builder()
             .method("GET")
-            .uri("/dlq/events?source=sentiment&status=all")
+            .uri("/internal/dlq/events?source=sentiment&status=all")
+            .header("X-Admin-Token", DEFAULT_DEV_ADMIN_TOKEN)
             .header(header::AUTHORIZATION, &auth_hdr)
             .body(Body::empty())
             .unwrap();
@@ -8033,7 +7222,8 @@ mod tests {
         // Filter by status=reprocessed
         let req_reproc = Request::builder()
             .method("GET")
-            .uri("/dlq/events?status=reprocessed")
+            .uri("/internal/dlq/events?status=reprocessed")
+            .header("X-Admin-Token", DEFAULT_DEV_ADMIN_TOKEN)
             .header(header::AUTHORIZATION, &auth_hdr)
             .body(Body::empty())
             .unwrap();
@@ -8047,7 +7237,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_dlq_get_reprocess_and_purge_lifecycle() {
-        let app = create_app();
+        let app = create_app_with_full_surface();
         let admin_token = generate_jwt(
             "admin_user",
             DEFAULT_JWT_EXPIRY_SECS,
@@ -8059,10 +7249,11 @@ mod tests {
 
         let target_uuid = uuid::Uuid::parse_str("550e8400-e29b-41d4-a716-446655440101").unwrap();
 
-        // 1. GET /dlq/events/{id}
+        // 1. GET /internal/dlq/events/{id}
         let req_get = Request::builder()
             .method("GET")
-            .uri(format!("/dlq/events/{}", target_uuid))
+            .uri(format!("/internal/dlq/events/{}", target_uuid))
+            .header("X-Admin-Token", DEFAULT_DEV_ADMIN_TOKEN)
             .header(header::AUTHORIZATION, &auth_hdr)
             .body(Body::empty())
             .unwrap();
@@ -8078,17 +7269,22 @@ mod tests {
         // 2. GET non-existent event -> 404
         let req_not_found = Request::builder()
             .method("GET")
-            .uri(format!("/dlq/events/{}", uuid::Uuid::new_v4()))
+            .uri(format!("/internal/dlq/events/{}", uuid::Uuid::new_v4()))
+            .header("X-Admin-Token", DEFAULT_DEV_ADMIN_TOKEN)
             .header(header::AUTHORIZATION, &auth_hdr)
             .body(Body::empty())
             .unwrap();
         let resp_not_found = app.clone().oneshot(req_not_found).await.unwrap();
         assert_eq!(resp_not_found.status(), StatusCode::NOT_FOUND);
 
-        // 3. POST /dlq/events/{id}/reprocess -> 200 OK
+        // 3. POST /internal/dlq/events/{id}/reprocess -> 200 OK
         let req_reprocess = Request::builder()
             .method("POST")
-            .uri(format!("/dlq/events/{id}/reprocess", id = target_uuid))
+            .uri(format!(
+                "/internal/dlq/events/{id}/reprocess",
+                id = target_uuid
+            ))
+            .header("X-Admin-Token", DEFAULT_DEV_ADMIN_TOKEN)
             .header(header::AUTHORIZATION, &auth_hdr)
             .body(Body::empty())
             .unwrap();
@@ -8106,10 +7302,11 @@ mod tests {
         assert_eq!(reprocess_resp.status, "reprocessed");
         assert_eq!(reprocess_resp.retry_count, 3);
 
-        // 4. DELETE /dlq/events/{id} -> 200 OK
+        // 4. DELETE /internal/dlq/events/{id} -> 200 OK
         let req_purge = Request::builder()
             .method("DELETE")
-            .uri(format!("/dlq/events/{id}", id = target_uuid))
+            .uri(format!("/internal/dlq/events/{id}", id = target_uuid))
+            .header("X-Admin-Token", DEFAULT_DEV_ADMIN_TOKEN)
             .header(header::AUTHORIZATION, &auth_hdr)
             .body(Body::empty())
             .unwrap();
@@ -8123,7 +7320,11 @@ mod tests {
         // 5. Attempting to reprocess a purged event -> 400 Bad Request
         let req_reprocess_purged = Request::builder()
             .method("POST")
-            .uri(format!("/dlq/events/{id}/reprocess", id = target_uuid))
+            .uri(format!(
+                "/internal/dlq/events/{id}/reprocess",
+                id = target_uuid
+            ))
+            .header("X-Admin-Token", DEFAULT_DEV_ADMIN_TOKEN)
             .header(header::AUTHORIZATION, &auth_hdr)
             .body(Body::empty())
             .unwrap();
@@ -8666,7 +7867,7 @@ mod tests {
             .body(Body::empty())
             .unwrap();
         let res = app.clone().oneshot(req).await.unwrap();
-        assert_eq!(res.status(), StatusCode::UNAUTHORIZED);
+        assert_eq!(res.status(), StatusCode::NOT_FOUND);
     }
 
     #[tokio::test]
@@ -8688,16 +7889,7 @@ mod tests {
             .body(Body::empty())
             .unwrap();
         let res = app.clone().oneshot(req).await.unwrap();
-        assert_eq!(res.status(), StatusCode::OK);
-
-        let bytes = axum::body::to_bytes(res.into_body(), usize::MAX)
-            .await
-            .unwrap();
-        let resp: models::AnomalyScanResponse = serde_json::from_slice(&bytes).unwrap();
-        assert!(resp.anomalies_found > 0);
-        assert!(!resp.anomalies.is_empty());
-        assert_eq!(resp.anomalies[0].event_type, "sentiment_anomaly");
-        assert!(resp.anomalies[0].zscore.abs() >= 2.0);
+        assert_eq!(res.status(), StatusCode::NOT_FOUND);
     }
 
     #[tokio::test]
@@ -8709,7 +7901,7 @@ mod tests {
             .body(Body::empty())
             .unwrap();
         let res = app.clone().oneshot(req).await.unwrap();
-        assert_eq!(res.status(), StatusCode::UNAUTHORIZED);
+        assert_eq!(res.status(), StatusCode::NOT_FOUND);
     }
 
     #[tokio::test]
@@ -8731,7 +7923,7 @@ mod tests {
             .body(Body::empty())
             .unwrap();
         let res = app.clone().oneshot(req).await.unwrap();
-        assert_eq!(res.status(), StatusCode::BAD_REQUEST);
+        assert_eq!(res.status(), StatusCode::NOT_FOUND);
     }
 
     #[tokio::test]
@@ -8746,7 +7938,6 @@ mod tests {
         .unwrap();
         let auth_hdr = format!("Bearer {}", token);
 
-        // 1. Spanish
         let req = Request::builder()
             .method("GET")
             .uri("/language/detect?text=El+mercado+de+valores+muestra+un+fuerte+crecimiento+en+las+acciones")
@@ -8754,34 +7945,7 @@ mod tests {
             .body(Body::empty())
             .unwrap();
         let res = app.clone().oneshot(req).await.unwrap();
-        assert_eq!(res.status(), StatusCode::OK);
-        let bytes = axum::body::to_bytes(res.into_body(), usize::MAX)
-            .await
-            .unwrap();
-        let resp: models::LanguageDetectionResponse = serde_json::from_slice(&bytes).unwrap();
-        assert_eq!(resp.language, "spanish");
-        assert_eq!(resp.language_code, "es");
-        assert!(resp.confidence >= 0.60);
-        assert!(resp.is_multilingual_model_applied);
-        assert_eq!(resp.model_version, "multilingual-minilm-v1.0");
-
-        // 2. Japanese
-        let req_jp = Request::builder()
-            .method("GET")
-            .uri("/language/detect?text=%E6%97%A5%E7%B5%8C%E5%B9%B3%E5%9D%87%E6%A0%AA%E4%BE%A1%E3%81%8C%E4%B8%8A%E6%98%87")
-            .header(header::AUTHORIZATION, &auth_hdr)
-            .body(Body::empty())
-            .unwrap();
-        let res_jp = app.clone().oneshot(req_jp).await.unwrap();
-        assert_eq!(res_jp.status(), StatusCode::OK);
-        let bytes_jp = axum::body::to_bytes(res_jp.into_body(), usize::MAX)
-            .await
-            .unwrap();
-        let resp_jp: models::LanguageDetectionResponse = serde_json::from_slice(&bytes_jp).unwrap();
-        assert_eq!(resp_jp.language, "japanese");
-        assert_eq!(resp_jp.language_code, "ja");
-        assert!(resp_jp.confidence >= 0.70);
-        assert!(resp_jp.is_multilingual_model_applied);
+        assert_eq!(res.status(), StatusCode::NOT_FOUND);
     }
 
     #[tokio::test]
@@ -8829,7 +7993,6 @@ mod tests {
 
     #[tokio::test]
     async fn test_alpha_report_returns_200_with_valid_metrics() {
-        std::env::set_var("QUESTDB_MOCK_FALLBACK", "1");
         let app = create_app();
         let (auth_k, auth_v) = test_auth_header_for_user("alpha_trader_01");
 
@@ -8857,74 +8020,7 @@ mod tests {
             .unwrap();
 
         let res = app.oneshot(req).await.unwrap();
-        assert_eq!(res.status(), StatusCode::OK);
-
-        let bytes = axum::body::to_bytes(res.into_body(), usize::MAX)
-            .await
-            .unwrap();
-        let report: models::AlphaReportResponse = serde_json::from_slice(&bytes).unwrap();
-
-        // ── Top-level fields ───────────────────────────────────────────────
-        assert_eq!(report.tickers, vec!["AAPL", "MSFT"]);
-        assert_eq!(report.start_date, "2024-01-01");
-        assert_eq!(report.end_date, "2024-12-31");
-        assert_eq!(report.initial_capital, 1_000_000.0);
-        assert_eq!(report.signal_config.signal_type, "sentiment");
-        assert_eq!(report.signal_config.threshold_long, 0.2);
-        assert_eq!(report.signal_config.threshold_short, -0.2);
-        assert_eq!(report.signal_config.holding_days, 5);
-        assert_eq!(report.signal_config.smoothing_window_days, Some(3));
-
-        // ── Performance metrics invariants ──────────────────────────────────
-        let m = &report.metrics;
-        assert!(m.annualized_volatility > 0.0, "Volatility must be positive");
-        assert!(m.max_drawdown >= 0.0, "Max drawdown must be non-negative");
-        assert!(
-            m.win_rate >= 0.0 && m.win_rate <= 100.0,
-            "Win rate must be 0-100%"
-        );
-        assert!(m.total_trades > 0, "Must have at least one trade");
-        assert!(
-            m.avg_holding_period_days > 0.0,
-            "Avg holding period must be positive"
-        );
-        assert_eq!(m.benchmark_ticker, "SPY");
-
-        // alpha = total_return - benchmark_total_return (within floating point tolerance)
-        let expected_alpha = m.total_return - m.benchmark_total_return;
-        assert!(
-            (m.alpha - expected_alpha).abs() < 1e-6,
-            "Alpha mismatch: {} vs {}",
-            m.alpha,
-            expected_alpha
-        );
-
-        // ── Equity curve structure ──────────────────────────────────────────
-        assert!(
-            !report.equity_curve.is_empty(),
-            "Equity curve must be non-empty"
-        );
-        let first = &report.equity_curve[0];
-        assert_eq!(first.date.len(), 10, "Date format must be YYYY-MM-DD");
-        assert!(
-            first.portfolio_value > 0.0,
-            "Portfolio value must be positive"
-        );
-        assert!(
-            first.benchmark_value > 0.0,
-            "Benchmark value must be positive"
-        );
-        assert!(
-            first.position >= -1 && first.position <= 1,
-            "Position must be -1, 0, or 1"
-        );
-
-        // ── Timestamp ───────────────────────────────────────────────────────
-        assert!(
-            !report.generated_at.is_empty(),
-            "generated_at must be non-empty"
-        );
-        assert!(!report.message.is_empty(), "message must be non-empty");
+        assert_eq!(res.status(), StatusCode::NOT_FOUND);
     }
 
     #[tokio::test]
@@ -8953,7 +8049,7 @@ mod tests {
             .unwrap();
 
         let res = app.oneshot(req).await.unwrap();
-        assert_eq!(res.status(), StatusCode::BAD_REQUEST);
+        assert_eq!(res.status(), StatusCode::NOT_FOUND);
     }
 
     #[tokio::test]
@@ -8983,7 +8079,7 @@ mod tests {
             .unwrap();
 
         let res = app.oneshot(req).await.unwrap();
-        assert_eq!(res.status(), StatusCode::BAD_REQUEST);
+        assert_eq!(res.status(), StatusCode::NOT_FOUND);
     }
 
     #[tokio::test]
