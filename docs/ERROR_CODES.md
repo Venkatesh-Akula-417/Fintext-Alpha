@@ -52,6 +52,7 @@ retry-after: 42
 | **`403`** | **Forbidden** | Client IP not whitelisted, insufficient role permissions | Add client IP to whitelist or request elevated RBAC credentials |
 | **`404`** | **Not Found** | Unknown ticker, non-existent organization, missing ID | Verify entity identifier or check universe coverage |
 | **`409`** | **Conflict** | Duplicate registration email, duplicate universe name | Use a distinct email/resource name or update the existing entity |
+| **`410`** | **Gone** | Accessing retired endpoints (`/auth/register`, `/news/articles/:id`, `/audio/transcribe`) | Consult migration guide; endpoints removed in v1.0 |
 | **`422`** | **Unprocessable Entity**| Missing required JSON field, mismatched data type | Review OpenAPI schema and ensure strict type conformance |
 | **`429`** | **Too Many Requests** | Per-minute burst limit or monthly plan quota exceeded | Implement exponential backoff or upgrade institutional tier |
 | **`500`** | **Internal Server Error**| Database socket error, unexpected execution failure | Check service status, verify mock fallback flags, or retry |
@@ -235,6 +236,30 @@ Returned when attempting to create a resource that violates unique constraints.
 
 ---
 
+### `410 Gone`
+
+Returned when attempting to access an API endpoint that has been permanently retired in version 1.0.
+
+#### Example Response: Retired Endpoint
+```json
+{
+  "error": "Gone",
+  "message": "This endpoint has been permanently removed in v1.0. Consult the documentation for migration guidance."
+}
+```
+
+Includes standard RFC 8594 `Sunset` response header:
+```http
+Sunset: Wed, 11 Nov 2026 00:00:00 GMT
+```
+
+#### Affected Endpoints
+- `POST /auth/register` (and `/v1/auth/register`)
+- `GET /news/articles/:id` (and `/v1/news/articles/:id`)
+- `POST /audio/transcribe` (and `/v1/audio/transcribe`)
+
+---
+
 ### `422 Unprocessable Entity`
 
 Returned by the Axum web framework when the incoming request body is syntactically valid JSON, but cannot be deserialized into the target Rust data structure.
@@ -249,7 +274,7 @@ Returned by the Axum web framework when the incoming request body is syntactical
 
 #### Common Causes
 1. **Mismatched Field Types**: Sending `"holding_days": "5"` (string) instead of `5` (integer).
-2. **Missing Non-Nullable Fields**: Omitting mandatory parameters in the request payload (e.g. missing `ticker` in `/backtest`).
+2. **Missing Non-Nullable Fields**: Omitting mandatory parameters in the request payload (e.g. missing `ticker` in `/signals/quality-report`).
 3. **Malformed Enums**: Passing an unsupported enum string (e.g. `"aggregation": "MINUTES"` instead of `"1m"`).
 
 #### Client Fix

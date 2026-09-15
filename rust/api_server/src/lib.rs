@@ -70,7 +70,7 @@ pub use auth::{
     IssueTokenRequest, IssueTokenResponse, DEFAULT_JWT_EXPIRY_SECS,
 };
 use axum::middleware::from_fn_with_state;
-use axum::routing::{delete, get, patch, post};
+use axum::routing::{any, delete, get, patch, post};
 use axum::Router;
 pub use billing::{
     create_checkout_handler, create_portal_handler, get_subscription_handler, init_billing_db,
@@ -218,7 +218,7 @@ pub use retraining::{
 };
 pub use sector::{SectorMap, GLOBAL_SECTOR_MAP};
 pub use state::{
-    is_finnhub_mock_fallback_enabled, is_kafka_mock_fallback_enabled,
+    enable_full_api_surface, is_finnhub_mock_fallback_enabled, is_kafka_mock_fallback_enabled,
     is_polygon_mock_fallback_enabled, is_production_mode, is_questdb_mock_fallback_enabled,
     is_whisper_mock_fallback_enabled, read_production_mode_from_config, set_production_mode,
     AppState, DEFAULT_DEV_ADMIN_TOKEN, DEFAULT_DEV_JWT_SECRET, PRODUCTION_MODE_ACTIVE,
@@ -252,6 +252,123 @@ pub use webhooks::{
     WebhookPayload, WebhookRegistry, WebhookResponse, WebhookSubscription,
 };
 
+pub mod subtle {
+    pub trait ConstantTimeEq {
+        fn ct_eq(&self, other: &Self) -> bool;
+    }
+
+    impl ConstantTimeEq for [u8] {
+        #[inline]
+        fn ct_eq(&self, other: &[u8]) -> bool {
+            if self.len() != other.len() {
+                return false;
+            }
+            let mut diff = 0u8;
+            for (&a, &b) in self.iter().zip(other.iter()) {
+                diff |= a ^ b;
+            }
+            diff == 0
+        }
+    }
+}
+
+pub use subtle::ConstantTimeEq;
+
+/// RFC 8594 410 Gone stub handler for deprecated and permanently removed endpoints.
+pub async fn gone_handler() -> impl axum::response::IntoResponse {
+    let mut headers = axum::http::HeaderMap::new();
+    headers.insert(
+        axum::http::header::HeaderName::from_static("sunset"),
+        axum::http::HeaderValue::from_static("Wed, 11 Nov 2026 00:00:00 GMT"),
+    );
+    (
+        axum::http::StatusCode::GONE,
+        headers,
+        axum::Json(serde_json::json!({
+            "error": "Gone",
+            "message": "This endpoint has been permanently removed in v1.0. Consult the documentation for migration guidance."
+        })),
+    )
+}
+
+/// Administrative token validation middleware for /internal/* operational endpoints.
+/// Enforces constant-time verification of the X-Admin-Token header.
+pub async fn admin_token_middleware(
+    axum::extract::State(state): axum::extract::State<AppState>,
+    req: axum::extract::Request,
+    next: axum::middleware::Next,
+) -> axum::response::Response {
+    use axum::response::IntoResponse;
+
+    let token_header = req
+        .headers()
+        .get("X-Admin-Token")
+        .or_else(|| req.headers().get("x-admin-token"))
+        .and_then(|h| h.to_str().ok());
+
+    let expected_token = std::env::var("ADMIN_TOKEN").unwrap_or_else(|_| state.admin_token.clone());
+
+    let is_valid = match token_header {
+        Some(token) => {
+            let token_bytes = token.as_bytes();
+            let expected_bytes = expected_token.as_bytes();
+            token_bytes.ct_eq(expected_bytes)
+        }
+        None => false,
+    };
+
+    if !is_valid {
+        return (
+            axum::http::StatusCode::UNAUTHORIZED,
+            axum::Json(serde_json::json!({
+                "error": "Unauthorized",
+                "message": "Invalid or missing X-Admin-Token header"
+            })),
+        )
+            .into_response();
+    }
+
+    next.run(req).await
+}
+
+/// Builds the internal operational router gated by ADMIN_TOKEN middleware under `/internal`.
+pub fn internal_router(state: AppState) -> Router<AppState> {
+    let internal_routes = Router::new()
+        .route("/dlq/events", get(list_dlq_events_handler))
+        .route(
+            "/dlq/events/:id",
+            get(get_dlq_event_handler).delete(purge_dlq_event_handler),
+        )
+        .route(
+            "/dlq/events/:id/reprocess",
+            post(reprocess_dlq_event_handler),
+        )
+        .route("/admin/reload-pit-data", post(reload_pit_data_handler))
+        .route(
+            "/retraining/jobs",
+            get(list_retraining_jobs_handler).post(create_retraining_job_handler),
+        )
+        .route("/retraining/jobs/:id", get(get_retraining_job_handler))
+        .route(
+            "/retraining/jobs/:id/cancel",
+            post(cancel_retraining_job_handler),
+        )
+        .route("/sentiment/backfill", post(backfill_sentiment_handler))
+        .route("/stream/kafka/topics", get(list_kafka_topics_handler))
+        .route(
+            "/stream/kafka/credentials",
+            get(get_kafka_credentials_handler),
+        )
+        .route(
+            "/stream/kafka/credentials/:id",
+            delete(revoke_kafka_credentials_handler),
+        )
+        .layer(from_fn_with_state(state.clone(), admin_token_middleware))
+        .layer(TimeoutLayer::new(Duration::from_secs(10)));
+
+    Router::new().nest("/internal", internal_routes)
+}
+
 /// Build the Axum application router with default state.
 pub fn create_app() -> Router {
     create_app_with_state(AppState::default())
@@ -260,7 +377,7 @@ pub fn create_app() -> Router {
 /// Build the Axum application router with explicitly injected `AppState`.
 pub fn create_app_with_state(state: AppState) -> Router {
     // 1. Protected REST routes (10-second timeout applied)
-    let mut protected_rest = Router::new()
+    let protected_rest = Router::new()
         .route(
             "/transcripts",
             post(create_transcript_handler).get(list_transcripts_handler),
@@ -269,11 +386,6 @@ pub fn create_app_with_state(state: AppState) -> Router {
             "/transcripts/:id",
             get(get_transcript_handler).delete(delete_transcript_handler),
         )
-        .route("/audio/transcribe", post(transcribe_audio_handler))
-        .route("/market/regime", get(get_market_regime_handler))
-        .route("/market/correlation", get(get_return_correlation_handler))
-        .route("/market/sector-rotation", get(get_sector_rotation_handler))
-        .route("/market/breadth", get(get_market_breadth_handler))
         .route("/sentiment", get(get_sentiment_handler))
         .route("/sentiment/anomalies", get(get_sentiment_anomalies_handler))
         .route(
@@ -298,8 +410,6 @@ pub fn create_app_with_state(state: AppState) -> Router {
                 .put(update_universe_handler)
                 .delete(delete_universe_handler),
         )
-        .route("/spillovers", get(get_spillovers_handler))
-        .route("/spillovers/matrix", get(get_spillover_matrix_handler))
         .route("/options/iv", get(get_options_iv_handler))
         .route("/options/unusual", get(get_unusual_options_handler))
         .route("/options/vol-surface", get(get_options_vol_surface_handler))
@@ -309,21 +419,16 @@ pub fn create_app_with_state(state: AppState) -> Router {
             get(get_options_microstructure_handler),
         )
         .route("/usage/stats", get(get_usage_stats_handler))
-        .route("/events/study", get(get_event_study_handler))
         .route("/events/8k", get(get_8k_events_handler))
         .route(
             "/events/earnings-surprise",
             get(get_earnings_surprise_handler),
         )
-        .route("/events/filings", get(get_regulatory_filings_handler))
         .route("/events/insider-trading", get(get_insider_trading_handler))
-        .route("/events/ma-rumors", get(get_ma_rumors_handler))
         .route(
             "/events/supply-chain-risk",
             get(get_supply_chain_risk_handler),
         )
-        .route("/backtest", post(backtest_handler))
-        .route("/signals/alpha-report", post(post_alpha_report_handler))
         .route(
             "/signals/quality-report",
             post(post_signal_quality_report_handler),
@@ -370,7 +475,6 @@ pub fn create_app_with_state(state: AppState) -> Router {
             delete(delete_ip_whitelist_handler),
         )
         .route("/news/articles", get(list_news_articles_handler))
-        .route("/news/articles/:id", get(get_news_article_handler))
         .route("/audit/logs", get(get_audit_logs_handler))
         .route("/audit/export", get(export_audit_logs_handler))
         .route("/search", get(get_search_handler))
@@ -380,16 +484,6 @@ pub fn create_app_with_state(state: AppState) -> Router {
                 .post(create_digest_subscription_handler)
                 .delete(delete_digest_subscription_handler),
         )
-        .route("/digest/trigger", post(trigger_digest_send_handler))
-        .route("/stream/kafka/topics", get(list_kafka_topics_handler))
-        .route(
-            "/stream/kafka/credentials",
-            get(get_kafka_credentials_handler),
-        )
-        .route(
-            "/stream/kafka/credentials/:id",
-            delete(revoke_kafka_credentials_handler),
-        )
         .route(
             "/retention/policies",
             get(list_retention_policies_handler).post(create_retention_policy_handler),
@@ -397,64 +491,6 @@ pub fn create_app_with_state(state: AppState) -> Router {
         .route(
             "/retention/policies/:id",
             delete(delete_retention_policy_handler),
-        )
-        .route("/risk/factor-exposure", get(get_factor_exposure_handler))
-        .route("/esg/scores", get(get_esg_scores_handler))
-        .route("/risk/bankruptcy", get(get_bankruptcy_risk_handler))
-        .route("/fx/sentiment", get(get_fx_sentiment_handler))
-        .route(
-            "/commodities/sentiment",
-            get(get_commodity_sentiment_handler),
-        )
-        .route("/crypto/sentiment", get(get_crypto_sentiment_handler))
-        .route(
-            "/polling-webhooks",
-            get(list_polling_webhooks_handler).post(create_polling_webhook_handler),
-        )
-        .route(
-            "/polling-webhooks/:id",
-            delete(delete_polling_webhook_handler),
-        )
-        .route(
-            "/chat-alerts",
-            get(list_chat_alerts_handler).post(create_chat_alert_handler),
-        )
-        .route("/chat-alerts/:id", delete(delete_chat_alert_handler))
-        .route("/risk/credit-sentiment", get(get_credit_sentiment_handler))
-        .route("/sentiment/backfill", post(backfill_sentiment_handler))
-        .route("/portfolio/optimize", post(portfolio_optimize_handler))
-        .route(
-            "/risk/portfolio-factor-exposure",
-            post(portfolio_factor_exposure_handler),
-        )
-        .route(
-            "/retraining/jobs",
-            get(list_retraining_jobs_handler).post(create_retraining_job_handler),
-        )
-        .route("/retraining/jobs/:id", get(get_retraining_job_handler))
-        .route(
-            "/retraining/jobs/:id/cancel",
-            post(cancel_retraining_job_handler),
-        );
-
-    if state.enable_fix_bridge {
-        protected_rest = protected_rest
-            .route("/fix/order", post(submit_fix_order_handler))
-            .route("/fix/orders", get(list_fix_orders_handler))
-            .route("/fix/cancel", post(cancel_fix_order_handler));
-    } else {
-        tracing::info!("[FIX Protocol Bridge] Route registration skipped: enable_fix_bridge=false");
-    }
-
-    protected_rest = protected_rest
-        .route("/dlq/events", get(list_dlq_events_handler))
-        .route(
-            "/dlq/events/:id",
-            get(get_dlq_event_handler).delete(purge_dlq_event_handler),
-        )
-        .route(
-            "/dlq/events/:id/reprocess",
-            post(reprocess_dlq_event_handler),
         )
         .route("/sla/status", get(get_sla_status_handler))
         .route("/sla/latency", get(sla_latency_handler))
@@ -465,21 +501,12 @@ pub fn create_app_with_state(state: AppState) -> Router {
             "/provenance/:record_type/:record_id",
             get(get_provenance_handler),
         )
-        .route("/anomaly-scan", post(post_anomaly_scan_handler))
-        .route("/language/detect", get(get_language_detect_handler))
         .layer(TimeoutLayer::new(Duration::from_secs(10)));
 
     // 2. Protected WebSocket route (long-lived connection; no request timeout)
     let protected_ws = Router::new().route("/ws", get(websocket_handler));
 
     // 3. Protected routes layer with per-user rate limiting, usage metering, and JWT/API-Key authentication middleware
-    // Note: In Axum, outer layer runs first.
-    // Execution Order:
-    // Request -> auth_middleware (validates JWT/API-Key, injects Claims)
-    //         -> ip_whitelist_middleware (validates client IP against user's whitelist)
-    //         -> metering_middleware (starts timer, captures user_id, captures status & latency on return)
-    //         -> rate_limit_middleware (enforces quota on Claims.sub; returns 429 if exceeded)
-    //         -> Handler
     let protected_routes = Router::new()
         .merge(protected_rest)
         .merge(protected_ws)
@@ -488,7 +515,7 @@ pub fn create_app_with_state(state: AppState) -> Router {
         .layer(from_fn_with_state(state.clone(), ip_whitelist_middleware))
         .layer(from_fn_with_state(state.clone(), auth_middleware));
 
-    // 4. Public routes (/health probe, /auth/token, /auth/register, /auth/login, and Swagger UI / OpenAPI docs)
+    // 4. Public routes (/health probe, /auth/token, /auth/login, Swagger UI / OpenAPI docs, and 410 Gone stubs)
     let swagger_router = SwaggerUi::new("/swagger-ui")
         .url("/v1/api-docs/openapi.json", PublicApiDoc::openapi())
         .url("/api-docs/openapi.json", ApiDoc::openapi());
@@ -506,25 +533,30 @@ pub fn create_app_with_state(state: AppState) -> Router {
         .route("/health", get(health_check_handler))
         .route("/readyz", get(readyz_handler))
         .route("/auth/token", post(issue_token_handler))
-        .route("/auth/register", post(register_user_handler))
+        .route("/auth/register", any(gone_handler))
+        .route("/news/articles/:id", any(gone_handler))
+        .route("/audio/transcribe", any(gone_handler))
         .route("/auth/login", post(login_user_handler))
         .route("/billing/webhook", post(stripe_webhook_handler))
         .route("/model-card", get(get_model_card_handler))
-        .route("/admin/reload-pit-data", post(reload_pit_data_handler))
         .layer(TimeoutLayer::new(Duration::from_secs(10)));
 
-    // 5. Versioned Public v1 Router (32 core endpoints)
+    // 5. Versioned Public v1 Router (pruned core endpoints)
     let v1_router = public_v1_router(state.clone());
 
-    Router::new()
+    let mut app = Router::new()
         .merge(public_routes)
         .merge(protected_routes)
-        .merge(v1_router)
-        .with_state(state)
-        .layer(TraceLayer::new_for_http())
+        .merge(v1_router);
+
+    if enable_full_api_surface() {
+        app = app.merge(internal_router(state.clone()));
+    }
+
+    app.with_state(state).layer(TraceLayer::new_for_http())
 }
 
-/// Builds the versioned public API Gateway router exposing only the 32 core endpoints under `/v1`.
+/// Builds the versioned public API Gateway router exposing only the core endpoints under `/v1`.
 pub fn public_v1_router(state: AppState) -> Router<AppState> {
     let v1_protected = Router::new()
         // Auth / User core endpoints
@@ -562,7 +594,6 @@ pub fn public_v1_router(state: AppState) -> Router<AppState> {
         .route("/sentiment/entities", get(get_sentiment_entities_handler))
         .route("/sentiment/sector", get(get_sector_sentiment_handler))
         .route("/news/articles", get(list_news_articles_handler))
-        .route("/news/articles/:id", get(get_news_article_handler))
         // Events / Filings core endpoints
         .route("/events/8k", get(get_8k_events_handler))
         .route(
@@ -614,6 +645,9 @@ pub fn public_v1_router(state: AppState) -> Router<AppState> {
         .route("/health", get(health_check_handler))
         .route("/readyz", get(readyz_handler))
         .route("/auth/token", post(issue_token_handler))
+        .route("/auth/register", any(gone_handler))
+        .route("/news/articles/:id", any(gone_handler))
+        .route("/audio/transcribe", any(gone_handler))
         .route("/model-card", get(get_model_card_handler));
 
     let v1_all = Router::new()

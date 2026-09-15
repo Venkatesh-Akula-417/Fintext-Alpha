@@ -157,6 +157,11 @@ pub fn read_enable_full_api_surface() -> bool {
     false
 }
 
+/// Helper function to check whether the full API surface is enabled (env ENABLE_FULL_API_SURFACE > config.yaml).
+pub fn enable_full_api_surface() -> bool {
+    read_enable_full_api_surface()
+}
+
 /// Reads `production_mode` setting from YAML configuration file.
 pub fn read_production_mode_from_config() -> bool {
     let config_paths = [
