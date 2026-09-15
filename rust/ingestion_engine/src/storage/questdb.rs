@@ -17,17 +17,22 @@ pub struct QuestDbConfig {
     pub table_name: String,
     pub max_retries: usize,
     pub timeout_ms: u64,
+    pub enabled: bool,
 }
 
 impl Default for QuestDbConfig {
     fn default() -> Self {
         let url = env::var("QUESTDB_URL").unwrap_or_else(|_| "http://127.0.0.1:9000".to_string());
         let table_name = env::var("QUESTDB_TABLE").unwrap_or_else(|_| "sentiment_news".to_string());
+        let enabled = env::var("QUESTDB_ENABLED")
+            .map(|v| v.eq_ignore_ascii_case("true") || v == "1")
+            .unwrap_or(false);
         Self {
             url,
             table_name,
             max_retries: 3,
             timeout_ms: 3000,
+            enabled,
         }
     }
 }
@@ -286,6 +291,9 @@ impl QuestDbSink {
 
     /// Helper to send an ILP text payload to QuestDB with retry and exponential backoff.
     pub async fn send_ilp_payload(&self, payload: &str) -> Result<(), String> {
+        if !self.config.enabled {
+            return Ok(());
+        }
         let endpoint = format!(
             "{}/write?precision=n",
             self.config.url.trim_end_matches('/')
@@ -345,6 +353,9 @@ impl QuestDbSink {
         sentiment: &SentimentOutput,
         signal_avail_ts_us: i64,
     ) -> Result<(i32, String), String> {
+        if !self.config.enabled {
+            return Ok((1, String::new()));
+        }
         let now_utc = Utc::now().to_rfc3339();
         if doc.db_commit_utc.is_none() {
             doc.db_commit_utc = Some(now_utc.clone());
@@ -465,6 +476,7 @@ pub mod tests {
             table_name: "sentiment_news".to_string(),
             max_retries: 3,
             timeout_ms: 1000,
+            enabled: true,
         };
         let sink = QuestDbSink::new(config);
 
@@ -538,6 +550,7 @@ pub mod tests {
             table_name: "sentiment_news".to_string(),
             max_retries: 3,
             timeout_ms: 1000,
+            enabled: true,
         };
         let sink = QuestDbSink::new(config);
 
@@ -609,6 +622,7 @@ pub mod tests {
             table_name: "sentiment_news".to_string(),
             max_retries: 1,
             timeout_ms: 100,
+            enabled: true,
         };
         let sink = QuestDbSink::new(config);
 
@@ -665,6 +679,7 @@ pub mod tests {
             table_name: "sentiment_news".to_string(),
             max_retries: 3,
             timeout_ms: 1000,
+            enabled: true,
         };
         let sink = QuestDbSink::new(config);
 
@@ -698,6 +713,7 @@ pub mod tests {
             table_name: "sentiment_news".to_string(),
             max_retries: 3,
             timeout_ms: 1000,
+            enabled: true,
         };
         let sink = QuestDbSink::new(config);
 
@@ -749,5 +765,55 @@ pub mod tests {
         assert!(ilp.contains("sla_target_ms=500i"));
         assert!(ilp.contains("is_sla_compliant=true"));
         assert!(ilp.ends_with(" 1724601600000000000"));
+    }
+
+    #[tokio::test]
+    async fn test_questdb_disabled_mode_skips_writes() {
+        let config = QuestDbConfig {
+            url: "http://127.0.0.1:9999".to_string(), // offline endpoint
+            table_name: "sentiment_news".to_string(),
+            max_retries: 1,
+            timeout_ms: 100,
+            enabled: false,
+        };
+        let sink = QuestDbSink::new(config);
+
+        let mut doc = ProcessedDocument {
+            id: "doc-disabled-1".to_string(),
+            title: "Disabled test".to_string(),
+            source: "Test".to_string(),
+            url: "http://test.com".to_string(),
+            published_utc: "2026-08-25T14:30:00Z".to_string(),
+            ingested_utc: "2026-08-25T14:30:00.050Z".to_string(),
+            clean_text: "Clean text".to_string(),
+            tickers: vec!["AAPL".to_string()],
+            primary_ticker: Some("AAPL".to_string()),
+            ..Default::default()
+        };
+
+        let sentiment = SentimentOutput::default();
+
+        // All operations must return Ok(()) without network calls when disabled
+        let res1 = sink.write_event(&doc, &sentiment, 1000).await;
+        assert!(res1.is_ok());
+
+        let bar = crate::sources::polygon::DailyBar {
+            ticker: "AAPL".to_string(),
+            date: "2025-01-02".to_string(),
+            timestamp_ms: 1735833600000,
+            open: 224.50,
+            high: 226.80,
+            low: 223.10,
+            close: 225.40,
+            volume: 48500000.0,
+            vwap: 225.10,
+        };
+        let res2 = sink.write_stock_bar(&bar).await;
+        assert!(res2.is_ok());
+
+        let res3 = sink
+            .upsert_sentiment_revision(&mut doc, &sentiment, 1000)
+            .await;
+        assert!(res3.is_ok());
     }
 }

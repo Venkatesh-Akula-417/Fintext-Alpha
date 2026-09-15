@@ -10,7 +10,6 @@ use std::collections::{HashMap, HashSet};
 use tracing::{info, warn};
 
 use crate::auth::Claims;
-use crate::handlers::backtest::generate_mock_stock_prices;
 use crate::models::{
     DecayCurvePoint, ICSummary, MarketCapBias, SignalQualityReportRequest,
     SignalQualityReportResponse,
@@ -633,6 +632,43 @@ pub fn compute_icir(period_ics: &[f64]) -> Option<f64> {
     } else {
         None
     }
+}
+
+/// Generates synthetic daily stock prices for deterministic mock testing and signal quality evaluation.
+pub fn generate_mock_stock_prices(
+    ticker: &str,
+    start_date: NaiveDate,
+    end_date: NaiveDate,
+) -> HashMap<NaiveDate, f64> {
+    let mut map = HashMap::new();
+    let mut curr = start_date;
+    let mut day_idx = 0usize;
+    let clean = ticker.trim().to_uppercase();
+    let hash_val = clean.bytes().map(|b| b as usize).sum::<usize>();
+
+    let mut price = match clean.as_str() {
+        "AAPL" => 224.50,
+        "NVDA" => 125.00,
+        "MSFT" => 415.00,
+        "GOOGL" | "GOOG" => 165.00,
+        "AMZN" => 185.00,
+        "META" => 510.00,
+        "TSLA" => 210.00,
+        "SPY" => 550.00,
+        _ => 100.0 + ((hash_val % 300) as f64),
+    };
+
+    while curr <= end_date {
+        let phase = ((hash_val + day_idx * 13) as f64) * 0.09;
+        let daily_change = (phase.sin() * 0.015) + 0.0004;
+        price = (price * (1.0 + daily_change)).max(1.0);
+        let rounded = (price * 100.0).round() / 100.0;
+        map.insert(curr, rounded);
+        curr += Duration::days(1);
+        day_idx += 1;
+    }
+
+    map
 }
 
 #[cfg(test)]

@@ -329,26 +329,31 @@ Auto-applies schema on first startup:
 
 ## 📡 Key API Endpoints & Capabilities
 
-The API server provides over 120 production REST and WebSocket endpoints, including the standardized versioned public API surface (`/v1`, 32 core endpoints):
+The API server provides 32 institutional core REST and WebSocket endpoints under the standardized `/v1` public gateway surface, purpose-built for Mid-Frequency Quant Funds, Stat-Arb, and Event-Driven Hedge Funds, with operational/governance routes securely isolated under `/internal/*`:
 
 | Endpoint Domain | Method & Route | Description |
 | :--- | :--- | :--- |
 | **Authentication & Users** | `POST /v1/auth/token`<br/>`GET /v1/users/me`<br/>`POST /v1/users/api-keys` | Token issuance, Argon2 password verification, rotating live API keys (`fintext_live_...`), RBAC. |
 | **Real-Time Sentiment** | `GET /v1/sentiment?ticker=NVDA`<br/>`GET /v1/sentiment/history`<br/>`GET /v1/sentiment/feed` | Real-time sentiment score, label, confidence, and Quantitative Data Quality Score (QDQS). |
-| **SCD2 Revision History** | `POST /sentiment/revision`<br/>`GET /sentiment/revisions?ticker=AAPL` | Slowly Changing Dimension Type 2 (SCD2) revision ingestion, audit lineage inspection, and look-ahead bias elimination with `as_of_utc`. |
-| **Options Microstructure** | `GET /options/vpin?ticker=AAPL`<br/>`GET /options/gex`<br/>`GET /options/vol-surface` | Volume-Synchronized Probability of Informed Trading, Black-Scholes Dealer Gamma Exposure, 2D Vol Surface. |
-| **Point-in-Time Backtest** | `POST /backtest`<br/>`GET /event-study` | Bi-temporal ASOF backtesting with Sharpe, Sortino, max drawdown, win rate, and Cumulative Abnormal Returns (CAR). |
-| **Cross-Asset Risk & GNN** | `GET /risk/spillovers`<br/>`GET /risk/spillover-matrix`<br/>`GET /risk/supply-chain` | Multi-lag Pearson cross-correlation lead-lag scan and multi-tier supply chain shock propagation. |
-| **Macro & Quantitative Models** | `GET /macro/regime`<br/>`GET /factors/exposure`<br/>`GET /portfolio/optimize` | Macro market regime clustering, Fama-French/Carhart multi-factor OLS regression, Mean-Variance & Risk Parity optimizer. |
-| **Alternative Signals** | `GET /signals/insider`<br/>`GET /signals/earnings-surprise`<br/>`POST /v1/signals/quality-report` | Form 4 insider transaction conviction scoring, earnings surprise tracker, and Signal Quality Diagnostics (IC, ICIR, decay curve, half-life, sector/cap bias). |
-| **Specialized Feeds** | `GET /esg`<br/>`GET /bankruptcy`<br/>`GET /fx`<br/>`GET /commodities`<br/>`GET /crypto` | Domain-specific sentiment and risk scores across equities, fixed income, FX pairs, commodities, and crypto. |
-| **Real-Time Streaming** | `WS /ws/sentiment`<br/>`GET /streaming/kafka/topics` | Real-time low-latency WebSocket feed and dedicated Kafka streaming topics. |
-| **Webhooks & Delivery** | `POST /v1/webhooks`<br/>`GET /polling-webhooks` | HMAC-SHA256 signed event delivery and pull-based polling webhooks. |
-| **Organizations & Billing**| `POST /orgs`<br/>`POST /billing/checkout-session` | Multi-user team management, seat allocations, Stripe checkout, customer billing portal. |
-| **Model Governance** | `GET /v1/model-card`<br/>`GET /model-validation` | Fine-tuned FinBERT (v3.1.0) lineage & INT8 quantization card, benchmark evaluation (accuracy, macro F1, confusion matrix, 10-bin calibration curve, ECE). |
-| **System Governance & DLQ** | `GET /v1/health`<br/>`GET /admin/dlq`<br/>`GET /audit-logs/export` | System health probe, Dead Letter Queue reprocessing, compliance audit trail export. |
+| **SCD2 Revision History** | `POST /v1/sentiment/revision`<br/>`GET /v1/sentiment/revisions?ticker=AAPL` | Slowly Changing Dimension Type 2 (SCD2) revision ingestion, audit lineage inspection, and look-ahead bias elimination with `as_of_utc`. |
+| **Options Microstructure** | `GET /v1/options/vpin?ticker=AAPL`<br/>`GET /v1/options/gex`<br/>`GET /v1/options/vol-surface` | Volume-Synchronized Probability of Informed Trading, Black-Scholes Dealer Gamma Exposure, 2D Vol Surface. |
+| **Supply Chain GNN** | `GET /v1/risk/supply-chain` | Multi-tier supply chain shock propagation via 2-layer Laplacian Graph Convolutional Network. |
+| **Signal Quality Research** | `POST /v1/signals/quality-report` | Signal Quality Diagnostics (Information Coefficient IC, ICIR, decay curve, half-life, sector & market-cap quantile spread). |
+| **Real-Time Streaming** | `WS /v1/ws/sentiment`<br/>`GET /v1/streaming/kafka/topics` | Low-latency bi-directional WebSocket feed and dedicated Kafka event streams. |
+| **Webhooks & Delivery** | `POST /v1/webhooks`<br/>`GET /v1/polling-webhooks` | HMAC-SHA256 signed event delivery and pull-based polling webhooks. |
+| **Organizations & Billing**| `POST /v1/orgs`<br/>`POST /v1/billing/checkout-session` | Multi-user team management, seat allocations, Stripe checkout, customer billing portal. |
+| **Model Governance** | `GET /v1/model-card`<br/>`GET /v1/model-validation` | Fine-tuned FinBERT (v3.1.0) lineage & INT8 quantization card, benchmark evaluation (accuracy, macro F1, calibration curve, ECE). |
+| **System Governance & DLQ** | `GET /v1/health`<br/>`GET /internal/dlq`<br/>`GET /internal/audit-logs/export` | System health probe, Dead Letter Queue reprocessing, compliance audit trail export. |
 
 *Comprehensive schemas, request DTOs, and error codes are accessible via the [Interactive Swagger UI](http://127.0.0.1:8000/swagger-ui).*
+
+### ⚡ Inference Latency Reconciliation (CPU vs GPU)
+As detailed in [`docs/LATENCY_RECONCILIATION.md`](docs/LATENCY_RECONCILIATION.md):
+- **CPU (Host x86_64, 4-8 threads)**: End-to-end FinBERT inference runs at ~155ms mean latency (comfortably within the $<437\text{ms}$ tradable SLA).
+- **GPU (CUDA / TensorRT, NVIDIA L4 / T4)**: End-to-end inference accelerates to ~0.85ms mean latency for high-frequency burst execution.
+
+### 💰 Cloud Cost & Infrastructure Optimization
+As detailed in [`docs/CLOUD_COST_OPTIMIZATION.md`](docs/CLOUD_COST_OPTIMIZATION.md), the platform architecture has been consolidated from an over-engineered 5-sink multi-cluster topology (~$1,000/mo) into a lean, institutional 4-core beta profile (PostgreSQL 16 + TimescaleDB, Redpanda, Ingestion Engine, and API Gateway) operating at **~$300/mo** infrastructure cost with zero data loss or SLA degradation.
 
 ---
 
@@ -441,13 +446,24 @@ To guarantee that **zero synthetic or mock data** is ever served to customer tra
   ```
   The ingestion engine, API server, and spillover analytics will automatically generate mathematically valid synthetic market data and execute in-memory.
 
-### 3. Docker Compose Quick Deployment (8 Services)
+### 3. Docker Compose Quick Deployment
+
+#### A. Core Beta Profile (Lean Production — ~$300/mo Cloud Cost)
+Starts the 4 essential institutional services: PostgreSQL 16 + TimescaleDB primary store, Redpanda/Kafka event bus, Ingestion Engine, and API Gateway:
 ```bash
-docker-compose up -d --build
+docker compose up -d --build
 ```
-- PostgreSQL 16 + TimescaleDB: `localhost:5432` (`fintext-postgres`)
-- QuestDB Console: [http://localhost:9000](http://localhost:9000) (`fintext-questdb`)
-- API Server: [http://localhost:8000](http://localhost:8000) (`fintext-api-gateway`)
+- **PostgreSQL 16 + TimescaleDB**: `localhost:5432` (`fintext-postgres`)
+- **Redpanda / Kafka**: `localhost:19092` (`fintext-kafka`)
+- **API Server & Gateway**: [http://localhost:8000](http://localhost:8000) (`fintext-api-gateway`)
+- **Interactive Swagger UI**: [http://localhost:8000/swagger-ui](http://localhost:8000/swagger-ui)
+
+#### B. Full Enterprise Profile (All 8 Services with Optional Hot Cache & Ops Sentinels)
+Activates optional hot-cache (QuestDB), cross-asset spillover engine, dead letter worker, and Prometheus anomaly detector:
+```bash
+docker compose --profile optional up -d --build
+```
+- **QuestDB Hot Cache & Web Console**: [http://localhost:9000](http://localhost:9000) (`fintext-questdb`)
 
 ---
 

@@ -28,13 +28,14 @@
 │     - Volume-Synchronized Probability of Informed Trading (VPIN) order toxicity engine.          │
 │     - Black-Scholes Dealer Net Gamma Exposure (GEX) 1% dollar risk calculation.                  │
 │     - Cross-Asset Sentiment Lead-Lag Spillover Analytics with multi-lag Pearson cross-correlation.│
-│                                                                                                  │
 │  3. Time-Series Storage & Real-Time Streaming:                                                   │
-│     - Time-Series Storage: QuestDB via Influx Line Protocol (ILP) with nanosecond timestamps.    │
+│     - Primary Storage: PostgreSQL 16 + TimescaleDB (sentiment_timeseries hypertable with SCD2).   │
+│     - Optional Hot Cache: QuestDB via Influx Line Protocol (ILP) (toggled via Docker profile).    │
 │     - Event Bus & Streaming: Kafka/Redpanda stream pub/sub for durable & real-time delivery.     │
+│     - Cold Storage Archive: Local / S3 Apache Parquet partitioned lakehouse (data/archive).       │
 │                                                                                                  │
 │  4. Point-in-Time Backtesting & API Serving:                                                     │
-│     - Axum HTTP REST and WebSocket Gateway serving /health, /sentiment, /spillovers, /backtest.  │
+│     - Axum HTTP REST and WebSocket Gateway serving /v1 32 core endpoints & /internal/* ops.      │
 │     - Bi-temporal point-in-time state reconstruction preventing look-ahead bias.                 │
 └──────────────────────────────────────────────────────────────────────────────────────────────────┘
 ```

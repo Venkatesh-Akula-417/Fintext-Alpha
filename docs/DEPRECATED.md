@@ -45,6 +45,39 @@ This file is the AUTHORITATIVE log of features, technologies, and files removed 
 - **Fallback:** `models/finbert/` (v3.0.0) is retained as fallback for `models/finbert-finetuned/` (v3.1.0)
 - **Verification:** `scripts/verify_finetuned_model.py` (Suite #258)
 
+### MiniLM-Seq32 Headline Model
+- **Removed in:** Suite #258 / Consistency Matrix A13
+- **Reason:** Replaced by 2-tier domain-specific FinBERT inference chain (Fine-tuned FinBERT INT8 v3.1.0 primary -> Base FinBERT v3.0.0 fallback).
+- **Files Removed:** `models/minilm_seq32/`, exporter scripts moved to `_archive/scripts/`.
+
+### Archived Handlers & Unused API Surfaces (P0-9 Surface Reduction)
+- **Archived in:** P0-9 / Lean Production Optimization
+- **Reason:** The original API had over 120 experimental, unmonetized endpoints across speculative asset classes (crypto, commodities, FX) and toy portfolio optimization endpoints that added maintenance overhead and attack surface. The platform is now standardized on 32 institutional core `/v1` endpoints tailored specifically to its Primary ICP (Mid-Frequency Quant Funds, Stat-Arb, Event-Driven Hedge Funds), with operational and audit endpoints isolated under `/internal/*`.
+- **Files Archived (Preserved in `_archive/handlers/`):**
+  - `alpha_report.rs`
+  - `anomaly_scan.rs`
+  - `backtest.rs`
+  - `bankruptcy_risk.rs`
+  - `commodity_sentiment.rs`
+  - `credit_sentiment.rs`
+  - `crypto_sentiment.rs`
+  - `esg_scores.rs`
+  - `event_study.rs`
+  - `factor_exposure.rs`
+  - `fix_orders.rs`
+  - `fx_sentiment.rs`
+  - `language_detect.rs`
+  - `ma_rumors.rs`
+  - `market_breadth.rs`
+  - `market_regime.rs`
+  - `portfolio_factor_exposure.rs`
+  - `portfolio_optimize.rs`
+  - `regulatory_filings.rs`
+  - `return_correlation.rs`
+  - `sector_rotation.rs`
+  - `spillover_matrix.rs`
+  - `spillovers.rs`
+
 ### Retired Data Sources
 - **Alpha Vantage** — Removed due to licensing restrictions. Benchmark reliability: 0.75
 - **NewsAPI** — Removed due to commercial use restrictions. Benchmark reliability: 0.60
@@ -67,8 +100,7 @@ The following files are FALLBACKS used only when `pit_database.enabled=false`:
 **Canonical source:** PostgreSQL bi-temporal tables in `config/pit_reference_schema.sql`.
 
 ### Base FinBERT Model (Fallback)
-- `models/finbert/` (v3.0.0) — fallback for `models/finbert-finetuned/` (v3.1.0)
-- `models/minilm_seq32/` — ultra-fast 32-token headline fallback when FinBERT is unavailable
+- `models/finbert/` (v3.0.0) — fallback for `models/finbert-finetuned/` (v3.1.0).
 
 ### VerticalPodAutoscaler (VPA) Manifest
 - `k8s/vpa-api.yaml` — Retained in `k8s/` and registered in `k8s/kustomization.yaml` per Suite #253 test contract (`scripts/verify_single_region_k8s.py`).
@@ -79,9 +111,9 @@ The following files are FALLBACKS used only when `pit_database.enabled=false`:
 
 - Rust 1.80.1, Axum 0.7, Tokio 1.36
 - PostgreSQL 16 + TimescaleDB (primary storage)
-- QuestDB (hot-path time-series, dual-storage)
+- QuestDB (optional hot-cache time-series, profile: `hot-cache`)
 - Redpanda / Kafka (event streaming)
-- AWS S3 / MinIO (cold archival, Parquet)
-- FinBERT fine-tuned INT8 ONNX (primary NLP)
+- AWS S3 / Local Parquet Archive (`data/archive`, cold storage)
+- FinBERT fine-tuned INT8 ONNX (primary NLP v3.1.0)
 - Whisper.cpp (audio ASR)
 - Vault / AWS Secrets Manager (secrets)

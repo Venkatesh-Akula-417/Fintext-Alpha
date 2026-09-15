@@ -13,8 +13,18 @@ production_mode: false
 public_api_version: "v1"
 enable_full_api_surface: false
 
-questdb:
+# ── Primary TimescaleDB & Storage Topology ─────────────────────────────────
+database:
+  timescaledb:
+    enabled: true
+    primary: true
+    url: "postgres://fintext:fintext@localhost:5432/fintext_metadata"
+  raw_archive:
+    enabled: true
+    path: "data/archive"
 
+questdb:
+  enabled: false  # Optional hot cache; PostgreSQL 16 + TimescaleDB is primary cold/warm store
   url: "http://localhost:9000"
   table: "sentiment_news"
   ilp_port: 9009
@@ -24,7 +34,7 @@ questdb:
   triple_timestamp_tracking: true  # Tracks published_utc (designated), ingested_utc, and db_commit_utc for look-ahead bias prevention
 
 questdb_buffer:
-  enabled: true
+  enabled: false  # Disabled when QuestDB is optional hot cache
   topic: "sentiment-questdb-buffer"
   consumer_group_id: "fintext-questdb-recovery"
   retry_max_attempts: 5
