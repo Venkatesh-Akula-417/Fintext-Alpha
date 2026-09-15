@@ -62,7 +62,7 @@ impl CacheConfig {
                         let key = k.trim();
                         let val = v.split('#').next().unwrap_or("").trim();
                         match key {
-                            "default_ttl_secs" => {
+                            "default_ttl_seconds" | "default_ttl_secs" => {
                                 if let Ok(n) = val.parse::<u64>() {
                                     cfg.default_ttl_secs = n;
                                 }
@@ -72,7 +72,7 @@ impl CacheConfig {
                                     cfg.default_max_capacity = n;
                                 }
                             }
-                            "cleanup_interval_secs" => {
+                            "cleanup_interval_seconds" | "cleanup_interval_secs" => {
                                 if let Ok(n) = val.parse::<u64>() {
                                     cfg.cleanup_interval_secs = n;
                                 }
@@ -85,17 +85,17 @@ impl CacheConfig {
         }
 
         // 2. Environment variables take highest precedence
-        if let Ok(val) = env::var("CACHE_DEFAULT_TTL_SECS") {
+        if let Ok(val) = env::var("CACHE_DEFAULT_TTL_SECONDS") {
             if let Ok(n) = val.parse::<u64>() {
                 cfg.default_ttl_secs = n;
             }
         }
-        if let Ok(val) = env::var("CACHE_MAX_CAPACITY") {
+        if let Ok(val) = env::var("CACHE_DEFAULT_MAX_CAPACITY") {
             if let Ok(n) = val.parse::<usize>() {
                 cfg.default_max_capacity = n;
             }
         }
-        if let Ok(val) = env::var("CACHE_CLEANUP_INTERVAL_SECS") {
+        if let Ok(val) = env::var("CACHE_CLEANUP_INTERVAL_SECONDS") {
             if let Ok(n) = val.parse::<u64>() {
                 cfg.cleanup_interval_secs = n;
             }
@@ -289,15 +289,15 @@ mod tests {
 
     #[test]
     fn test_cache_config_env_overrides() {
-        std::env::set_var("CACHE_DEFAULT_TTL_SECS", "120");
-        std::env::set_var("CACHE_MAX_CAPACITY", "5000");
-        std::env::set_var("CACHE_CLEANUP_INTERVAL_SECS", "30");
+        std::env::set_var("CACHE_DEFAULT_TTL_SECONDS", "120");
+        std::env::set_var("CACHE_DEFAULT_MAX_CAPACITY", "5000");
+        std::env::set_var("CACHE_CLEANUP_INTERVAL_SECONDS", "30");
 
         let cfg = CacheConfig::from_env_or_config();
 
-        std::env::remove_var("CACHE_DEFAULT_TTL_SECS");
-        std::env::remove_var("CACHE_MAX_CAPACITY");
-        std::env::remove_var("CACHE_CLEANUP_INTERVAL_SECS");
+        std::env::remove_var("CACHE_DEFAULT_TTL_SECONDS");
+        std::env::remove_var("CACHE_DEFAULT_MAX_CAPACITY");
+        std::env::remove_var("CACHE_CLEANUP_INTERVAL_SECONDS");
 
         assert_eq!(cfg.default_ttl_secs, 120);
         assert_eq!(cfg.default_max_capacity, 5000);
