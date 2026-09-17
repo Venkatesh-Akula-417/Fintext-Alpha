@@ -13,7 +13,7 @@
     },
     {
       "key": "admin_token",
-      "value": "fintext-admin-dev-secret-token",
+      "value": "your_admin_token_here",
       "type": "string"
     },
     {

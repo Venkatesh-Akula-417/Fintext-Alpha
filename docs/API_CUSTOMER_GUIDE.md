@@ -16,9 +16,12 @@ Like tuning a high-performance derailleur, connecting to FinText is fast and mec
 # 1. Spin up the 4 core platform services (Postgres+TimescaleDB, Redpanda Kafka, Ingestion, API)
 docker compose up -d
 
-# 2. Acquire your Bearer JWT Token using the admin development secret
+# 2. Acquire your Bearer JWT Token using your admin token
+# (Set ADMIN_TOKEN environment variable or use the development secret from .env)
+export ADMIN_TOKEN="${ADMIN_TOKEN:-your_admin_token_here}"
+
 TOKEN=$(curl -s -X POST http://127.0.0.1:8000/v1/auth/token \
-  -H "X-Admin-Token: fintext-admin-dev-secret-token" \
+  -H "X-Admin-Token: ${ADMIN_TOKEN}" \
   -H "Content-Type: application/json" \
   -d '{"user_id": "quant_researcher_01", "role": "admin", "ttl_seconds": 86400}' | grep -o '"token":"[^"]*' | cut -d'"' -f4)
 
@@ -60,7 +63,7 @@ FinText enforces multi-tiered institutional authentication. Think of it as a 3-t
 Tokens are signed using HMAC-SHA256 and embed user role claims (`user`, `analyst`, `trader`, `admin`).
 ```bash
 curl -X POST http://127.0.0.1:8000/v1/auth/token \
-  -H "X-Admin-Token: fintext-admin-dev-secret-token" \
+  -H "X-Admin-Token: ${ADMIN_TOKEN}" \
   -H "Content-Type: application/json" \
   -d '{
     "user_id": "quant_fund_desk_01",
@@ -178,9 +181,14 @@ X-RateLimit-Reset: 1726581600
 
 ### 7.1 Real-Time & PIT Sentiment (Python Sync)
 ```python
+import os
 from fintext import FinTextClient
 
-client = FinTextClient(base_url="http://127.0.0.1:8000", api_version="v1", admin_token="fintext-admin-dev-secret-token")
+client = FinTextClient(
+    base_url="http://127.0.0.1:8000",
+    api_version="v1",
+    admin_token=os.getenv("FINTEXT_ADMIN_TOKEN", "your_admin_token_here")
+)
 
 # Real-time sentiment
 current = client.sentiment("AAPL")
@@ -200,11 +208,16 @@ assert replay.replay_consistency.is_lookahead_bias_free, "Lookahead violation!"
 
 ### 7.3 Multi-Asset Asynchronous Ingestion (Python Async)
 ```python
+import os
 import asyncio
 from fintext import FinTextAsyncClient
 
 async def main():
-    async with FinTextAsyncClient(base_url="http://127.0.0.1:8000", api_version="v1", admin_token="fintext-admin-dev-secret-token") as client:
+    async with FinTextAsyncClient(
+        base_url="http://127.0.0.1:8000",
+        api_version="v1",
+        admin_token=os.getenv("FINTEXT_ADMIN_TOKEN", "your_admin_token_here")
+    ) as client:
         tickers = ["AAPL", "MSFT", "NVDA", "AMZN", "GOOGL"]
         tasks = [client.sentiment(t) for t in tickers]
         results = await asyncio.gather(*tasks)

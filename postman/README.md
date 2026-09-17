@@ -22,7 +22,7 @@ The collection includes pre-configured variables. You can edit them at the colle
 | Variable | Default Value | Description |
 | :--- | :--- | :--- |
 | `base_url` | `http://127.0.0.1:8000` | Host and port of the FinText Axum API gateway |
-| `admin_token` | `fintext-admin-dev-secret-token` | Administrative development secret used to mint JWTs |
+| `admin_token` | `your_admin_token_here` | Administrative development secret used to mint JWTs |
 | `jwt_token` | *(auto-populated)* | Bearer JWT acquired from `POST /v1/auth/token` |
 | `ticker` | `AAPL` | Target equity ticker symbol |
 | `as_of` | `2023-01-03T16:00:00Z` | Historical Point-in-Time RFC3339 evaluation timestamp |
@@ -68,5 +68,5 @@ You can run the full collection headlessly using `newman`:
 npm install -g newman
 newman run postman/FinText_Alpha_Vectorizer_32_core.postman_collection.json \
   --env-var "base_url=http://127.0.0.1:8000" \
-  --env-var "admin_token=fintext-admin-dev-secret-token"
+  --env-var "admin_token=${ADMIN_TOKEN:-your_admin_token_here}"
 ```

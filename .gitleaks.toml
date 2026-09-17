@@ -33,6 +33,10 @@ regexes = [
   '''c12345testkeyabcdef67890''',
   '''ft_invalid_bogus_api_key_12345''',
   '''verification-test-jwt-secret-99999''',
+  '''fintext-admin-dev-secret-token''',
+  '''fintext-admin-dev''',
+  '''your_admin_token''',
+  '''your_admin_token_here''',
   # SHA256 hashes in models_manifest.json (public checksums, not secrets)
   '''[a-fA-F0-9]{64}''',
 ]
