@@ -659,6 +659,7 @@ mod tests {
             table_name: "sentiment_news".to_string(),
             max_retries: 1,
             timeout_ms: 10,
+            enabled: true,
         }));
         let consumer = QuestDbBufferConsumer::new_mock(config, questdb_sink, queue.clone());
 

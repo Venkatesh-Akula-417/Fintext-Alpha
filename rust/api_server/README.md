@@ -3,12 +3,12 @@
 > **Last Verified**: 2026-09-10 (Suite #96) | **Audit Readiness**: Certified Clean | **Authoritative Deprecations**: [`docs/DEPRECATED.md`](../../docs/DEPRECATED.md)
 
 ## 1. Module Name & Purpose
-`fintext_api_server` is the primary high-performance HTTP REST and WebSocket streaming gateway for the FinText Alpha Vectorizer platform. Built on `axum`, `tokio`, and `tower`, it serves the public versioned `/v1` API surface (32 core endpoints) alongside specialized institutional endpoints for quantitative alpha signals, real-time sentiment streams, options microstructure (VPIN/GEX), event-driven backtesting, ESG analytics, macroeconomic regime indicators, cross-asset risk matrices, and multi-tenant enterprise governance to algorithmic trading systems with sub-millisecond response latencies.
+`fintext_api_server` is the primary high-performance HTTP REST and WebSocket streaming gateway for the FinText Alpha Vectorizer platform. Built on `axum`, `tokio`, and `tower`, it serves the public versioned `/v1` API surface (32 core endpoints) alongside specialized institutional endpoints for quantitative alpha signals, real-time sentiment streams, options microstructure (VPIN/GEX), Point-in-Time (PIT) replay, supply chain risk propagation, and multi-tenant enterprise governance to algorithmic trading systems with sub-millisecond response latencies.
 
 ## 2. Module Overview Table
 | Sub-Module / File | Purpose & Responsibilities |
 | :--- | :--- |
-| **`handlers/`** | Specialized HTTP request controllers across 100+ endpoints (sentiment, options, ESG, bankruptcy, FX, commodities, crypto, webhooks, etc.). |
+| **`handlers/`** | Specialized HTTP request controllers across 46 active modules supporting 32 core `/v1` endpoints (sentiment, options IV, PIT replay, supply chain risk, webhooks, audio transcription, etc.). |
 | **`auth.rs` & `users.rs`** | JWT token lifecycle, Argon2id password hashing, rotating API keys (`fintext_live_...`), and RBAC user permissions. |
 | **`quality.rs`** | Quantitative Data Quality Scoring (QDQS) engine calculating reliability weights, length factors, and spam penalties. |
 | **`rate_limit.rs`** | Thread-safe in-memory sliding-window rate limiters per user, organization, and IP. |

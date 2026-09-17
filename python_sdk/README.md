@@ -15,8 +15,9 @@ Official synchronous and asynchronous Python Client SDK for the **FinText Alpha 
 - ⚡ **Synchronous & Asynchronous Clients**: First-class support for both `FinTextClient` (sync) and `FinTextAsyncClient` (asyncio).
 - 🛡️ **Automated JWT Lifecycle**: Automatically acquires and injects signed JWT bearer tokens using `admin_token` credentials.
 - ⏱️ **Rate Limit Awareness**: Tracks and exposes `X-RateLimit-*` and `Retry-After` headers on every call.
-- 📊 **Point-in-Time Alpha Backtesting**: Execute and parse complex Long/Short strategy simulations with equity curve progression.
-- 🌐 **Cross-Asset Spillover Graph**: Explore Granger causality and lead-lag relationships across multi-asset equity universes.
+- 📈 **Options Implied Volatility & Greeks**: Query Black-Scholes IV and analytical Greeks (Delta, Gamma, Theta, Vega, Rho) across contracts.
+- ⏳ **Point-in-Time Historical State Replay**: Reconstruct historical state with strict survivorship and look-ahead bias prevention.
+- 🕸️ **Multi-Tier Supply Chain Risk**: Evaluate upstream and downstream corporate network shocks and graph dependencies.
 - 📡 **WebSocket Stream URL Generator**: Effortlessly construct authenticated streaming URLs (`ws://` and `wss://`).
 - 🔒 **Type-Safe Pydantic v2 Models**: Strict typed dataclasses for all request parameters and response bodies.
 
@@ -39,7 +40,7 @@ pip install fintext
 ### 1. Synchronous Client (`FinTextClient`)
 
 ```python
-from fintext import FinTextClient, BacktestRequest
+from fintext import FinTextClient
 
 # Initialize client with versioned /v1 API gateway
 client = FinTextClient(
@@ -56,27 +57,22 @@ print(f"Server Status: {health.status} (v{health.version})")
 sentiment = client.sentiment("AAPL")
 print(f"AAPL Sentiment: {sentiment.sentiment_score:.3f} [{sentiment.sentiment_label}]")
 
-# 3. Cross-Asset Lead-Lag Spillovers
-spillovers = client.spillovers("AAPL", limit=5)
-for s in spillovers.spillovers:
-    print(f"Spillover: {s.relationship} (r = {s.correlation:.3f}, lag = {s.lag_hours}h)")
+# 3. Options Implied Volatility & Greeks
+options = client.options_iv("AAPL", expiration_date="2026-03-20")
+print(f"AAPL IV: {options.implied_volatility:.2%} | Delta: {options.delta:.3f}")
 
-# 4. Point-in-Time Strategy Simulation
-backtest = client.backtest(BacktestRequest(
-    ticker="AAPL",
-    start_date="2025-01-01",
-    end_date="2025-03-31",
-    long_threshold=0.2,
-    short_threshold=-0.2,
-    holding_days=5,
-    initial_capital=1_000_000.0,
-))
-print(f"Backtest Total Return: {backtest.total_return * 100:.2f}% | Sharpe: {backtest.sharpe_ratio:.2f}")
+# 4. Point-in-Time Historical State Replay
+replay = client.pit_replay("AAPL", as_of_utc="2025-01-15T09:30:00Z")
+print(f"PIT Replay Articles: {len(replay.news)} | Filings: {len(replay.filings)}")
 
-# 5. Rate Limit Status
+# 5. Multi-Tier Supply Chain Risk Propagation
+supply_chain = client.supply_chain_risk("AAPL", max_depth=2)
+print(f"Supply Chain Risk: {supply_chain.composite_risk_score:.2f} ({supply_chain.risk_tier})")
+
+# 6. Rate Limit Status
 print(f"Remaining Requests: {client.last_rate_limit.remaining}/{client.last_rate_limit.limit}")
 
-# 6. WebSocket Stream URL
+# 7. WebSocket Stream URL
 print(f"Real-time Stream URL: {client.ws_url(ticker='AAPL')}")
 ```
 

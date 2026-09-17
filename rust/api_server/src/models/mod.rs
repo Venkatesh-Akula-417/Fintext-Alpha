@@ -1,29 +1,60 @@
+pub mod anomalies;
 pub mod audio;
-pub mod backtest;
-pub mod correlation;
+pub mod chat_alerts;
+pub mod digest;
+pub mod dlq;
 pub mod events;
 pub mod export;
+pub mod fix;
+pub mod kafka_stream;
+pub mod model_card;
+pub mod model_validation;
 pub mod news_articles;
 pub mod options;
+pub mod pit;
+pub mod provenance;
+pub mod provider_health;
 pub mod put_call_ratio;
-pub mod regime;
+pub mod quality_report;
+pub mod retention;
+pub mod retraining;
+pub mod sandbox;
+pub mod search;
 pub mod sentiment;
+pub mod sla;
 pub mod spillovers;
 pub mod supply_chain;
 pub mod symbols;
 pub mod transcripts;
 pub mod usage;
 
+pub use anomalies::SentimentAnomalyAlert;
+pub use chat_alerts::*;
+pub use spillovers::SpilloverItem;
+
 pub use audio::{AcousticFeatures, AudioSentiment, AudioTranscriptionResponse};
-pub use backtest::{BacktestRequest, BacktestResponse, EquityPoint};
-pub use correlation::{ReturnCorrelationItem, ReturnCorrelationParams, ReturnCorrelationResponse};
+pub use digest::{
+    CreateDigestRequest, DeleteDigestResponse, DigestItemCounts, DigestSubscription,
+    DigestSubscriptionResponse, TriggerDigestRequest, TriggerDigestResponse,
+};
+pub use dlq::{
+    DLQEventDetail, DLQEventItem, DLQEventsListResponse, DLQEventsQueryParams, PurgeDLQResponse,
+    ReprocessDLQResponse,
+};
 pub use events::{
-    AbnormalReturnPoint, EarningsSurpriseItem, EarningsSurpriseParams, EarningsSurpriseResponse,
-    EightKFiling, EightKParams, EightKResponse, EventStudyParams, EventStudyResponse,
-    InsiderTradeItem, InsiderTradingParams, InsiderTradingResponse, MARumorItem, MARumorsParams,
-    MARumorsResponse, RegulatoryFilingItem, RegulatoryFilingsParams, RegulatoryFilingsResponse,
+    EarningsSurpriseItem, EarningsSurpriseParams, EarningsSurpriseResponse, EightKFiling,
+    EightKParams, EightKResponse, InsiderTradeItem, InsiderTradingParams, InsiderTradingResponse,
 };
 pub use export::ExportParquetParams;
+pub use kafka_stream::{
+    GetKafkaCredentialsQuery, KafkaCredentials, KafkaTopicInfo, KafkaTopicsResponse,
+    RevokeKafkaCredentialsResponse, StoredKafkaCredential,
+};
+pub use model_card::{HardwareRequirements, LicensingInfo, ModelCardResponse, VersionHistoryItem};
+pub use model_validation::{
+    CalibrationPoint, ClassConfusion, ClassificationMetrics, ConfusionMatrix, ModelValidationQuery,
+    ModelValidationResponse, PerClassMetrics,
+};
 pub use news_articles::{
     ListNewsArticlesQuery, NewsArticleFull, NewsArticleMetadata, NewsArticlesListResponse,
 };
@@ -32,8 +63,29 @@ pub use options::{
     OptionsIvParams, OptionsIvResponse, OptionsVolSurfaceParams, OptionsVolSurfaceResponse,
     UnusualOptionItem, UnusualOptionsParams, UnusualOptionsResponse, VolSurfacePoint,
 };
+pub use pit::{
+    PITBackfillTestResult, PITCertificateParams, PITCertificatePolicies, PITCertificateResponse,
+    PITCertificateTests, PITDuplicateTestResult, PITReplayConsistency, PITReplayEventItem,
+    PITReplayFilingItem, PITReplayNewsItem, PITReplayParams, PITReplayResponse,
+    PITReplaySentimentItem, PITReplaySummary, PITTestResult,
+};
+pub use provenance::{DataProvenanceItem, DataProvenanceResponse, ProcessingStep};
+pub use provider_health::{ProviderHealthItem, ProviderHealthQuery, ProviderHealthResponse};
 pub use put_call_ratio::{PutCallRatioParams, PutCallRatioPoint, PutCallRatioResponse};
-pub use regime::{MarketRegimeParams, MarketRegimeResponse, RegimeComponents};
+pub use quality_report::{
+    DecayCurvePoint, ICSummary, MarketCapBias, SignalQualityReportRequest,
+    SignalQualityReportResponse,
+};
+pub use retention::{
+    CreateRetentionPolicyRequest, DeleteRetentionPolicyResponse, RetentionPoliciesResponse,
+    RetentionPolicy,
+};
+pub use retraining::{
+    CreateRetrainingJobRequest, ListRetrainingJobsQuery, ListRetrainingJobsResponse, RetrainingJob,
+    RetrainingJobResponse,
+};
+pub use sandbox::{SandboxStatusResponse, DEFAULT_SANDBOX_MOCK_VERSION};
+pub use search::{SearchParams, SearchResponse, SearchResultItem};
 pub use sentiment::{
     compute_confidence_and_probabilities, BackfillSentimentRequest, BackfillSentimentResponse,
     BatchSentimentParams, BatchSentimentResponse, EntitySentimentItem, EntitySentimentResponse,
@@ -45,9 +97,8 @@ pub use sentiment::{
     SentimentResponse, SourceBreakdown, DEFAULT_DATA_PROVENANCE, DEFAULT_MODEL_VERSION,
     DEFAULT_PIPELINE_VERSION,
 };
-pub use spillovers::{
-    SpilloverItem, SpilloverMatrixItem, SpilloverMatrixParams, SpilloverMatrixResponse,
-    SpilloverQuery, SpilloverResponse,
+pub use sla::{
+    SLALatencyParams, SLALatencyResponse, SLAStatusParams, SLAStatusResponse, StageBreakdown,
 };
 pub use supply_chain::{SupplyChainRiskItem, SupplyChainRiskParams, SupplyChainRiskResponse};
 pub use symbols::{SymbolMapParams, SymbolMapResponse};
@@ -56,136 +107,3 @@ pub use transcripts::{
     TranscriptListResponse, TranscriptMetadata, TranscriptResponse,
 };
 pub use usage::{UsageGroupItem, UsageStatsParams, UsageStatsResponse, UsageStatsSummary};
-
-pub mod search;
-pub use search::{SearchParams, SearchResponse, SearchResultItem};
-
-pub mod sector_rotation;
-pub use sector_rotation::{SectorRotationItem, SectorRotationParams, SectorRotationResponse};
-
-pub mod digest;
-pub use digest::{
-    CreateDigestRequest, DeleteDigestResponse, DigestItemCounts, DigestSubscription,
-    DigestSubscriptionResponse, TriggerDigestRequest, TriggerDigestResponse,
-};
-
-pub mod kafka_stream;
-pub use kafka_stream::{
-    GetKafkaCredentialsQuery, KafkaCredentials, KafkaTopicInfo, KafkaTopicsResponse,
-    RevokeKafkaCredentialsResponse, StoredKafkaCredential,
-};
-
-pub mod retention;
-pub use retention::{
-    CreateRetentionPolicyRequest, DeleteRetentionPolicyResponse, RetentionPoliciesResponse,
-    RetentionPolicy,
-};
-
-pub mod risk;
-pub use risk::{
-    BankruptcyComponents, BankruptcyRiskParams, BankruptcyRiskResponse, FactorExposureItem,
-    FactorExposureParams, FactorExposureResponse, OLSStatistics, PortfolioFactorExposureRequest,
-    PortfolioFactorExposureResponse,
-};
-
-pub mod esg;
-pub use esg::{ESGDimensionScore, ESGDimensions, ESGScoresParams, ESGScoresResponse};
-
-pub mod fx;
-pub use fx::{FXSentimentArticle, FXSentimentParams, FXSentimentResponse, FXSentimentSummary};
-
-pub mod commodity;
-pub use commodity::{
-    CommoditySentimentArticle, CommoditySentimentParams, CommoditySentimentResponse,
-    CommoditySentimentSummary,
-};
-
-pub mod crypto;
-pub use crypto::{
-    CryptoSentimentArticle, CryptoSentimentParams, CryptoSentimentResponse, CryptoSentimentSummary,
-};
-
-pub mod breadth;
-pub use breadth::{MarketBreadthParams, MarketBreadthPoint, MarketBreadthResponse};
-
-pub mod chat_alerts;
-pub use chat_alerts::{
-    ChatAlertSubscription, ChatAlertSubscriptionResponse, ChatAlertsResponse,
-    CreateChatAlertRequest, DeleteChatAlertResponse, ALLOWED_EVENT_TYPES, CHANNEL_TYPE_DISCORD,
-    CHANNEL_TYPE_TELEGRAM,
-};
-
-pub mod credit;
-pub use credit::{CreditSentimentParams, CreditSentimentResponse};
-
-pub mod portfolio;
-pub use portfolio::{
-    PortfolioConstraints, PortfolioOptimizeRequest, PortfolioOptimizeResponse, PortfolioWeight,
-};
-
-pub mod retraining;
-pub use retraining::{
-    CreateRetrainingJobRequest, ListRetrainingJobsQuery, ListRetrainingJobsResponse, RetrainingJob,
-    RetrainingJobResponse,
-};
-
-pub mod fix;
-pub use fix::{
-    FIXCancelRequest, FIXOrderRequest, FIXOrderResponse, FIXOrdersListResponse,
-    FIXOrdersQueryParams, FixOrderItem,
-};
-
-pub mod dlq;
-pub use dlq::{
-    DLQEventDetail, DLQEventItem, DLQEventsListResponse, DLQEventsQueryParams, PurgeDLQResponse,
-    ReprocessDLQResponse,
-};
-
-pub mod sla;
-pub use sla::{
-    SLALatencyParams, SLALatencyResponse, SLAStatusParams, SLAStatusResponse, StageBreakdown,
-};
-
-pub mod sandbox;
-pub use sandbox::{SandboxStatusResponse, DEFAULT_SANDBOX_MOCK_VERSION};
-
-pub mod provenance;
-pub use provenance::{DataProvenanceItem, DataProvenanceResponse, ProcessingStep};
-
-pub mod anomalies;
-pub use anomalies::{AnomalyScanResponse, SentimentAnomalyAlert};
-
-pub mod language;
-pub use language::{LanguageDetectionQuery, LanguageDetectionResponse};
-
-pub mod model_card;
-pub use model_card::{HardwareRequirements, LicensingInfo, ModelCardResponse, VersionHistoryItem};
-
-pub mod alpha;
-pub use alpha::{
-    AlphaReportRequest, AlphaReportResponse, AlphaSignalConfig, EquityCurvePoint,
-    PerformanceMetrics,
-};
-
-pub mod pit;
-pub use pit::{
-    PITBackfillTestResult, PITCertificateParams, PITCertificatePolicies, PITCertificateResponse,
-    PITCertificateTests, PITDuplicateTestResult, PITReplayConsistency, PITReplayEventItem,
-    PITReplayFilingItem, PITReplayNewsItem, PITReplayParams, PITReplayResponse,
-    PITReplaySentimentItem, PITReplaySummary, PITTestResult,
-};
-
-pub mod quality_report;
-pub use quality_report::{
-    DecayCurvePoint, ICSummary, MarketCapBias, SignalQualityReportRequest,
-    SignalQualityReportResponse,
-};
-
-pub mod provider_health;
-pub use provider_health::{ProviderHealthItem, ProviderHealthQuery, ProviderHealthResponse};
-
-pub mod model_validation;
-pub use model_validation::{
-    CalibrationPoint, ClassConfusion, ClassificationMetrics, ConfusionMatrix, ModelValidationQuery,
-    ModelValidationResponse, PerClassMetrics,
-};

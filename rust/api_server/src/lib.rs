@@ -87,37 +87,29 @@ pub use digest::{
 };
 pub use handlers::health::readyz_handler;
 pub use handlers::{
-    activate_sandbox_handler, backfill_sentiment_handler, backtest_handler,
-    cancel_fix_order_handler, cancel_retraining_job_handler, create_digest_subscription_handler,
-    create_retention_policy_handler, create_retraining_job_handler, create_transcript_handler,
-    deactivate_sandbox_handler, delete_digest_subscription_handler,
-    delete_retention_policy_handler, delete_transcript_handler, export_audit_logs_handler,
-    export_csv_handler, export_parquet_handler, get_8k_events_handler, get_audit_logs_handler,
-    get_bankruptcy_risk_handler, get_batch_sentiment_handler, get_commodity_sentiment_handler,
-    get_credit_sentiment_handler, get_crypto_sentiment_handler, get_digest_subscription_handler,
-    get_dlq_event_handler, get_earnings_surprise_handler, get_esg_scores_handler,
-    get_event_study_handler, get_factor_exposure_handler, get_fx_sentiment_handler,
-    get_insider_trading_handler, get_kafka_credentials_handler, get_language_detect_handler,
-    get_ma_rumors_handler, get_market_breadth_handler, get_market_regime_handler,
-    get_model_card_handler, get_model_validation_handler, get_news_article_handler,
-    get_options_iv_handler, get_options_microstructure_handler, get_options_vol_surface_handler,
-    get_pit_certificate_handler, get_pit_replay_handler, get_provenance_handler,
-    get_provider_health_handler, get_put_call_ratio_handler, get_regulatory_filings_handler,
-    get_retraining_job_handler, get_return_correlation_handler, get_sandbox_status_handler,
+    activate_sandbox_handler, backfill_sentiment_handler, cancel_retraining_job_handler,
+    create_digest_subscription_handler, create_retention_policy_handler,
+    create_retraining_job_handler, create_transcript_handler, deactivate_sandbox_handler,
+    delete_digest_subscription_handler, delete_retention_policy_handler, delete_transcript_handler,
+    export_audit_logs_handler, export_csv_handler, export_parquet_handler, get_8k_events_handler,
+    get_audit_logs_handler, get_batch_sentiment_handler, get_digest_subscription_handler,
+    get_dlq_event_handler, get_earnings_surprise_handler, get_insider_trading_handler,
+    get_kafka_credentials_handler, get_model_card_handler, get_model_validation_handler,
+    get_news_article_handler, get_options_iv_handler, get_options_microstructure_handler,
+    get_options_vol_surface_handler, get_pit_certificate_handler, get_pit_replay_handler,
+    get_provenance_handler, get_provider_health_handler, get_put_call_ratio_handler,
+    get_retraining_job_handler, get_sandbox_status_handler, get_search_handler,
     get_sector_sentiment_handler, get_sentiment_anomalies_handler,
     get_sentiment_disagreement_handler, get_sentiment_entities_handler, get_sentiment_feed_handler,
     get_sentiment_handler, get_sentiment_history_handler, get_sentiment_revisions_handler,
-    get_sla_status_handler, get_spillover_matrix_handler, get_spillovers_handler,
-    get_supply_chain_risk_handler, get_symbol_map_handler, get_transcript_handler,
-    get_unusual_options_handler, get_usage_stats_handler, health_check_handler,
-    list_dlq_events_handler, list_fix_orders_handler, list_kafka_topics_handler,
+    get_sla_status_handler, get_supply_chain_risk_handler, get_symbol_map_handler,
+    get_transcript_handler, get_unusual_options_handler, get_usage_stats_handler,
+    health_check_handler, list_dlq_events_handler, list_kafka_topics_handler,
     list_news_articles_handler, list_retention_policies_handler, list_retraining_jobs_handler,
-    list_transcripts_handler, portfolio_factor_exposure_handler, portfolio_optimize_handler,
-    post_alpha_report_handler, post_anomaly_scan_handler, post_sentiment_revision_handler,
-    post_signal_quality_report_handler, purge_dlq_event_handler, reload_pit_data_handler,
-    reprocess_dlq_event_handler, revoke_kafka_credentials_handler, search::get_search_handler,
-    sector_rotation::get_sector_rotation_handler, sla_latency_handler, submit_fix_order_handler,
-    transcribe_audio_handler, trigger_digest_send_handler, websocket_handler,
+    list_transcripts_handler, post_sentiment_revision_handler, post_signal_quality_report_handler,
+    purge_dlq_event_handler, reload_pit_data_handler, reprocess_dlq_event_handler,
+    revoke_kafka_credentials_handler, sla_latency_handler, transcribe_audio_handler,
+    trigger_digest_send_handler, websocket_handler,
 };
 pub use ip_whitelist::{
     add_ip_whitelist_handler, delete_ip_whitelist_handler, get_ip_whitelist_handler,
@@ -135,54 +127,42 @@ pub use metering::{
     DEFAULT_METERING_CHANNEL_CAPACITY, DEFAULT_METERING_FLUSH_INTERVAL_MS,
 };
 pub use models::{
-    AbnormalReturnPoint, AcousticFeatures, AnomalyScanResponse, AudioSentiment,
-    AudioTranscriptionResponse, BackfillSentimentRequest, BackfillSentimentResponse,
-    BacktestRequest, BacktestResponse, BankruptcyComponents, BankruptcyRiskParams,
-    BankruptcyRiskResponse, BatchSentimentParams, BatchSentimentResponse, CalibrationPoint,
-    ChatAlertSubscription, ChatAlertSubscriptionResponse, ChatAlertsResponse, ClassConfusion,
-    ClassificationMetrics, CommoditySentimentArticle, CommoditySentimentParams,
-    CommoditySentimentResponse, CommoditySentimentSummary, ConfusionMatrix, CreateChatAlertRequest,
+    AcousticFeatures, AudioSentiment, AudioTranscriptionResponse, BackfillSentimentRequest,
+    BackfillSentimentResponse, BatchSentimentParams, BatchSentimentResponse, CalibrationPoint,
+    ClassConfusion, ClassificationMetrics, ConfusionMatrix, CreateDigestRequest,
     CreateRetentionPolicyRequest, CreateRetrainingJobRequest, CreateTranscriptRequest,
-    CreditSentimentParams, CreditSentimentResponse, CryptoSentimentArticle, CryptoSentimentParams,
-    CryptoSentimentResponse, CryptoSentimentSummary, DLQEventDetail, DLQEventItem,
-    DLQEventsListResponse, DLQEventsQueryParams, DataProvenanceItem, DataProvenanceResponse,
-    DeleteChatAlertResponse, DeleteRetentionPolicyResponse, DeleteTranscriptResponse,
-    ESGDimensionScore, ESGDimensions, ESGScoresParams, ESGScoresResponse, EarningsSurpriseItem,
-    EarningsSurpriseParams, EarningsSurpriseResponse, EightKFiling, EightKParams, EightKResponse,
-    EquityPoint, EventStudyParams, EventStudyResponse, ExportParquetParams, FIXCancelRequest,
-    FIXOrderRequest, FIXOrderResponse, FIXOrdersListResponse, FIXOrdersQueryParams,
-    FXSentimentArticle, FXSentimentParams, FXSentimentResponse, FXSentimentSummary,
-    FactorExposureItem, FactorExposureParams, FactorExposureResponse, FixOrderItem, HealthResponse,
-    InsiderTradeItem, InsiderTradingParams, InsiderTradingResponse, LanguageDetectionQuery,
-    LanguageDetectionResponse, ListRetrainingJobsQuery, ListRetrainingJobsResponse, MARumorItem,
-    MARumorsParams, MARumorsResponse, MarketBreadthParams, MarketBreadthPoint,
-    MarketBreadthResponse, MarketRegimeParams, MarketRegimeResponse, MicrostructureParams,
-    MicrostructurePoint, MicrostructureResponse, ModelValidationQuery, ModelValidationResponse,
-    NewsArticleFull, NewsArticleMetadata, NewsArticlesListResponse, OLSStatistics, OptionContract,
-    OptionsIvParams, OptionsIvResponse, OptionsVolSurfaceParams, OptionsVolSurfaceResponse,
-    PITBackfillTestResult, PITCertificateParams, PITCertificatePolicies, PITCertificateResponse,
-    PITCertificateTests, PITDuplicateTestResult, PITReplayConsistency, PITReplayEventItem,
-    PITReplayFilingItem, PITReplayNewsItem, PITReplayParams, PITReplayResponse,
-    PITReplaySentimentItem, PITReplaySummary, PITTestResult, PerClassMetrics, PortfolioConstraints,
-    PortfolioFactorExposureRequest, PortfolioFactorExposureResponse, PortfolioOptimizeRequest,
-    PortfolioOptimizeResponse, PortfolioWeight, ProcessingStep, ProviderHealthItem,
-    ProviderHealthQuery, ProviderHealthResponse, PurgeDLQResponse, PutCallRatioParams,
-    PutCallRatioPoint, PutCallRatioResponse, RegimeComponents, RegulatoryFilingItem,
-    RegulatoryFilingsParams, RegulatoryFilingsResponse, ReprocessDLQResponse,
+    DLQEventDetail, DLQEventItem, DLQEventsListResponse, DLQEventsQueryParams, DataProvenanceItem,
+    DataProvenanceResponse, DecayCurvePoint, DeleteDigestResponse, DeleteRetentionPolicyResponse,
+    DeleteTranscriptResponse, DigestItemCounts, DigestSubscription, DigestSubscriptionResponse,
+    EarningsSurpriseItem, EarningsSurpriseParams, EarningsSurpriseResponse, EightKFiling,
+    EightKParams, EightKResponse, EntitySentimentItem, EntitySentimentResponse,
+    ExportParquetParams, HardwareRequirements, HealthResponse, ICSummary, InsiderTradeItem,
+    InsiderTradingParams, InsiderTradingResponse, KafkaCredentials, KafkaTopicInfo,
+    KafkaTopicsResponse, LicensingInfo, ListNewsArticlesQuery, ListRetrainingJobsQuery,
+    ListRetrainingJobsResponse, MarketCapBias, MicrostructureParams, MicrostructurePoint,
+    MicrostructureResponse, ModelCardResponse, ModelMetadata, ModelValidationQuery,
+    ModelValidationResponse, NewsArticleFull, NewsArticleMetadata, NewsArticlesListResponse,
+    OptionContract, OptionsIvParams, OptionsIvResponse, OptionsVolSurfaceParams,
+    OptionsVolSurfaceResponse, PITBackfillTestResult, PITCertificateParams, PITCertificatePolicies,
+    PITCertificateResponse, PITCertificateTests, PITDuplicateTestResult, PITReplayConsistency,
+    PITReplayEventItem, PITReplayFilingItem, PITReplayNewsItem, PITReplayParams, PITReplayResponse,
+    PITReplaySentimentItem, PITReplaySummary, PITTestResult, PerClassMetrics, ProcessingStep,
+    ProviderHealthItem, ProviderHealthQuery, ProviderHealthResponse, PurgeDLQResponse,
+    PutCallRatioParams, PutCallRatioPoint, PutCallRatioResponse, ReprocessDLQResponse,
     RetentionPoliciesResponse, RetentionPolicy, RetrainingJob, RetrainingJobResponse,
-    ReturnCorrelationItem, ReturnCorrelationParams, ReturnCorrelationResponse, SLAStatusParams,
+    RevokeKafkaCredentialsResponse, SLALatencyParams, SLALatencyResponse, SLAStatusParams,
     SLAStatusResponse, SandboxStatusResponse, SearchParams, SearchResponse, SearchResultItem,
-    SectorRotationItem, SectorRotationParams, SectorRotationResponse, SectorSentimentParams,
-    SectorSentimentResponse, SentimentAnomaliesParams, SentimentAnomaliesResponse,
-    SentimentAnomalyAlert, SentimentAnomalyItem, SentimentDisagreementParams,
-    SentimentDisagreementResponse, SentimentFeedItem, SentimentFeedParams, SentimentFeedResponse,
-    SentimentHistoryParams, SentimentHistoryResponse, SentimentProbabilities, SentimentQuery,
-    SentimentRecord, SentimentResponse, SourceBreakdown, SpilloverItem, SpilloverMatrixItem,
-    SpilloverMatrixParams, SpilloverMatrixResponse, SpilloverQuery, SpilloverResponse,
+    SectorSentimentParams, SectorSentimentResponse, SentimentAnomaliesParams,
+    SentimentAnomaliesResponse, SentimentAnomalyItem, SentimentDisagreementParams,
+    SentimentDisagreementResponse, SentimentEntitiesParams, SentimentFeedItem, SentimentFeedParams,
+    SentimentFeedResponse, SentimentHistoryParams, SentimentHistoryResponse,
+    SentimentProbabilities, SentimentQuery, SentimentRecord, SentimentResponse,
+    SignalQualityReportRequest, SignalQualityReportResponse, SourceBreakdown, StageBreakdown,
     SupplyChainRiskItem, SupplyChainRiskParams, SupplyChainRiskResponse, SymbolMapParams,
     SymbolMapResponse, TranscriptListParams, TranscriptListResponse, TranscriptMetadata,
-    TranscriptResponse, UnusualOptionItem, UnusualOptionsParams, UnusualOptionsResponse,
-    UsageGroupItem, UsageStatsParams, UsageStatsResponse, UsageStatsSummary, VolSurfacePoint,
+    TranscriptResponse, TriggerDigestRequest, TriggerDigestResponse, UnusualOptionItem,
+    UnusualOptionsParams, UnusualOptionsResponse, UsageGroupItem, UsageStatsParams,
+    UsageStatsResponse, UsageStatsSummary, VersionHistoryItem, VolSurfacePoint,
     DEFAULT_SANDBOX_MOCK_VERSION,
 };
 pub use news_articles::NewsArticleRegistry;
@@ -708,8 +688,8 @@ mod tests {
     use chrono::Utc;
     use http_body_util::BodyExt;
     use models::{
-        BacktestResponse, HealthResponse, ModelMetadata, OptionsIvResponse, SLALatencyResponse,
-        SLAStatusResponse, SentimentFeedResponse, SentimentResponse, SpilloverResponse,
+        HealthResponse, OptionsIvResponse, SLALatencyResponse, SLAStatusResponse,
+        SentimentFeedResponse, SentimentResponse,
     };
     use std::sync::Arc;
     use tower::ServiceExt;
@@ -785,10 +765,6 @@ mod tests {
         assert!(paths.contains_key("/health"));
         assert!(paths.contains_key("/auth/token"));
         assert!(paths.contains_key("/sentiment"));
-        // Verify removed routes are NOT present in OpenAPI paths
-        assert!(!paths.contains_key("/spillovers"));
-        assert!(!paths.contains_key("/backtest"));
-        assert!(!paths.contains_key("/fix/order"));
         assert!(!paths.contains_key("/crypto/sentiment"));
 
         // Verify Bearer JWT Security scheme
@@ -870,12 +846,9 @@ mod tests {
         assert!(paths.contains_key("/v1/webhooks"));
 
         // Ensure non-public/internal routes are NOT in public spec
-        assert!(!paths.contains_key("/v1/market/regime"));
-        assert!(!paths.contains_key("/v1/spillovers"));
         assert!(!paths.contains_key("/v1/options/iv"));
         assert!(!paths.contains_key("/v1/billing/checkout"));
         assert!(!paths.contains_key("/v1/orgs"));
-        assert!(!paths.contains_key("/v1/fix/orders"));
     }
 
     #[tokio::test]
@@ -1201,255 +1174,14 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_spillovers_endpoint_valid() {
-        let app = create_app();
-        let (auth_k, auth_v) = test_auth_header();
-        let req = Request::builder()
-            .uri("/spillovers?ticker=AAPL&limit=10")
-            .header(auth_k, auth_v)
-            .body(Body::empty())
-            .unwrap();
-
-        let response = app.oneshot(req).await.unwrap();
-        assert_eq!(response.status(), StatusCode::NOT_FOUND);
-    }
-
-    #[tokio::test]
-    async fn test_spillovers_endpoint_missing_ticker() {
-        let app = create_app();
-        let (auth_k, auth_v) = test_auth_header();
-        let req = Request::builder()
-            .uri("/spillovers?ticker=")
-            .header(auth_k, auth_v)
-            .body(Body::empty())
-            .unwrap();
-
-        let response = app.oneshot(req).await.unwrap();
-        assert_eq!(response.status(), StatusCode::NOT_FOUND);
-    }
-
-    #[tokio::test]
-    async fn test_spillovers_endpoint_invalid_ticker() {
-        let app = create_app();
-        let (auth_k, auth_v) = test_auth_header();
-        let req = Request::builder()
-            .uri("/spillovers?ticker=TOOLONGTICKERNAMEEXCEEDSLIMIT")
-            .header(auth_k, auth_v)
-            .body(Body::empty())
-            .unwrap();
-
-        let response = app.oneshot(req).await.unwrap();
-        assert_eq!(response.status(), StatusCode::NOT_FOUND);
-    }
-
-    #[tokio::test]
-    async fn test_backtest_endpoint_valid() {
-        let app = create_app();
-        let payload = serde_json::json!({
-            "ticker": "AAPL",
-            "start_date": "2025-01-01",
-            "end_date": "2025-03-31",
-            "long_threshold": 0.2,
-            "short_threshold": -0.2,
-            "holding_days": 5,
-            "initial_capital": 1000000.0
-        });
-
-        let (auth_k, auth_v) = test_auth_header();
-        let req = Request::builder()
-            .method("POST")
-            .uri("/backtest")
-            .header(header::CONTENT_TYPE, "application/json")
-            .header(auth_k, auth_v)
-            .body(Body::from(payload.to_string()))
-            .unwrap();
-
-        let response = app.oneshot(req).await.unwrap();
-        assert_eq!(response.status(), StatusCode::NOT_FOUND);
-    }
-
-    #[tokio::test]
-    async fn test_backtest_endpoint_missing_ticker() {
-        let app = create_app();
-        let payload = serde_json::json!({
-            "ticker": "",
-            "start_date": "2025-01-01",
-            "end_date": "2025-03-31"
-        });
-
-        let (auth_k, auth_v) = test_auth_header();
-        let req = Request::builder()
-            .method("POST")
-            .uri("/backtest")
-            .header(header::CONTENT_TYPE, "application/json")
-            .header(auth_k, auth_v)
-            .body(Body::from(payload.to_string()))
-            .unwrap();
-
-        let response = app.oneshot(req).await.unwrap();
-        assert_eq!(response.status(), StatusCode::NOT_FOUND);
-    }
-
-    #[tokio::test]
-    async fn test_backtest_endpoint_invalid_date_range() {
-        let app = create_app();
-        let payload = serde_json::json!({
-            "ticker": "AAPL",
-            "start_date": "2025-06-01",
-            "end_date": "2025-01-01"
-        });
-
-        let (auth_k, auth_v) = test_auth_header();
-        let req = Request::builder()
-            .method("POST")
-            .uri("/backtest")
-            .header(header::CONTENT_TYPE, "application/json")
-            .header(auth_k, auth_v)
-            .body(Body::from(payload.to_string()))
-            .unwrap();
-
-        let response = app.oneshot(req).await.unwrap();
-        assert_eq!(response.status(), StatusCode::NOT_FOUND);
-    }
-
-    #[tokio::test]
-    async fn test_backtest_endpoint_invalid_thresholds() {
-        let app = create_app();
-        let payload = serde_json::json!({
-            "ticker": "AAPL",
-            "start_date": "2025-01-01",
-            "end_date": "2025-03-31",
-            "long_threshold": -0.5,
-            "short_threshold": 0.5
-        });
-
-        let (auth_k, auth_v) = test_auth_header();
-        let req = Request::builder()
-            .method("POST")
-            .uri("/backtest")
-            .header(header::CONTENT_TYPE, "application/json")
-            .header(auth_k, auth_v)
-            .body(Body::from(payload.to_string()))
-            .unwrap();
-
-        let response = app.oneshot(req).await.unwrap();
-        assert_eq!(response.status(), StatusCode::NOT_FOUND);
-    }
-
-    #[tokio::test]
-    async fn test_backtest_endpoint_multi_asset_portfolio() {
-        let app = create_app();
-        let payload = serde_json::json!({
-            "tickers": ["AAPL", "NVDA", "MSFT"],
-            "weights": [0.5, 0.3, 0.2],
-            "benchmark_ticker": "SPY",
-            "transaction_cost_bps": 10.0,
-            "start_date": "2025-01-01",
-            "end_date": "2025-03-31",
-            "long_threshold": 0.2,
-            "short_threshold": -0.2,
-            "holding_days": 5,
-            "initial_capital": 1000000.0
-        });
-
-        let (auth_k, auth_v) = test_auth_header();
-        let req = Request::builder()
-            .method("POST")
-            .uri("/backtest")
-            .header(header::CONTENT_TYPE, "application/json")
-            .header(auth_k, auth_v)
-            .body(Body::from(payload.to_string()))
-            .unwrap();
-
-        let response = app.oneshot(req).await.unwrap();
-        assert_eq!(response.status(), StatusCode::NOT_FOUND);
-    }
-
-    #[tokio::test]
-    async fn test_backtest_endpoint_invalid_weights() {
-        let app = create_app();
-        let payload = serde_json::json!({
-            "tickers": ["AAPL", "NVDA"],
-            "weights": [0.5, 0.1], // sum is 0.6 != 1.0
-            "start_date": "2025-01-01",
-            "end_date": "2025-03-31"
-        });
-
-        let (auth_k, auth_v) = test_auth_header();
-        let req = Request::builder()
-            .method("POST")
-            .uri("/backtest")
-            .header(header::CONTENT_TYPE, "application/json")
-            .header(auth_k, auth_v)
-            .body(Body::from(payload.to_string()))
-            .unwrap();
-
-        let response = app.oneshot(req).await.unwrap();
-        assert_eq!(response.status(), StatusCode::NOT_FOUND);
-    }
-
-    #[tokio::test]
     async fn test_rate_limit_exceeded_returns_429() {
         std::env::set_var("QUESTDB_MOCK_FALLBACK", "1");
 
-        let state = AppState {
-            kafka_consumer: Arc::new(KafkaSubscriber::from_env()),
-            jwt_secret: DEFAULT_DEV_JWT_SECRET.to_string(),
-            admin_token: DEFAULT_DEV_ADMIN_TOKEN.to_string(),
-            rate_limiter: Arc::new(PerUserRateLimiter::new(RateLimitConfig {
-                requests_per_window: 2,
-                window_seconds: 60,
-            })),
-            metering_tx: None,
-            db_pool: None,
-            webhook_registry: WebhookRegistry::new(),
-            user_registry: UserRegistry::new(),
-            api_key_registry: ApiKeyRegistry::new(),
-            universe_registry: UniverseRegistry::new(),
-            transcript_registry: TranscriptRegistry::new(),
-            org_registry: OrgRegistry::new(),
-            ip_whitelist_registry: Arc::new(IpWhitelistRegistry::new()),
-            news_article_registry: Arc::new(NewsArticleRegistry::new()),
-            pit_data: GLOBAL_PIT_DATA.clone(),
-            sector_map: GLOBAL_SECTOR_MAP.clone(),
-            symbol_map: GLOBAL_SYMBOL_MAP.clone(),
-            supply_chain_graph: GLOBAL_SUPPLY_CHAIN_GRAPH.clone(),
-            stripe_secret_key: None,
-            stripe_webhook_secret: None,
-            monthly_quota_cache: Arc::new(MonthlyQuotaCache::default()),
-            audit_log_registry: Arc::new(AuditLogRegistry::new()),
-            model_metadata: Arc::new(std::sync::RwLock::new(ModelMetadata::from_env_or_config())),
-            digest_registry: Arc::new(DigestSubscriptionRegistry::new()),
-            email_sender: Arc::new(MockEmailSender::new()),
-            kafka_credentials_registry: Arc::new(KafkaCredentialsRegistry::new()),
-            retention_registry: Arc::new(RetentionPolicyRegistry::new()),
-            polling_webhook_registry: Arc::new(PollingWebhookRegistry::new()),
-            chat_alert_registry: Arc::new(ChatAlertRegistry::new()),
-            retraining_registry: Arc::new(crate::retraining::RetrainingRegistry::new()),
-            fix_order_registry: Arc::new(FixOrderRegistry::new()),
-            dlq_registry: Arc::new(DlqRegistry::new()),
-            sandbox_registry: Arc::new(SandboxRegistry::new()),
-            provenance_registry: Arc::new(ProvenanceRegistry::new()),
-            anomaly_broadcaster: Arc::new(AnomalyBroadcaster::default()),
-            enable_fix_bridge: true,
-            production_mode: false,
-            public_api_version: "v1".to_string(),
-            enable_full_api_surface: false,
-            scd2_registry: Arc::new(Scd2RevisionRegistry::new()),
-            pit_cert_archiver: Arc::new(PitCertArchiver::from_env_or_config()),
-            pit_db_store: None,
-            timescaledb_primary: false,
-            timescaledb_client: Arc::new(crate::storage::TimescaleDbClient::new(
-                crate::storage::TimescaleDbClientConfig::default(),
-            )),
-            db_circuit_breaker: Arc::new(crate::resilience::DbCircuitBreaker::new(
-                crate::resilience::CircuitBreakerConfig::default(),
-            )),
-            cache_config: crate::cache::CacheConfig::default(),
-            provider_health_store: Arc::new(
-                crate::handlers::provider_health::ProviderHealthStore::default(),
-            ),
-        };
+        let mut state = AppState::default();
+        state.rate_limiter = Arc::new(PerUserRateLimiter::new(RateLimitConfig {
+            requests_per_window: 2,
+            window_seconds: 60,
+        }));
 
         let app = create_app_with_state(state);
         let (auth_k, auth_v) = test_auth_header_for_user("heavy_trader");
@@ -1491,64 +1223,11 @@ mod tests {
     async fn test_rate_limit_independent_user_quotas() {
         std::env::set_var("QUESTDB_MOCK_FALLBACK", "1");
 
-        let state = AppState {
-            kafka_consumer: Arc::new(KafkaSubscriber::from_env()),
-            jwt_secret: DEFAULT_DEV_JWT_SECRET.to_string(),
-            admin_token: DEFAULT_DEV_ADMIN_TOKEN.to_string(),
-            rate_limiter: Arc::new(PerUserRateLimiter::new(RateLimitConfig {
-                requests_per_window: 1,
-                window_seconds: 60,
-            })),
-            metering_tx: None,
-            db_pool: None,
-            webhook_registry: WebhookRegistry::new(),
-            user_registry: UserRegistry::new(),
-            api_key_registry: ApiKeyRegistry::new(),
-            universe_registry: UniverseRegistry::new(),
-            transcript_registry: TranscriptRegistry::new(),
-            org_registry: OrgRegistry::new(),
-            ip_whitelist_registry: Arc::new(IpWhitelistRegistry::new()),
-            news_article_registry: Arc::new(NewsArticleRegistry::new()),
-            pit_data: GLOBAL_PIT_DATA.clone(),
-            sector_map: GLOBAL_SECTOR_MAP.clone(),
-            symbol_map: GLOBAL_SYMBOL_MAP.clone(),
-            supply_chain_graph: GLOBAL_SUPPLY_CHAIN_GRAPH.clone(),
-            stripe_secret_key: None,
-            stripe_webhook_secret: None,
-            monthly_quota_cache: Arc::new(MonthlyQuotaCache::default()),
-            audit_log_registry: Arc::new(AuditLogRegistry::new()),
-            model_metadata: Arc::new(std::sync::RwLock::new(ModelMetadata::from_env_or_config())),
-            digest_registry: Arc::new(DigestSubscriptionRegistry::new()),
-            email_sender: Arc::new(MockEmailSender::new()),
-            kafka_credentials_registry: Arc::new(KafkaCredentialsRegistry::new()),
-            retention_registry: Arc::new(RetentionPolicyRegistry::new()),
-            polling_webhook_registry: Arc::new(PollingWebhookRegistry::new()),
-            chat_alert_registry: Arc::new(ChatAlertRegistry::new()),
-            retraining_registry: Arc::new(crate::retraining::RetrainingRegistry::new()),
-            fix_order_registry: Arc::new(FixOrderRegistry::new()),
-            dlq_registry: Arc::new(DlqRegistry::new()),
-            sandbox_registry: Arc::new(SandboxRegistry::new()),
-            provenance_registry: Arc::new(ProvenanceRegistry::new()),
-            anomaly_broadcaster: Arc::new(AnomalyBroadcaster::default()),
-            enable_fix_bridge: true,
-            production_mode: false,
-            public_api_version: "v1".to_string(),
-            enable_full_api_surface: false,
-            scd2_registry: Arc::new(Scd2RevisionRegistry::new()),
-            pit_cert_archiver: Arc::new(PitCertArchiver::from_env_or_config()),
-            pit_db_store: None,
-            timescaledb_primary: false,
-            timescaledb_client: Arc::new(crate::storage::TimescaleDbClient::new(
-                crate::storage::TimescaleDbClientConfig::default(),
-            )),
-            db_circuit_breaker: Arc::new(crate::resilience::DbCircuitBreaker::new(
-                crate::resilience::CircuitBreakerConfig::default(),
-            )),
-            cache_config: crate::cache::CacheConfig::default(),
-            provider_health_store: Arc::new(
-                crate::handlers::provider_health::ProviderHealthStore::default(),
-            ),
-        };
+        let mut state = AppState::default();
+        state.rate_limiter = Arc::new(PerUserRateLimiter::new(RateLimitConfig {
+            requests_per_window: 1,
+            window_seconds: 60,
+        }));
 
         let app = create_app_with_state(state);
 
@@ -1594,61 +1273,8 @@ mod tests {
         std::env::set_var("QUESTDB_MOCK_FALLBACK", "1");
         let (tx, mut rx) = create_metering_channel(10);
 
-        let state = AppState {
-            kafka_consumer: Arc::new(KafkaSubscriber::from_env()),
-            jwt_secret: DEFAULT_DEV_JWT_SECRET.to_string(),
-            admin_token: DEFAULT_DEV_ADMIN_TOKEN.to_string(),
-            rate_limiter: Arc::new(PerUserRateLimiter::from_env()),
-            metering_tx: Some(tx),
-            db_pool: None,
-            webhook_registry: WebhookRegistry::new(),
-            user_registry: UserRegistry::new(),
-            api_key_registry: ApiKeyRegistry::new(),
-            universe_registry: UniverseRegistry::new(),
-            transcript_registry: TranscriptRegistry::new(),
-            org_registry: OrgRegistry::new(),
-            ip_whitelist_registry: Arc::new(IpWhitelistRegistry::new()),
-            news_article_registry: Arc::new(NewsArticleRegistry::new()),
-            pit_data: GLOBAL_PIT_DATA.clone(),
-            sector_map: GLOBAL_SECTOR_MAP.clone(),
-            symbol_map: GLOBAL_SYMBOL_MAP.clone(),
-            supply_chain_graph: GLOBAL_SUPPLY_CHAIN_GRAPH.clone(),
-            stripe_secret_key: None,
-            stripe_webhook_secret: None,
-            monthly_quota_cache: Arc::new(MonthlyQuotaCache::default()),
-            audit_log_registry: Arc::new(AuditLogRegistry::new()),
-            model_metadata: Arc::new(std::sync::RwLock::new(ModelMetadata::from_env_or_config())),
-            digest_registry: Arc::new(DigestSubscriptionRegistry::new()),
-            email_sender: Arc::new(MockEmailSender::new()),
-            kafka_credentials_registry: Arc::new(KafkaCredentialsRegistry::new()),
-            retention_registry: Arc::new(RetentionPolicyRegistry::new()),
-            polling_webhook_registry: Arc::new(PollingWebhookRegistry::new()),
-            chat_alert_registry: Arc::new(ChatAlertRegistry::new()),
-            retraining_registry: Arc::new(crate::retraining::RetrainingRegistry::new()),
-            fix_order_registry: Arc::new(FixOrderRegistry::new()),
-            dlq_registry: Arc::new(DlqRegistry::new()),
-            sandbox_registry: Arc::new(SandboxRegistry::new()),
-            provenance_registry: Arc::new(ProvenanceRegistry::new()),
-            anomaly_broadcaster: Arc::new(AnomalyBroadcaster::default()),
-            enable_fix_bridge: true,
-            production_mode: false,
-            public_api_version: "v1".to_string(),
-            enable_full_api_surface: false,
-            scd2_registry: Arc::new(Scd2RevisionRegistry::new()),
-            pit_cert_archiver: Arc::new(PitCertArchiver::from_env_or_config()),
-            pit_db_store: None,
-            timescaledb_primary: false,
-            timescaledb_client: Arc::new(crate::storage::TimescaleDbClient::new(
-                crate::storage::TimescaleDbClientConfig::default(),
-            )),
-            db_circuit_breaker: Arc::new(crate::resilience::DbCircuitBreaker::new(
-                crate::resilience::CircuitBreakerConfig::default(),
-            )),
-            cache_config: crate::cache::CacheConfig::default(),
-            provider_health_store: Arc::new(
-                crate::handlers::provider_health::ProviderHealthStore::default(),
-            ),
-        };
+        let mut state = AppState::default();
+        state.metering_tx = Some(tx);
 
         let app = create_app_with_state(state);
         let (auth_k, auth_v) = test_auth_header_for_user("metered_fund_01");
@@ -1675,64 +1301,12 @@ mod tests {
         std::env::set_var("QUESTDB_MOCK_FALLBACK", "1");
         let (tx, mut rx) = create_metering_channel(10);
 
-        let state = AppState {
-            kafka_consumer: Arc::new(KafkaSubscriber::from_env()),
-            jwt_secret: DEFAULT_DEV_JWT_SECRET.to_string(),
-            admin_token: DEFAULT_DEV_ADMIN_TOKEN.to_string(),
-            rate_limiter: Arc::new(PerUserRateLimiter::new(RateLimitConfig {
-                requests_per_window: 1,
-                window_seconds: 60,
-            })),
-            metering_tx: Some(tx),
-            db_pool: None,
-            webhook_registry: WebhookRegistry::new(),
-            user_registry: UserRegistry::new(),
-            api_key_registry: ApiKeyRegistry::new(),
-            universe_registry: UniverseRegistry::new(),
-            transcript_registry: TranscriptRegistry::new(),
-            org_registry: OrgRegistry::new(),
-            ip_whitelist_registry: Arc::new(IpWhitelistRegistry::new()),
-            news_article_registry: Arc::new(NewsArticleRegistry::new()),
-            pit_data: GLOBAL_PIT_DATA.clone(),
-            sector_map: GLOBAL_SECTOR_MAP.clone(),
-            symbol_map: GLOBAL_SYMBOL_MAP.clone(),
-            supply_chain_graph: GLOBAL_SUPPLY_CHAIN_GRAPH.clone(),
-            stripe_secret_key: None,
-            stripe_webhook_secret: None,
-            monthly_quota_cache: Arc::new(MonthlyQuotaCache::default()),
-            audit_log_registry: Arc::new(AuditLogRegistry::new()),
-            model_metadata: Arc::new(std::sync::RwLock::new(ModelMetadata::from_env_or_config())),
-            digest_registry: Arc::new(DigestSubscriptionRegistry::new()),
-            email_sender: Arc::new(MockEmailSender::new()),
-            kafka_credentials_registry: Arc::new(KafkaCredentialsRegistry::new()),
-            retention_registry: Arc::new(RetentionPolicyRegistry::new()),
-            polling_webhook_registry: Arc::new(PollingWebhookRegistry::new()),
-            chat_alert_registry: Arc::new(ChatAlertRegistry::new()),
-            retraining_registry: Arc::new(crate::retraining::RetrainingRegistry::new()),
-            fix_order_registry: Arc::new(FixOrderRegistry::new()),
-            dlq_registry: Arc::new(DlqRegistry::new()),
-            sandbox_registry: Arc::new(SandboxRegistry::new()),
-            provenance_registry: Arc::new(ProvenanceRegistry::new()),
-            anomaly_broadcaster: Arc::new(AnomalyBroadcaster::default()),
-            enable_fix_bridge: true,
-            production_mode: false,
-            public_api_version: "v1".to_string(),
-            enable_full_api_surface: false,
-            scd2_registry: Arc::new(Scd2RevisionRegistry::new()),
-            pit_cert_archiver: Arc::new(PitCertArchiver::from_env_or_config()),
-            pit_db_store: None,
-            timescaledb_primary: false,
-            timescaledb_client: Arc::new(crate::storage::TimescaleDbClient::new(
-                crate::storage::TimescaleDbClientConfig::default(),
-            )),
-            db_circuit_breaker: Arc::new(crate::resilience::DbCircuitBreaker::new(
-                crate::resilience::CircuitBreakerConfig::default(),
-            )),
-            cache_config: crate::cache::CacheConfig::default(),
-            provider_health_store: Arc::new(
-                crate::handlers::provider_health::ProviderHealthStore::default(),
-            ),
-        };
+        let mut state = AppState::default();
+        state.rate_limiter = Arc::new(PerUserRateLimiter::new(RateLimitConfig {
+            requests_per_window: 1,
+            window_seconds: 60,
+        }));
+        state.metering_tx = Some(tx);
 
         let app = create_app_with_state(state);
         let (auth_k, auth_v) = test_auth_header_for_user("rate_limited_user");
@@ -1788,61 +1362,8 @@ mod tests {
             mock_mode: true,
         }));
 
-        let state = AppState {
-            kafka_consumer: subscriber.clone(),
-            jwt_secret: DEFAULT_DEV_JWT_SECRET.to_string(),
-            admin_token: DEFAULT_DEV_ADMIN_TOKEN.to_string(),
-            rate_limiter: Arc::new(PerUserRateLimiter::from_env()),
-            metering_tx: None,
-            db_pool: None,
-            webhook_registry: WebhookRegistry::new(),
-            user_registry: UserRegistry::new(),
-            api_key_registry: ApiKeyRegistry::new(),
-            universe_registry: UniverseRegistry::new(),
-            transcript_registry: TranscriptRegistry::new(),
-            org_registry: OrgRegistry::new(),
-            ip_whitelist_registry: Arc::new(IpWhitelistRegistry::new()),
-            news_article_registry: Arc::new(NewsArticleRegistry::new()),
-            pit_data: GLOBAL_PIT_DATA.clone(),
-            sector_map: GLOBAL_SECTOR_MAP.clone(),
-            symbol_map: GLOBAL_SYMBOL_MAP.clone(),
-            supply_chain_graph: GLOBAL_SUPPLY_CHAIN_GRAPH.clone(),
-            stripe_secret_key: None,
-            stripe_webhook_secret: None,
-            monthly_quota_cache: Arc::new(MonthlyQuotaCache::default()),
-            audit_log_registry: Arc::new(AuditLogRegistry::new()),
-            model_metadata: Arc::new(std::sync::RwLock::new(ModelMetadata::from_env_or_config())),
-            digest_registry: Arc::new(DigestSubscriptionRegistry::new()),
-            email_sender: Arc::new(MockEmailSender::new()),
-            kafka_credentials_registry: Arc::new(KafkaCredentialsRegistry::new()),
-            retention_registry: Arc::new(RetentionPolicyRegistry::new()),
-            polling_webhook_registry: Arc::new(PollingWebhookRegistry::new()),
-            chat_alert_registry: Arc::new(ChatAlertRegistry::new()),
-            retraining_registry: Arc::new(crate::retraining::RetrainingRegistry::new()),
-            fix_order_registry: Arc::new(FixOrderRegistry::new()),
-            dlq_registry: Arc::new(DlqRegistry::new()),
-            sandbox_registry: Arc::new(SandboxRegistry::new()),
-            provenance_registry: Arc::new(ProvenanceRegistry::new()),
-            anomaly_broadcaster: Arc::new(AnomalyBroadcaster::default()),
-            enable_fix_bridge: true,
-            production_mode: false,
-            public_api_version: "v1".to_string(),
-            enable_full_api_surface: false,
-            scd2_registry: Arc::new(Scd2RevisionRegistry::new()),
-            pit_cert_archiver: Arc::new(PitCertArchiver::from_env_or_config()),
-            pit_db_store: None,
-            timescaledb_primary: false,
-            timescaledb_client: Arc::new(crate::storage::TimescaleDbClient::new(
-                crate::storage::TimescaleDbClientConfig::default(),
-            )),
-            db_circuit_breaker: Arc::new(crate::resilience::DbCircuitBreaker::new(
-                crate::resilience::CircuitBreakerConfig::default(),
-            )),
-            cache_config: crate::cache::CacheConfig::default(),
-            provider_health_store: Arc::new(
-                crate::handlers::provider_health::ProviderHealthStore::default(),
-            ),
-        };
+        let mut state = AppState::default();
+        state.kafka_consumer = subscriber.clone();
 
         let app = create_app_with_state(state);
         let token =
@@ -1879,61 +1400,8 @@ mod tests {
             mock_mode: true,
         }));
 
-        let state = AppState {
-            kafka_consumer: subscriber.clone(),
-            jwt_secret: DEFAULT_DEV_JWT_SECRET.to_string(),
-            admin_token: DEFAULT_DEV_ADMIN_TOKEN.to_string(),
-            rate_limiter: Arc::new(PerUserRateLimiter::from_env()),
-            metering_tx: None,
-            db_pool: None,
-            webhook_registry: WebhookRegistry::new(),
-            user_registry: UserRegistry::new(),
-            api_key_registry: ApiKeyRegistry::new(),
-            universe_registry: UniverseRegistry::new(),
-            transcript_registry: TranscriptRegistry::new(),
-            org_registry: OrgRegistry::new(),
-            ip_whitelist_registry: Arc::new(IpWhitelistRegistry::new()),
-            news_article_registry: Arc::new(NewsArticleRegistry::new()),
-            pit_data: GLOBAL_PIT_DATA.clone(),
-            sector_map: GLOBAL_SECTOR_MAP.clone(),
-            symbol_map: GLOBAL_SYMBOL_MAP.clone(),
-            supply_chain_graph: GLOBAL_SUPPLY_CHAIN_GRAPH.clone(),
-            stripe_secret_key: None,
-            stripe_webhook_secret: None,
-            monthly_quota_cache: Arc::new(MonthlyQuotaCache::default()),
-            audit_log_registry: Arc::new(AuditLogRegistry::new()),
-            model_metadata: Arc::new(std::sync::RwLock::new(ModelMetadata::from_env_or_config())),
-            digest_registry: Arc::new(DigestSubscriptionRegistry::new()),
-            email_sender: Arc::new(MockEmailSender::new()),
-            kafka_credentials_registry: Arc::new(KafkaCredentialsRegistry::new()),
-            retention_registry: Arc::new(RetentionPolicyRegistry::new()),
-            polling_webhook_registry: Arc::new(PollingWebhookRegistry::new()),
-            chat_alert_registry: Arc::new(ChatAlertRegistry::new()),
-            retraining_registry: Arc::new(crate::retraining::RetrainingRegistry::new()),
-            fix_order_registry: Arc::new(FixOrderRegistry::new()),
-            dlq_registry: Arc::new(DlqRegistry::new()),
-            sandbox_registry: Arc::new(SandboxRegistry::new()),
-            provenance_registry: Arc::new(ProvenanceRegistry::new()),
-            anomaly_broadcaster: Arc::new(AnomalyBroadcaster::default()),
-            enable_fix_bridge: true,
-            production_mode: false,
-            public_api_version: "v1".to_string(),
-            enable_full_api_surface: false,
-            scd2_registry: Arc::new(Scd2RevisionRegistry::new()),
-            pit_cert_archiver: Arc::new(PitCertArchiver::from_env_or_config()),
-            pit_db_store: None,
-            timescaledb_primary: false,
-            timescaledb_client: Arc::new(crate::storage::TimescaleDbClient::new(
-                crate::storage::TimescaleDbClientConfig::default(),
-            )),
-            db_circuit_breaker: Arc::new(crate::resilience::DbCircuitBreaker::new(
-                crate::resilience::CircuitBreakerConfig::default(),
-            )),
-            cache_config: crate::cache::CacheConfig::default(),
-            provider_health_store: Arc::new(
-                crate::handlers::provider_health::ProviderHealthStore::default(),
-            ),
-        };
+        let mut state = AppState::default();
+        state.kafka_consumer = subscriber.clone();
 
         let _app = create_app_with_state(state);
 
@@ -1951,7 +1419,7 @@ mod tests {
 
         let payload = serde_json::json!({
             "url": "https://quant.fund.com/webhooks/sentiment",
-            "events": ["sentiment", "spillover"]
+            "events": ["sentiment", "anomalies"]
         });
 
         // 1. POST /webhooks
@@ -2633,88 +2101,6 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_spillover_matrix_endpoint_valid() {
-        let app = create_app();
-        let (auth_k, auth_v) = test_auth_header();
-
-        let req = Request::builder()
-            .uri("/spillovers/matrix?tickers=AAPL,MSFT,NVDA&start_date=2025-01-01&end_date=2025-03-31&min_correlation=0.5&max_lag_hours=24")
-            .header(auth_k, auth_v)
-            .body(Body::empty())
-            .unwrap();
-
-        let resp = app.oneshot(req).await.unwrap();
-        assert_eq!(resp.status(), StatusCode::NOT_FOUND);
-    }
-
-    #[tokio::test]
-    async fn test_spillover_matrix_endpoint_default_universe() {
-        let app = create_app();
-        let (auth_k, auth_v) = test_auth_header();
-
-        let req = Request::builder()
-            .uri("/spillovers/matrix?start_date=2025-01-01&end_date=2025-03-31")
-            .header(auth_k, auth_v)
-            .body(Body::empty())
-            .unwrap();
-
-        let resp = app.oneshot(req).await.unwrap();
-        assert_eq!(resp.status(), StatusCode::NOT_FOUND);
-    }
-
-    #[tokio::test]
-    async fn test_spillover_matrix_endpoint_invalid_bounds() {
-        let app = create_app();
-        let (auth_k, auth_v) = test_auth_header();
-
-        // Inverted dates
-        let req1 = Request::builder()
-            .uri("/spillovers/matrix?tickers=AAPL,MSFT&start_date=2025-05-01&end_date=2025-01-01")
-            .header(auth_k.clone(), auth_v.clone())
-            .body(Body::empty())
-            .unwrap();
-        assert_eq!(
-            app.clone().oneshot(req1).await.unwrap().status(),
-            StatusCode::NOT_FOUND
-        );
-
-        // Invalid min_correlation > 1.0
-        let req2 = Request::builder()
-            .uri("/spillovers/matrix?tickers=AAPL,MSFT&start_date=2025-01-01&end_date=2025-03-31&min_correlation=2.5")
-            .header(auth_k.clone(), auth_v.clone())
-            .body(Body::empty())
-            .unwrap();
-        assert_eq!(
-            app.clone().oneshot(req2).await.unwrap().status(),
-            StatusCode::NOT_FOUND
-        );
-
-        // Invalid max_lag_hours > 168
-        let req3 = Request::builder()
-            .uri("/spillovers/matrix?tickers=AAPL,MSFT&start_date=2025-01-01&end_date=2025-03-31&max_lag_hours=500")
-            .header(auth_k, auth_v)
-            .body(Body::empty())
-            .unwrap();
-        assert_eq!(
-            app.oneshot(req3).await.unwrap().status(),
-            StatusCode::NOT_FOUND
-        );
-    }
-
-    #[tokio::test]
-    async fn test_spillover_matrix_unauthenticated_rejected() {
-        let app = create_app();
-
-        let req = Request::builder()
-            .uri("/spillovers/matrix?start_date=2025-01-01&end_date=2025-03-31")
-            .body(Body::empty())
-            .unwrap();
-
-        let resp = app.oneshot(req).await.unwrap();
-        assert_eq!(resp.status(), StatusCode::NOT_FOUND);
-    }
-
-    #[tokio::test]
     async fn test_pit_sentiment_history_symbol_change_fb_meta() {
         std::env::set_var("QUESTDB_MOCK_FALLBACK", "1");
         std::env::set_var("PIT_DATA_ENABLED", "1");
@@ -2770,23 +2156,6 @@ mod tests {
         let body = resp.into_body().collect().await.unwrap().to_bytes();
         let data: SentimentHistoryResponse = serde_json::from_slice(&body).unwrap();
         assert_eq!(data.count, 0);
-    }
-
-    #[tokio::test]
-    async fn test_pit_spillover_matrix_excludes_invalid_tickers() {
-        let app = create_app();
-        let (auth_k, auth_v) = test_auth_header();
-
-        let req = Request::builder()
-            .uri(
-                "/spillovers/matrix?tickers=AAPL,FB,META&start_date=2021-01-01&end_date=2021-03-31",
-            )
-            .header(auth_k, auth_v)
-            .body(Body::empty())
-            .unwrap();
-
-        let resp = app.oneshot(req).await.unwrap();
-        assert_eq!(resp.status(), StatusCode::NOT_FOUND);
     }
 
     #[tokio::test]
@@ -3782,74 +3151,6 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_event_study_endpoint_authenticated_success() {
-        let app = create_app();
-        let (auth_k, auth_v) = test_auth_header();
-
-        let req = Request::builder()
-            .uri("/events/study?ticker=AAPL&event_date=2025-06-15&event_window=5&estimation_window=60&benchmark_ticker=SPY")
-            .header(auth_k, auth_v)
-            .body(Body::empty())
-            .unwrap();
-        let resp = app.oneshot(req).await.unwrap();
-        assert_eq!(resp.status(), StatusCode::NOT_FOUND);
-    }
-
-    #[tokio::test]
-    async fn test_event_study_endpoint_invalid_parameters() {
-        let app = create_app();
-        let (auth_k, auth_v) = test_auth_header();
-
-        // 1. Missing ticker
-        let req1 = Request::builder()
-            .uri("/events/study?event_date=2025-06-15")
-            .header(auth_k.clone(), auth_v.clone())
-            .body(Body::empty())
-            .unwrap();
-        let resp1 = app.clone().oneshot(req1).await.unwrap();
-        assert_eq!(resp1.status(), StatusCode::NOT_FOUND);
-
-        // 2. Invalid date format
-        let req2 = Request::builder()
-            .uri("/events/study?ticker=AAPL&event_date=15-06-2025")
-            .header(auth_k.clone(), auth_v.clone())
-            .body(Body::empty())
-            .unwrap();
-        let resp2 = app.clone().oneshot(req2).await.unwrap();
-        assert_eq!(resp2.status(), StatusCode::NOT_FOUND);
-
-        // 3. Event window out of bounds (> 20)
-        let req3 = Request::builder()
-            .uri("/events/study?ticker=AAPL&event_date=2025-06-15&event_window=30")
-            .header(auth_k.clone(), auth_v.clone())
-            .body(Body::empty())
-            .unwrap();
-        let resp3 = app.clone().oneshot(req3).await.unwrap();
-        assert_eq!(resp3.status(), StatusCode::NOT_FOUND);
-
-        // 4. Estimation window out of bounds (< 10)
-        let req4 = Request::builder()
-            .uri("/events/study?ticker=AAPL&event_date=2025-06-15&estimation_window=5")
-            .header(auth_k, auth_v)
-            .body(Body::empty())
-            .unwrap();
-        let resp4 = app.oneshot(req4).await.unwrap();
-        assert_eq!(resp4.status(), StatusCode::NOT_FOUND);
-    }
-
-    #[tokio::test]
-    async fn test_event_study_endpoint_unauthenticated_rejected() {
-        let app = create_app();
-
-        let req = Request::builder()
-            .uri("/events/study?ticker=AAPL&event_date=2025-06-15")
-            .body(Body::empty())
-            .unwrap();
-        let resp = app.oneshot(req).await.unwrap();
-        assert_eq!(resp.status(), StatusCode::NOT_FOUND);
-    }
-
-    #[tokio::test]
     async fn test_8k_events_endpoint_authenticated_success() {
         let app = create_app();
         let (auth_k, auth_v) = test_auth_header();
@@ -4681,147 +3982,6 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_market_regime_default_query() {
-        let app = create_app();
-        let (auth_k, auth_v) = test_auth_header();
-
-        let req = Request::builder()
-            .uri("/market/regime?lookback_days=5&min_data_points=50")
-            .header(auth_k.clone(), auth_v.clone())
-            .body(Body::empty())
-            .unwrap();
-
-        let resp = app.clone().oneshot(req).await.unwrap();
-        assert_eq!(resp.status(), StatusCode::NOT_FOUND);
-    }
-
-    #[tokio::test]
-    async fn test_market_regime_custom_weights() {
-        let app = create_app();
-        let (auth_k, auth_v) = test_auth_header();
-
-        let req = Request::builder()
-            .uri("/market/regime?lookback_days=7&sector_weights=Technology:0.5,Financials:0.3,Healthcare:0.2")
-            .header(auth_k.clone(), auth_v.clone())
-            .body(Body::empty())
-            .unwrap();
-
-        let resp = app.clone().oneshot(req).await.unwrap();
-        assert_eq!(resp.status(), StatusCode::NOT_FOUND);
-    }
-
-    #[tokio::test]
-    async fn test_market_regime_bounds_validation() {
-        let app = create_app();
-        let (auth_k, auth_v) = test_auth_header();
-
-        // lookback_days > 30
-        let req_bad_lookback = Request::builder()
-            .uri("/market/regime?lookback_days=45")
-            .header(auth_k.clone(), auth_v.clone())
-            .body(Body::empty())
-            .unwrap();
-        let resp = app.clone().oneshot(req_bad_lookback).await.unwrap();
-        assert_eq!(resp.status(), StatusCode::NOT_FOUND);
-
-        // min_data_points == 0
-        let req_bad_pts = Request::builder()
-            .uri("/market/regime?min_data_points=0")
-            .header(auth_k.clone(), auth_v.clone())
-            .body(Body::empty())
-            .unwrap();
-        let resp = app.clone().oneshot(req_bad_pts).await.unwrap();
-        assert_eq!(resp.status(), StatusCode::NOT_FOUND);
-    }
-
-    #[tokio::test]
-    async fn test_market_regime_unauthenticated() {
-        let app = create_app();
-        let req = Request::builder()
-            .uri("/market/regime")
-            .body(Body::empty())
-            .unwrap();
-
-        let resp = app.clone().oneshot(req).await.unwrap();
-        assert_eq!(resp.status(), StatusCode::NOT_FOUND);
-    }
-
-    #[tokio::test]
-    async fn test_return_correlation_valid_matrix() {
-        let app = create_app();
-        let (auth_k, auth_v) = test_auth_header();
-
-        let req = Request::builder()
-            .uri("/market/correlation?tickers=AAPL,MSFT,NVDA&start_date=2025-01-01&end_date=2025-03-31&min_periods=15")
-            .header(auth_k.clone(), auth_v.clone())
-            .body(Body::empty())
-            .unwrap();
-
-        let resp = app.clone().oneshot(req).await.unwrap();
-        assert_eq!(resp.status(), StatusCode::NOT_FOUND);
-    }
-
-    #[tokio::test]
-    async fn test_return_correlation_include_self() {
-        let app = create_app();
-        let (auth_k, auth_v) = test_auth_header();
-
-        let req = Request::builder()
-            .uri("/market/correlation?tickers=AAPL,NVDA&start_date=2025-01-01&end_date=2025-03-31&include_self=true")
-            .header(auth_k.clone(), auth_v.clone())
-            .body(Body::empty())
-            .unwrap();
-
-        let resp = app.clone().oneshot(req).await.unwrap();
-        assert_eq!(resp.status(), StatusCode::NOT_FOUND);
-    }
-
-    #[tokio::test]
-    async fn test_return_correlation_validation_errors() {
-        let app = create_app();
-        let (auth_k, auth_v) = test_auth_header();
-
-        // Empty tickers
-        let req_empty = Request::builder()
-            .uri("/market/correlation?tickers=&start_date=2025-01-01&end_date=2025-03-31")
-            .header(auth_k.clone(), auth_v.clone())
-            .body(Body::empty())
-            .unwrap();
-        let resp = app.clone().oneshot(req_empty).await.unwrap();
-        assert_eq!(resp.status(), StatusCode::NOT_FOUND);
-
-        // start_date > end_date
-        let req_inv_dates = Request::builder()
-            .uri("/market/correlation?tickers=AAPL,MSFT&start_date=2025-05-01&end_date=2025-01-01")
-            .header(auth_k.clone(), auth_v.clone())
-            .body(Body::empty())
-            .unwrap();
-        let resp = app.clone().oneshot(req_inv_dates).await.unwrap();
-        assert_eq!(resp.status(), StatusCode::NOT_FOUND);
-
-        // min_periods < 10
-        let req_bad_min = Request::builder()
-            .uri("/market/correlation?tickers=AAPL,MSFT&start_date=2025-01-01&end_date=2025-03-31&min_periods=5")
-            .header(auth_k.clone(), auth_v.clone())
-            .body(Body::empty())
-            .unwrap();
-        let resp = app.clone().oneshot(req_bad_min).await.unwrap();
-        assert_eq!(resp.status(), StatusCode::NOT_FOUND);
-    }
-
-    #[tokio::test]
-    async fn test_return_correlation_unauthenticated() {
-        let app = create_app();
-        let req = Request::builder()
-            .uri("/market/correlation?tickers=AAPL,MSFT&start_date=2025-01-01&end_date=2025-03-31")
-            .body(Body::empty())
-            .unwrap();
-
-        let resp = app.clone().oneshot(req).await.unwrap();
-        assert_eq!(resp.status(), StatusCode::NOT_FOUND);
-    }
-
-    #[tokio::test]
     async fn test_put_call_ratio_single_ticker_daily() {
         let app = create_app();
         let (auth_k, auth_v) = test_auth_header();
@@ -5342,138 +4502,6 @@ mod tests {
 
         let resp = app.clone().oneshot(req).await.unwrap();
         assert_eq!(resp.status(), StatusCode::UNAUTHORIZED);
-    }
-
-    #[tokio::test]
-    async fn test_ma_rumors_single_ticker() {
-        let app = create_app();
-        let (auth_k, auth_v) = test_auth_header();
-
-        let req = Request::builder()
-            .uri("/events/ma-rumors?ticker=NVDA&min_rumor_score=0.4")
-            .header(auth_k, auth_v)
-            .body(Body::empty())
-            .unwrap();
-
-        let resp = app.clone().oneshot(req).await.unwrap();
-        assert_eq!(resp.status(), StatusCode::NOT_FOUND);
-    }
-
-    #[tokio::test]
-    async fn test_ma_rumors_universe_scan() {
-        let app = create_app();
-        let (auth_k, auth_v) = test_auth_header();
-
-        let req = Request::builder()
-            .uri("/events/ma-rumors?min_rumor_score=0.3&limit=5")
-            .header(auth_k, auth_v)
-            .body(Body::empty())
-            .unwrap();
-
-        let resp = app.clone().oneshot(req).await.unwrap();
-        assert_eq!(resp.status(), StatusCode::NOT_FOUND);
-    }
-
-    #[tokio::test]
-    async fn test_ma_rumors_validation_errors() {
-        let app = create_app();
-        let (auth_k, auth_v) = test_auth_header();
-
-        // min_rumor_score > 1.0
-        let req_score = Request::builder()
-            .uri("/events/ma-rumors?min_rumor_score=1.5")
-            .header(auth_k.clone(), auth_v.clone())
-            .body(Body::empty())
-            .unwrap();
-        let resp = app.clone().oneshot(req_score).await.unwrap();
-        assert_eq!(resp.status(), StatusCode::NOT_FOUND);
-
-        // lookback_days > 30
-        let req_days = Request::builder()
-            .uri("/events/ma-rumors?lookback_days=45")
-            .header(auth_k.clone(), auth_v.clone())
-            .body(Body::empty())
-            .unwrap();
-        let resp = app.clone().oneshot(req_days).await.unwrap();
-        assert_eq!(resp.status(), StatusCode::NOT_FOUND);
-    }
-
-    #[tokio::test]
-    async fn test_ma_rumors_unauthenticated() {
-        let app = create_app();
-        let req = Request::builder()
-            .uri("/events/ma-rumors")
-            .body(Body::empty())
-            .unwrap();
-
-        let resp = app.clone().oneshot(req).await.unwrap();
-        assert_eq!(resp.status(), StatusCode::NOT_FOUND);
-    }
-
-    #[tokio::test]
-    async fn test_regulatory_filings_single_ticker() {
-        let app = create_app();
-        let (auth_k, auth_v) = test_auth_header();
-
-        let req = Request::builder()
-            .uri("/events/filings?ticker=AAPL")
-            .header(auth_k, auth_v)
-            .body(Body::empty())
-            .unwrap();
-
-        let resp = app.clone().oneshot(req).await.unwrap();
-        assert_eq!(resp.status(), StatusCode::NOT_FOUND);
-    }
-
-    #[tokio::test]
-    async fn test_regulatory_filings_filters_and_pagination() {
-        let app = create_app();
-        let (auth_k, auth_v) = test_auth_header();
-
-        let req = Request::builder()
-            .uri("/events/filings?form_type=10-K&limit=5&offset=0")
-            .header(auth_k, auth_v)
-            .body(Body::empty())
-            .unwrap();
-
-        let resp = app.clone().oneshot(req).await.unwrap();
-        assert_eq!(resp.status(), StatusCode::NOT_FOUND);
-    }
-
-    #[tokio::test]
-    async fn test_regulatory_filings_validation_errors() {
-        let app = create_app();
-        let (auth_k, auth_v) = test_auth_header();
-
-        // start_date > end_date
-        let req_dates = Request::builder()
-            .uri("/events/filings?start_date=2025-12-31&end_date=2025-01-01")
-            .header(auth_k.clone(), auth_v.clone())
-            .body(Body::empty())
-            .unwrap();
-        let resp = app.clone().oneshot(req_dates).await.unwrap();
-        assert_eq!(resp.status(), StatusCode::NOT_FOUND);
-
-        // limit > 100
-        let req_lim = Request::builder()
-            .uri("/events/filings?limit=200")
-            .header(auth_k.clone(), auth_v.clone())
-            .body(Body::empty())
-            .unwrap();
-        let resp = app.clone().oneshot(req_lim).await.unwrap();
-        assert_eq!(resp.status(), StatusCode::NOT_FOUND);
-    }
-
-    #[tokio::test]
-    async fn test_regulatory_filings_unauthenticated() {
-        let app = create_app();
-        let req = Request::builder()
-            .uri("/events/filings")
-            .body(Body::empty())
-            .unwrap();
-
-        let resp = app.clone().oneshot(req).await.unwrap();
-        assert_eq!(resp.status(), StatusCode::NOT_FOUND);
     }
 
     #[tokio::test]
@@ -6411,22 +5439,6 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_sector_rotation_endpoint() {
-        let app = create_app();
-        let (auth_k, auth_v) = test_auth_header_for_user("quant_tester");
-
-        let req = Request::builder()
-            .method("GET")
-            .uri("/market/sector-rotation")
-            .header(auth_k.clone(), auth_v.clone())
-            .body(Body::empty())
-            .unwrap();
-
-        let resp = app.clone().oneshot(req).await.unwrap();
-        assert_eq!(resp.status(), StatusCode::NOT_FOUND);
-    }
-
-    #[tokio::test]
     async fn test_email_digest_endpoints() {
         let app = create_app();
         let (auth_k, auth_v) = test_auth_header_for_user("digest_quant_tester");
@@ -6643,111 +5655,6 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_factor_exposure_endpoint() {
-        let app = create_app();
-        let (auth_k, auth_v) = test_auth_header();
-
-        let req = Request::builder()
-            .method("GET")
-            .uri("/risk/factor-exposure?ticker=AAPL&start_date=2025-01-01&end_date=2025-06-30&benchmark_ticker=SPY")
-            .header(auth_k.clone(), auth_v.clone())
-            .body(Body::empty())
-            .unwrap();
-        let resp = app.clone().oneshot(req).await.unwrap();
-        assert_eq!(resp.status(), StatusCode::NOT_FOUND);
-    }
-
-    #[tokio::test]
-    async fn test_esg_scores_endpoint() {
-        let app = create_app();
-        let (auth_k, auth_v) = test_auth_header();
-
-        let req = Request::builder()
-            .method("GET")
-            .uri("/esg/scores?ticker=AAPL&start_date=2025-06-01&end_date=2025-08-30")
-            .header(auth_k.clone(), auth_v.clone())
-            .body(Body::empty())
-            .unwrap();
-        let resp = app.clone().oneshot(req).await.unwrap();
-        assert_eq!(resp.status(), StatusCode::NOT_FOUND);
-    }
-
-    #[tokio::test]
-    async fn test_bankruptcy_risk_endpoint() {
-        let app = create_app();
-        let (auth_k, auth_v) = test_auth_header();
-
-        let req = Request::builder()
-            .method("GET")
-            .uri("/risk/bankruptcy?ticker=AAPL&lookback_days=30&include_components=true")
-            .header(auth_k.clone(), auth_v.clone())
-            .body(Body::empty())
-            .unwrap();
-        let resp = app.clone().oneshot(req).await.unwrap();
-        assert_eq!(resp.status(), StatusCode::NOT_FOUND);
-    }
-
-    #[tokio::test]
-    async fn test_fx_sentiment_endpoint() {
-        let app = create_app();
-        let (auth_k, auth_v) = test_auth_header();
-
-        let req = Request::builder()
-            .method("GET")
-            .uri("/fx/sentiment?currency_pair=EUR/USD&min_confidence=0.5&limit=10")
-            .header(auth_k.clone(), auth_v.clone())
-            .body(Body::empty())
-            .unwrap();
-        let resp = app.clone().oneshot(req).await.unwrap();
-        assert_eq!(resp.status(), StatusCode::NOT_FOUND);
-    }
-
-    #[tokio::test]
-    async fn test_commodity_sentiment_endpoint() {
-        let app = create_app();
-        let (auth_k, auth_v) = test_auth_header();
-
-        let req = Request::builder()
-            .method("GET")
-            .uri("/commodities/sentiment?commodity=crude_oil&min_confidence=0.5&limit=10")
-            .header(auth_k.clone(), auth_v.clone())
-            .body(Body::empty())
-            .unwrap();
-        let resp = app.clone().oneshot(req).await.unwrap();
-        assert_eq!(resp.status(), StatusCode::NOT_FOUND);
-    }
-
-    #[tokio::test]
-    async fn test_polling_webhooks_lifecycle() {
-        let app = create_app();
-        let (auth_k, auth_v) = test_auth_header();
-
-        let req_create = Request::builder()
-            .method("POST")
-            .uri("/polling-webhooks")
-            .header(auth_k.clone(), auth_v.clone())
-            .header("Content-Type", "application/json")
-            .body(Body::from(r#"{"name":"Tech Sentiment Poll","url":"https://quant.fund.com/poll","interval_seconds":300,"query_type":"sentiment","query_params":{"tickers":["AAPL","MSFT"]}}"#))
-            .unwrap();
-        let resp_create = app.clone().oneshot(req_create).await.unwrap();
-        assert_eq!(resp_create.status(), StatusCode::NOT_FOUND);
-    }
-
-    #[tokio::test]
-    async fn test_crypto_sentiment_endpoint() {
-        let app = create_app();
-        let (auth_k, auth_v) = test_auth_header();
-
-        let req_ok = Request::builder()
-            .uri("/crypto/sentiment?asset=BTC&min_confidence=0.5&limit=5")
-            .header(auth_k.clone(), auth_v.clone())
-            .body(Body::empty())
-            .unwrap();
-        let resp_ok = app.clone().oneshot(req_ok).await.unwrap();
-        assert_eq!(resp_ok.status(), StatusCode::NOT_FOUND);
-    }
-
-    #[tokio::test]
     async fn test_options_microstructure_endpoint() {
         let app = create_app();
         let (auth_k, auth_v) = test_auth_header();
@@ -6786,57 +5693,6 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_market_breadth_endpoint() {
-        let app = create_app();
-        let (auth_k, auth_v) = test_auth_header();
-
-        let req = Request::builder()
-            .uri("/market/breadth?start_date=2025-01-01&end_date=2025-01-15&universe=all&limit=10&include_new_highs_lows=true")
-            .header(auth_k.clone(), auth_v.clone())
-            .body(Body::empty())
-            .unwrap();
-        let resp = app.clone().oneshot(req).await.unwrap();
-        assert_eq!(resp.status(), StatusCode::NOT_FOUND);
-    }
-
-    #[tokio::test]
-    async fn test_chat_alerts_endpoints() {
-        let app = create_app();
-        let (auth_k, auth_v) = test_auth_header();
-
-        let req_tg = Request::builder()
-            .method("POST")
-            .uri("/chat-alerts")
-            .header(auth_k.clone(), auth_v.clone())
-            .header("Content-Type", "application/json")
-            .body(Body::from(
-                serde_json::to_string(&serde_json::json!({
-                    "channel_type": "telegram",
-                    "channel_target": "123456789",
-                    "event_types": ["sentiment_anomaly", "8k_filing"]
-                }))
-                .unwrap(),
-            ))
-            .unwrap();
-        let resp_tg = app.clone().oneshot(req_tg).await.unwrap();
-        assert_eq!(resp_tg.status(), StatusCode::NOT_FOUND);
-    }
-
-    #[tokio::test]
-    async fn test_credit_sentiment_endpoint() {
-        let app = create_app();
-        let (auth_k, auth_v) = test_auth_header();
-
-        let req = Request::builder()
-            .uri("/risk/credit-sentiment?ticker=AAPL&lookback_days=30")
-            .header(auth_k.clone(), auth_v.clone())
-            .body(Body::empty())
-            .unwrap();
-        let resp = app.clone().oneshot(req).await.unwrap();
-        assert_eq!(resp.status(), StatusCode::NOT_FOUND);
-    }
-
-    #[tokio::test]
     async fn test_backfill_sentiment_endpoint() {
         let app = create_app_with_full_surface();
         let (auth_k, auth_v) = test_auth_header();
@@ -6871,57 +5727,6 @@ mod tests {
         assert!(json_body["total_articles_found"].is_number());
         assert!(json_body["processed_articles"].is_number());
         assert_eq!(json_body["failed_articles"], 0);
-    }
-
-    #[tokio::test]
-    async fn test_portfolio_optimize_endpoint() {
-        let app = create_app();
-        let (auth_k, auth_v) = test_auth_header();
-
-        let req = Request::builder()
-            .method("POST")
-            .uri("/portfolio/optimize")
-            .header(auth_k.clone(), auth_v.clone())
-            .header(header::CONTENT_TYPE, "application/json")
-            .body(Body::from(
-                serde_json::to_vec(&serde_json::json!({
-                    "tickers": ["AAPL", "MSFT", "NVDA"],
-                    "start_date": "2025-01-01",
-                    "end_date": "2025-06-30",
-                    "optimization_type": "max_sharpe",
-                    "risk_free_rate": 0.05
-                }))
-                .unwrap(),
-            ))
-            .unwrap();
-        let resp = app.clone().oneshot(req).await.unwrap();
-        assert_eq!(resp.status(), StatusCode::NOT_FOUND);
-    }
-
-    #[tokio::test]
-    async fn test_portfolio_factor_exposure_endpoint() {
-        let app = create_app();
-        let (auth_k, auth_v) = test_auth_header();
-
-        let req = Request::builder()
-            .method("POST")
-            .uri("/risk/portfolio-factor-exposure")
-            .header(auth_k.clone(), auth_v.clone())
-            .header(header::CONTENT_TYPE, "application/json")
-            .body(Body::from(
-                serde_json::to_vec(&serde_json::json!({
-                    "tickers": ["AAPL", "MSFT", "NVDA"],
-                    "weights": [0.4, 0.3, 0.3],
-                    "start_date": "2025-01-01",
-                    "end_date": "2025-06-30",
-                    "benchmark_ticker": "SPY",
-                    "factors": "market,momentum,sentiment,volatility"
-                }))
-                .unwrap(),
-            ))
-            .unwrap();
-        let resp = app.clone().oneshot(req).await.unwrap();
-        assert_eq!(resp.status(), StatusCode::NOT_FOUND);
     }
 
     #[tokio::test]
@@ -6980,140 +5785,6 @@ mod tests {
             .unwrap();
         let resp3 = app.clone().oneshot(req3).await.unwrap();
         assert_eq!(resp3.status(), StatusCode::OK);
-    }
-
-    #[tokio::test]
-    async fn test_fix_order_submission_market_fill() {
-        let app = create_app();
-        let (auth_k, auth_v) = test_auth_header_with_role("fix_trader_01", "enterprise");
-
-        let fix_msg = "8=FIX.4.4|9=60|35=D|11=CL-MKT-01|55=AAPL|54=1|38=100|40=1|10=000|";
-        let req = Request::builder()
-            .method("POST")
-            .uri("/fix/order")
-            .header(auth_k.clone(), auth_v.clone())
-            .header(header::CONTENT_TYPE, "application/json")
-            .body(Body::from(
-                serde_json::to_vec(&serde_json::json!({
-                    "fix_message": fix_msg
-                }))
-                .unwrap(),
-            ))
-            .unwrap();
-
-        let resp = app.clone().oneshot(req).await.unwrap();
-        assert_eq!(resp.status(), StatusCode::NOT_FOUND);
-    }
-
-    #[tokio::test]
-    async fn test_fix_order_submission_limit_open_and_cancel() {
-        let app = create_app();
-        let (auth_k, auth_v) = test_auth_header_with_role("fix_trader_02", "enterprise");
-
-        let fix_limit_msg =
-            "8=FIX.4.4|9=70|35=D|11=CL-LMT-01|55=MSFT|54=1|38=50|40=2|44=10.00|10=000|";
-        let req_order = Request::builder()
-            .method("POST")
-            .uri("/fix/order")
-            .header(auth_k.clone(), auth_v.clone())
-            .header(header::CONTENT_TYPE, "application/json")
-            .body(Body::from(
-                serde_json::to_vec(&serde_json::json!({
-                    "fix_message": fix_limit_msg
-                }))
-                .unwrap(),
-            ))
-            .unwrap();
-
-        let resp_order = app.clone().oneshot(req_order).await.unwrap();
-        assert_eq!(resp_order.status(), StatusCode::NOT_FOUND);
-    }
-
-    #[tokio::test]
-    async fn test_fix_order_list_with_filters() {
-        let app = create_app();
-        let (auth_k, auth_v) = test_auth_header_with_role("fix_trader_03", "enterprise");
-
-        let req_all = Request::builder()
-            .method("GET")
-            .uri("/fix/orders?limit=10")
-            .header(auth_k.clone(), auth_v.clone())
-            .body(Body::empty())
-            .unwrap();
-        let resp_all = app.clone().oneshot(req_all).await.unwrap();
-        assert_eq!(resp_all.status(), StatusCode::NOT_FOUND);
-    }
-
-    #[tokio::test]
-    async fn test_fix_order_missing_tags_rejected() {
-        let app = create_app();
-        let (auth_k, auth_v) = test_auth_header_with_role("fix_trader_04", "enterprise");
-
-        // Missing Symbol (Tag 55)
-        let invalid_msg = "8=FIX.4.4|9=40|35=D|11=INV-01|54=1|38=100|40=1|10=000|";
-        let req = Request::builder()
-            .method("POST")
-            .uri("/fix/order")
-            .header(auth_k.clone(), auth_v.clone())
-            .header(header::CONTENT_TYPE, "application/json")
-            .body(Body::from(
-                serde_json::to_vec(&serde_json::json!({
-                    "fix_message": invalid_msg
-                }))
-                .unwrap(),
-            ))
-            .unwrap();
-
-        let resp = app.clone().oneshot(req).await.unwrap();
-        assert_eq!(resp.status(), StatusCode::NOT_FOUND);
-    }
-
-    #[tokio::test]
-    async fn test_fix_order_forbidden_for_non_enterprise_role() {
-        let app = create_app();
-        let (auth_k, auth_v) = test_auth_header_with_role("retail_trader_01", "institutional");
-
-        let fix_msg = "8=FIX.4.4|9=60|35=D|11=CL-MKT-01|55=AAPL|54=1|38=100|40=1|10=000|";
-        let req = Request::builder()
-            .method("POST")
-            .uri("/fix/order")
-            .header(auth_k.clone(), auth_v.clone())
-            .header(header::CONTENT_TYPE, "application/json")
-            .body(Body::from(
-                serde_json::to_vec(&serde_json::json!({
-                    "fix_message": fix_msg
-                }))
-                .unwrap(),
-            ))
-            .unwrap();
-
-        let resp = app.clone().oneshot(req).await.unwrap();
-        assert_eq!(resp.status(), StatusCode::NOT_FOUND);
-    }
-
-    #[tokio::test]
-    async fn test_fix_bridge_disabled_returns_404() {
-        let mut state = AppState::default();
-        state.enable_fix_bridge = false;
-        let app = create_app_with_state(state);
-        let (auth_k, auth_v) = test_auth_header_with_role("ent_user", "enterprise");
-
-        let fix_msg = "8=FIX.4.4|9=60|35=D|11=CL-MKT-01|55=AAPL|54=1|38=100|40=1|10=000|";
-        let req = Request::builder()
-            .method("POST")
-            .uri("/fix/order")
-            .header(auth_k.clone(), auth_v.clone())
-            .header(header::CONTENT_TYPE, "application/json")
-            .body(Body::from(
-                serde_json::to_vec(&serde_json::json!({
-                    "fix_message": fix_msg
-                }))
-                .unwrap(),
-            ))
-            .unwrap();
-
-        let resp = app.clone().oneshot(req).await.unwrap();
-        assert_eq!(resp.status(), StatusCode::NOT_FOUND);
     }
 
     #[tokio::test]
@@ -7859,96 +6530,6 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_anomaly_scan_unauthenticated_returns_401() {
-        let app = create_app();
-        let req = Request::builder()
-            .method("POST")
-            .uri("/anomaly-scan")
-            .body(Body::empty())
-            .unwrap();
-        let res = app.clone().oneshot(req).await.unwrap();
-        assert_eq!(res.status(), StatusCode::NOT_FOUND);
-    }
-
-    #[tokio::test]
-    async fn test_anomaly_scan_authenticated_returns_200() {
-        let app = create_app();
-        let token = generate_jwt(
-            "anomaly_tester",
-            DEFAULT_JWT_EXPIRY_SECS,
-            Some("institutional"),
-            DEFAULT_DEV_JWT_SECRET.as_bytes(),
-        )
-        .unwrap();
-        let auth_hdr = format!("Bearer {}", token);
-
-        let req = Request::builder()
-            .method("POST")
-            .uri("/anomaly-scan")
-            .header(header::AUTHORIZATION, &auth_hdr)
-            .body(Body::empty())
-            .unwrap();
-        let res = app.clone().oneshot(req).await.unwrap();
-        assert_eq!(res.status(), StatusCode::NOT_FOUND);
-    }
-
-    #[tokio::test]
-    async fn test_language_detect_unauthenticated_returns_401() {
-        let app = create_app();
-        let req = Request::builder()
-            .method("GET")
-            .uri("/language/detect?text=Hello+world")
-            .body(Body::empty())
-            .unwrap();
-        let res = app.clone().oneshot(req).await.unwrap();
-        assert_eq!(res.status(), StatusCode::NOT_FOUND);
-    }
-
-    #[tokio::test]
-    async fn test_language_detect_empty_text_returns_400() {
-        let app = create_app();
-        let token = generate_jwt(
-            "lang_tester",
-            DEFAULT_JWT_EXPIRY_SECS,
-            Some("institutional"),
-            DEFAULT_DEV_JWT_SECRET.as_bytes(),
-        )
-        .unwrap();
-        let auth_hdr = format!("Bearer {}", token);
-
-        let req = Request::builder()
-            .method("GET")
-            .uri("/language/detect?text=")
-            .header(header::AUTHORIZATION, &auth_hdr)
-            .body(Body::empty())
-            .unwrap();
-        let res = app.clone().oneshot(req).await.unwrap();
-        assert_eq!(res.status(), StatusCode::NOT_FOUND);
-    }
-
-    #[tokio::test]
-    async fn test_language_detect_multilingual_success() {
-        let app = create_app();
-        let token = generate_jwt(
-            "lang_tester",
-            DEFAULT_JWT_EXPIRY_SECS,
-            Some("institutional"),
-            DEFAULT_DEV_JWT_SECRET.as_bytes(),
-        )
-        .unwrap();
-        let auth_hdr = format!("Bearer {}", token);
-
-        let req = Request::builder()
-            .method("GET")
-            .uri("/language/detect?text=El+mercado+de+valores+muestra+un+fuerte+crecimiento+en+las+acciones")
-            .header(header::AUTHORIZATION, &auth_hdr)
-            .body(Body::empty())
-            .unwrap();
-        let res = app.clone().oneshot(req).await.unwrap();
-        assert_eq!(res.status(), StatusCode::NOT_FOUND);
-    }
-
-    #[tokio::test]
     async fn test_model_card_public_endpoint_returns_200() {
         let app = create_app();
 
@@ -7989,97 +6570,6 @@ mod tests {
             card.licensing.model_license == "apache_2.0"
                 || card.licensing.model_license == "internal_proprietary"
         );
-    }
-
-    #[tokio::test]
-    async fn test_alpha_report_returns_200_with_valid_metrics() {
-        let app = create_app();
-        let (auth_k, auth_v) = test_auth_header_for_user("alpha_trader_01");
-
-        let payload = serde_json::json!({
-            "tickers": ["AAPL", "MSFT"],
-            "start_date": "2024-01-01",
-            "end_date": "2024-12-31",
-            "signal_config": {
-                "signal_type": "sentiment",
-                "threshold_long": 0.2,
-                "threshold_short": -0.2,
-                "holding_days": 5,
-                "smoothing_window_days": 3
-            },
-            "benchmark_ticker": "SPY",
-            "initial_capital": 1000000.0
-        });
-
-        let req = Request::builder()
-            .method("POST")
-            .uri("/signals/alpha-report")
-            .header(auth_k, auth_v)
-            .header(header::CONTENT_TYPE, "application/json")
-            .body(Body::from(serde_json::to_vec(&payload).unwrap()))
-            .unwrap();
-
-        let res = app.oneshot(req).await.unwrap();
-        assert_eq!(res.status(), StatusCode::NOT_FOUND);
-    }
-
-    #[tokio::test]
-    async fn test_alpha_report_validation_empty_tickers() {
-        let app = create_app();
-        let (auth_k, auth_v) = test_auth_header_for_user("alpha_trader_02");
-
-        let payload = serde_json::json!({
-            "tickers": [],
-            "start_date": "2024-01-01",
-            "end_date": "2024-12-31",
-            "signal_config": {
-                "signal_type": "sentiment",
-                "threshold_long": 0.2,
-                "threshold_short": -0.2,
-                "holding_days": 5
-            }
-        });
-
-        let req = Request::builder()
-            .method("POST")
-            .uri("/signals/alpha-report")
-            .header(auth_k, auth_v)
-            .header(header::CONTENT_TYPE, "application/json")
-            .body(Body::from(serde_json::to_vec(&payload).unwrap()))
-            .unwrap();
-
-        let res = app.oneshot(req).await.unwrap();
-        assert_eq!(res.status(), StatusCode::NOT_FOUND);
-    }
-
-    #[tokio::test]
-    async fn test_alpha_report_validation_too_many_tickers() {
-        let app = create_app();
-        let (auth_k, auth_v) = test_auth_header_for_user("alpha_trader_03");
-
-        let tickers: Vec<String> = (0..11).map(|i| format!("T{}", i)).collect();
-        let payload = serde_json::json!({
-            "tickers": tickers,
-            "start_date": "2024-01-01",
-            "end_date": "2024-12-31",
-            "signal_config": {
-                "signal_type": "sentiment",
-                "threshold_long": 0.2,
-                "threshold_short": -0.2,
-                "holding_days": 5
-            }
-        });
-
-        let req = Request::builder()
-            .method("POST")
-            .uri("/signals/alpha-report")
-            .header(auth_k, auth_v)
-            .header(header::CONTENT_TYPE, "application/json")
-            .body(Body::from(serde_json::to_vec(&payload).unwrap()))
-            .unwrap();
-
-        let res = app.oneshot(req).await.unwrap();
-        assert_eq!(res.status(), StatusCode::NOT_FOUND);
     }
 
     #[tokio::test]
