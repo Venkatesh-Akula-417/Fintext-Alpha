@@ -1,0 +1,1579 @@
+{
+  "info": {
+    "_postman_id": "c9284a1d-7201-49b0-9ce8-32corefintext",
+    "name": "FinText Alpha Vectorizer \u2014 32 Core Endpoints",
+    "description": "Institutional Quantitative Gateway Postman Collection for FinText Alpha Vectorizer. Covers all 32 production core /v1 endpoints across System, Auth, Sentiment, Options Microstructure, Point-in-Time (PIT) Intelligence, Corporate Events, and High-Throughput Research Data Export.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://127.0.0.1:8000",
+      "type": "string"
+    },
+    {
+      "key": "admin_token",
+      "value": "fintext-admin-dev-secret-token",
+      "type": "string"
+    },
+    {
+      "key": "jwt_token",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "ticker",
+      "value": "AAPL",
+      "type": "string"
+    },
+    {
+      "key": "as_of",
+      "value": "2023-01-03T16:00:00Z",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "1. System & Diagnostics",
+      "item": [
+        {
+          "name": "1.1 System Health Probe",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/v1/health",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "v1",
+                "health"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "1.2 Cluster Readiness Probe",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/v1/readyz",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "v1",
+                "readyz"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "1.3 Model Card & Governance",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/v1/model-card",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "v1",
+                "model-card"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "2. Authentication & Identity",
+      "item": [
+        {
+          "name": "2.1 Acquire Bearer JWT Token",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-Admin-Token",
+                "value": "{{admin_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/v1/auth/token",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "v1",
+                "auth",
+                "token"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"user_id\": \"quant_researcher_01\",\n  \"role\": \"admin\",\n  \"ttl_seconds\": 86400\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "var data = pm.response.json();",
+                  "if (data.token) {",
+                  "    pm.collectionVariables.set(\"jwt_token\", data.token);",
+                  "    console.log(\"Acquired Bearer JWT Token successfully.\");",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "2.2 Current User Profile",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/v1/users/me",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "v1",
+                "users",
+                "me"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "2.3 Create API Key",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/v1/users/api-keys",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "v1",
+                "users",
+                "api-keys"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"hft_desk_key\",\n  \"expires_in_days\": 90\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "2.4 List API Keys",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/v1/users/api-keys",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "v1",
+                "users",
+                "api-keys"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "3. Sentiment & NLP Signals",
+      "item": [
+        {
+          "name": "3.1 Point-in-Time Asset Sentiment",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/v1/sentiment?ticker={{ticker}}&as_of_utc={{as_of}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "v1",
+                "sentiment"
+              ],
+              "query": [
+                {
+                  "key": "ticker",
+                  "value": "{{ticker}}",
+                  "description": "Parameter ticker"
+                },
+                {
+                  "key": "as_of_utc",
+                  "value": "{{as_of}}",
+                  "description": "Parameter as_of_utc"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "3.2 Batch Multi-Asset Sentiment",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/v1/sentiment/batch",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "v1",
+                "sentiment",
+                "batch"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"tickers\": [\n    \"AAPL\",\n    \"NVDA\",\n    \"MSFT\"\n  ],\n  \"as_of_utc\": \"{{as_of}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "3.3 Historical Sentiment Stream",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/v1/sentiment/history?ticker={{ticker}}&start_date=2023-01-01&end_date=2023-03-31&as_of_utc={{as_of}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "v1",
+                "sentiment",
+                "history"
+              ],
+              "query": [
+                {
+                  "key": "ticker",
+                  "value": "{{ticker}}",
+                  "description": "Parameter ticker"
+                },
+                {
+                  "key": "start_date",
+                  "value": "2023-01-01",
+                  "description": "Parameter start_date"
+                },
+                {
+                  "key": "end_date",
+                  "value": "2023-03-31",
+                  "description": "Parameter end_date"
+                },
+                {
+                  "key": "as_of_utc",
+                  "value": "{{as_of}}",
+                  "description": "Parameter as_of_utc"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "3.4 Real-Time Sentiment Feed",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/v1/sentiment/feed?limit=20",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "v1",
+                "sentiment",
+                "feed"
+              ],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "20",
+                  "description": "Parameter limit"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "3.5 Token Named Entities (NER)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/v1/sentiment/entities?ticker={{ticker}}&as_of_utc={{as_of}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "v1",
+                "sentiment",
+                "entities"
+              ],
+              "query": [
+                {
+                  "key": "ticker",
+                  "value": "{{ticker}}",
+                  "description": "Parameter ticker"
+                },
+                {
+                  "key": "as_of_utc",
+                  "value": "{{as_of}}",
+                  "description": "Parameter as_of_utc"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "3.6 GICS Sector Sentiment Heatmap",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/v1/sentiment/sector?sector=Technology&as_of_utc={{as_of}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "v1",
+                "sentiment",
+                "sector"
+              ],
+              "query": [
+                {
+                  "key": "sector",
+                  "value": "Technology",
+                  "description": "Parameter sector"
+                },
+                {
+                  "key": "as_of_utc",
+                  "value": "{{as_of}}",
+                  "description": "Parameter as_of_utc"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "3.7 Sentiment Disagreement & Entropy",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/v1/sentiment/disagreement?ticker={{ticker}}&as_of_utc={{as_of}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "v1",
+                "sentiment",
+                "disagreement"
+              ],
+              "query": [
+                {
+                  "key": "ticker",
+                  "value": "{{ticker}}",
+                  "description": "Parameter ticker"
+                },
+                {
+                  "key": "as_of_utc",
+                  "value": "{{as_of}}",
+                  "description": "Parameter as_of_utc"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "4. Options Microstructure",
+      "item": [
+        {
+          "name": "4.1 Implied Volatility & Greeks",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/v1/options/iv?ticker={{ticker}}&expiration_date=2026-03-20&option_type=all",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "v1",
+                "options",
+                "iv"
+              ],
+              "query": [
+                {
+                  "key": "ticker",
+                  "value": "{{ticker}}",
+                  "description": "Parameter ticker"
+                },
+                {
+                  "key": "expiration_date",
+                  "value": "2026-03-20",
+                  "description": "Parameter expiration_date"
+                },
+                {
+                  "key": "option_type",
+                  "value": "all",
+                  "description": "Parameter option_type"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "4.2 Microstructure VPIN & Dealer GEX",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/v1/options/microstructure?ticker={{ticker}}&start_date=2025-01-01&end_date=2025-01-15&metric=both",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "v1",
+                "options",
+                "microstructure"
+              ],
+              "query": [
+                {
+                  "key": "ticker",
+                  "value": "{{ticker}}",
+                  "description": "Parameter ticker"
+                },
+                {
+                  "key": "start_date",
+                  "value": "2025-01-01",
+                  "description": "Parameter start_date"
+                },
+                {
+                  "key": "end_date",
+                  "value": "2025-01-15",
+                  "description": "Parameter end_date"
+                },
+                {
+                  "key": "metric",
+                  "value": "both",
+                  "description": "Parameter metric"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "4.3 Unusual Options Activity",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/v1/options/unusual?ticker={{ticker}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "v1",
+                "options",
+                "unusual"
+              ],
+              "query": [
+                {
+                  "key": "ticker",
+                  "value": "{{ticker}}",
+                  "description": "Parameter ticker"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "4.4 Volatility Surface Skew Mesh",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/v1/options/vol-surface?ticker={{ticker}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "v1",
+                "options",
+                "vol-surface"
+              ],
+              "query": [
+                {
+                  "key": "ticker",
+                  "value": "{{ticker}}",
+                  "description": "Parameter ticker"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "4.5 Put/Call Ratio Time Series",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/v1/options/put-call-ratio?ticker={{ticker}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "v1",
+                "options",
+                "put-call-ratio"
+              ],
+              "query": [
+                {
+                  "key": "ticker",
+                  "value": "{{ticker}}",
+                  "description": "Parameter ticker"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "5. Point-in-Time (PIT) Intelligence",
+      "item": [
+        {
+          "name": "5.1 Historical State Replay (Zero-Lookahead)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/v1/pit/replay?ticker={{ticker}}&as_of_utc={{as_of}}&limit=20",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "v1",
+                "pit",
+                "replay"
+              ],
+              "query": [
+                {
+                  "key": "ticker",
+                  "value": "{{ticker}}",
+                  "description": "Parameter ticker"
+                },
+                {
+                  "key": "as_of_utc",
+                  "value": "{{as_of}}",
+                  "description": "Parameter as_of_utc"
+                },
+                {
+                  "key": "limit",
+                  "value": "20",
+                  "description": "Parameter limit"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "5.2 Cryptographic Audit Certificate",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/v1/pit/certificate?universe=sp500&start_date=2023-01-01&end_date=2023-01-15",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "v1",
+                "pit",
+                "certificate"
+              ],
+              "query": [
+                {
+                  "key": "universe",
+                  "value": "sp500",
+                  "description": "Parameter universe"
+                },
+                {
+                  "key": "start_date",
+                  "value": "2023-01-01",
+                  "description": "Parameter start_date"
+                },
+                {
+                  "key": "end_date",
+                  "value": "2023-01-15",
+                  "description": "Parameter end_date"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "5.3 Permanent Identifier Crosswalk",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/v1/symbols/map?ticker={{ticker}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "v1",
+                "symbols",
+                "map"
+              ],
+              "query": [
+                {
+                  "key": "ticker",
+                  "value": "{{ticker}}",
+                  "description": "Parameter ticker"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "6. Corporate Events & Graph Intelligence",
+      "item": [
+        {
+          "name": "6.1 Material SEC Form 8-K Disclosures",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/v1/events/8k?ticker={{ticker}}&as_of_utc={{as_of}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "v1",
+                "events",
+                "8k"
+              ],
+              "query": [
+                {
+                  "key": "ticker",
+                  "value": "{{ticker}}",
+                  "description": "Parameter ticker"
+                },
+                {
+                  "key": "as_of_utc",
+                  "value": "{{as_of}}",
+                  "description": "Parameter as_of_utc"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "6.2 Earnings Surprise Actuals vs Estimates",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/v1/events/earnings-surprise?ticker={{ticker}}&as_of_utc={{as_of}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "v1",
+                "events",
+                "earnings-surprise"
+              ],
+              "query": [
+                {
+                  "key": "ticker",
+                  "value": "{{ticker}}",
+                  "description": "Parameter ticker"
+                },
+                {
+                  "key": "as_of_utc",
+                  "value": "{{as_of}}",
+                  "description": "Parameter as_of_utc"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "6.3 Form 4 Insider Trading Activity",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/v1/events/insider-trading?ticker={{ticker}}&as_of_utc={{as_of}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "v1",
+                "events",
+                "insider-trading"
+              ],
+              "query": [
+                {
+                  "key": "ticker",
+                  "value": "{{ticker}}",
+                  "description": "Parameter ticker"
+                },
+                {
+                  "key": "as_of_utc",
+                  "value": "{{as_of}}",
+                  "description": "Parameter as_of_utc"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "6.4 Supply Chain Graph Shock Propagation",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/v1/events/supply-chain-risk?ticker={{ticker}}&max_depth=2&decay_factor=0.6",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "v1",
+                "events",
+                "supply-chain-risk"
+              ],
+              "query": [
+                {
+                  "key": "ticker",
+                  "value": "{{ticker}}",
+                  "description": "Parameter ticker"
+                },
+                {
+                  "key": "max_depth",
+                  "value": "2",
+                  "description": "Parameter max_depth"
+                },
+                {
+                  "key": "decay_factor",
+                  "value": "0.6",
+                  "description": "Parameter decay_factor"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "7. Universes & Call Transcripts",
+      "item": [
+        {
+          "name": "7.1 List Asset Universes",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/v1/universes",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "v1",
+                "universes"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "7.2 Create Custom Universe",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/v1/universes",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "v1",
+                "universes"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"liquid_tech_10\",\n  \"tickers\": [\n    \"AAPL\",\n    \"MSFT\",\n    \"NVDA\",\n    \"AMZN\",\n    \"GOOGL\"\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "7.3 Earnings Call Transcripts",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/v1/transcripts?ticker={{ticker}}&as_of_utc={{as_of}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "v1",
+                "transcripts"
+              ],
+              "query": [
+                {
+                  "key": "ticker",
+                  "value": "{{ticker}}",
+                  "description": "Parameter ticker"
+                },
+                {
+                  "key": "as_of_utc",
+                  "value": "{{as_of}}",
+                  "description": "Parameter as_of_utc"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "8. Signal Quality & Research Export",
+      "item": [
+        {
+          "name": "8.1 Quantitative Quality Report (IC & Decay)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/v1/signals/quality-report",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "v1",
+                "signals",
+                "quality-report"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"signal_type\": \"sentiment\",\n  \"tickers\": [\n    \"AAPL\",\n    \"MSFT\",\n    \"NVDA\"\n  ],\n  \"start_date\": \"2024-01-01\",\n  \"end_date\": \"2024-12-31\",\n  \"horizon_days\": 5\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "8.2 Columnar Parquet Research Export",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/v1/export/parquet?start_date=2025-01-01&end_date=2025-01-15",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "v1",
+                "export",
+                "parquet"
+              ],
+              "query": [
+                {
+                  "key": "start_date",
+                  "value": "2025-01-01",
+                  "description": "Parameter start_date"
+                },
+                {
+                  "key": "end_date",
+                  "value": "2025-01-15",
+                  "description": "Parameter end_date"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "8.3 Webhook Notification Registration",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/v1/webhooks",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "v1",
+                "webhooks"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"url\": \"https://quant-desk.internal/webhooks/signals\",\n  \"events\": [\n    \"sentiment.anomaly\",\n    \"options.vpin_spike\"\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
