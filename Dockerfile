@@ -3,7 +3,8 @@
 # ═══════════════════════════════════════════════════════════════════════════════
 
 # ── Stage 1: Native Rust Compiler ─────────────────────────────────────────────
-FROM rust:1.80.1-bookworm AS builder
+# Updated to 1.85 to support edition2024 (block-buffer 0.12.0)
+FROM rust:1.85-bookworm AS builder
 
 
 WORKDIR /build

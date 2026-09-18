@@ -11,7 +11,7 @@ from fintext import FinTextClient, FinTextError
 client = FinTextClient(
     base_url=os.getenv("FINTEXT_BASE_URL", "http://127.0.0.1:8000"),
     api_version="v1",
-    admin_token=os.getenv("FINTEXT_ADMIN_TOKEN", "fintext-admin-dev-secret-token")
+    admin_token=os.getenv("FINTEXT_ADMIN_TOKEN", "your_admin_token_here")
 )
 
 try:
