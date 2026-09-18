@@ -3,8 +3,8 @@
 # ═══════════════════════════════════════════════════════════════════════════════
 
 # ── Stage 1: Native Rust Compiler ─────────────────────────────────────────────
-# Updated to 1.85 to support edition2024 (block-buffer 0.12.0)
-FROM rust:1.85-bookworm AS builder
+# Updated to latest stable to support edition2024 and aws-sdk 1.94.1+ (block-buffer 0.12.0, aws-credential-types 1.3.0)
+FROM rust:bookworm AS builder
 
 
 WORKDIR /build
