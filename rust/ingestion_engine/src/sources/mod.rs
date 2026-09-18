@@ -20,4 +20,3 @@ pub use polygon::{
 };
 pub use polygon_ws::{PolygonWsClient, PolygonWsConfig, PolygonWsMessage, PolygonWsRawTrade};
 pub use sec_edgar::SecEdgarFetcher;
-

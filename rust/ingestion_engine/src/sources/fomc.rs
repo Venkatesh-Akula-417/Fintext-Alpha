@@ -13,7 +13,10 @@
 
 use crate::pipeline::RawDocument;
 use chrono::{DateTime, Utc};
-use reqwest::header::{HeaderMap, HeaderValue, ACCEPT_ENCODING, ETAG, IF_MODIFIED_SINCE, IF_NONE_MATCH, LAST_MODIFIED, USER_AGENT};
+use reqwest::header::{
+    HeaderMap, HeaderValue, ACCEPT_ENCODING, ETAG, IF_MODIFIED_SINCE, IF_NONE_MATCH, LAST_MODIFIED,
+    USER_AGENT,
+};
 use reqwest::Client;
 use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
@@ -24,10 +27,10 @@ use tokio::time::{interval, sleep_until, Instant};
 use tracing::{debug, info, warn};
 use uuid::Uuid;
 
-pub const FOMC_USER_AGENT: &str = "FinText Institutional Macro Research/2.0 (macro@fintext-alpha.com)";
+pub const FOMC_USER_AGENT: &str =
+    "FinText Institutional Macro Research/2.0 (macro@fintext-alpha.com)";
 pub const DEFAULT_BURST_INTERVAL_MS: u64 = 10; // 10ms micro-burst polling
 pub const DEFAULT_BURST_DURATION_SECS: u64 = 300; // 5 minutes burst duration
-
 
 /// Record representation of an FOMC scheduled event.
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -103,7 +106,10 @@ impl FomcFetcher {
             }
         }
 
-        let resp = req.send().await.map_err(|e| format!("HTTP request error for FOMC: {}", e))?;
+        let resp = req
+            .send()
+            .await
+            .map_err(|e| format!("HTTP request error for FOMC: {}", e))?;
         let status = resp.status();
 
         // 304 Not Modified: 1ms ultra-fast path, no content changes
@@ -126,7 +132,10 @@ impl FomcFetcher {
                 }
             }
 
-            let text = resp.text().await.map_err(|e| format!("Failed to read FOMC body: {}", e))?;
+            let text = resp
+                .text()
+                .await
+                .map_err(|e| format!("Failed to read FOMC body: {}", e))?;
             let doc = self.parse_fomc_html(&text, url);
             Ok(Some(doc))
         } else {
@@ -169,9 +178,10 @@ impl FomcFetcher {
 
     /// Calculates the next scheduled FOMC policy announcement time.
     pub fn get_next_fomc_time(&self) -> DateTime<Utc> {
-        let schedule_file = self.schedule_path.clone().unwrap_or_else(|| {
-            PathBuf::from("config/fomc_schedule.json")
-        });
+        let schedule_file = self
+            .schedule_path
+            .clone()
+            .unwrap_or_else(|| PathBuf::from("config/fomc_schedule.json"));
 
         if schedule_file.exists() {
             if let Ok(content) = std::fs::read_to_string(&schedule_file) {

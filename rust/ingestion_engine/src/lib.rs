@@ -162,9 +162,9 @@ pub use quality::{
 pub use sources::{
     compute_ticker_diff, generate_mock_company_tickers, parse_sec_company_tickers_json,
     run_updater_cycle, DailyBar, DelistingEvent, FinnhubArticle, FinnhubClient, FinnhubWsClient,
-    FinnhubWsConfig, FinnhubWsMessage, FinnhubWsNewsItem, PolygonAggsResponse, PolygonWsClient,
-    PolygonWsConfig, PolygonWsMessage, PolygonWsRawTrade, SecEdgarFetcher, SecTickerRecord,
-    SecUpdaterConfig, TickerChange, TickerDiff, UpdaterRunReport,
+    FinnhubWsConfig, FinnhubWsMessage, FinnhubWsNewsItem, FomcFetcher, PolygonAggsResponse,
+    PolygonWsClient, PolygonWsConfig, PolygonWsMessage, PolygonWsRawTrade, SecEdgarFetcher,
+    SecTickerRecord, SecUpdaterConfig, TickerChange, TickerDiff, UpdaterRunReport,
 };
 pub use storage::{
     calculate_buffer_backoff, quarantine_failed_message, spawn_raw_archiver_worker,
