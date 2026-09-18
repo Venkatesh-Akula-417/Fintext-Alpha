@@ -277,6 +277,18 @@ pub struct SentimentResponse {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     #[schema(example = true)]
     pub is_current: Option<bool>,
+    /// Degraded service flag indicating fallback store was queried
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[schema(example = true)]
+    pub degraded: Option<bool>,
+    /// Underlying storage engine queried for this response ("questdb-hot", "timescale-primary", "in-memory-fallback")
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[schema(example = "timescale-primary")]
+    pub storage: Option<String>,
+    /// Diagnostic warning message if running in degraded fallback mode
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[schema(example = "QuestDB unreachable, serving from TimescaleDB primary - degraded mode")]
+    pub warning: Option<String>,
 }
 
 impl Default for SentimentResponse {
@@ -305,6 +317,9 @@ impl Default for SentimentResponse {
             valid_to: None,
             revision_number: None,
             is_current: None,
+            degraded: None,
+            storage: None,
+            warning: None,
         }
     }
 }

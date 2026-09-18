@@ -86,6 +86,9 @@ services:
         condition: service_healthy
     environment:
       - DATABASE_URL=postgres://fintext:fintext@postgres:5432/fintext_metadata
+      - TIMESCALE_DB_URL=postgres://fintext:fintext@postgres:5432/fintext_metadata
+      - ENABLE_TIMESCALEDB=true
+      - TIMESCALE_PRIMARY=true
       - QUESTDB_ENABLED=false
       - QUESTDB_URL=http://questdb:9000
       - KAFKA_BOOTSTRAP_SERVERS=kafka:9092

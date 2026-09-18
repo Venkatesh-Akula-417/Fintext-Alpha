@@ -17,7 +17,7 @@ use crate::users::{ApiKeyRegistry, UserRegistry};
 use crate::webhooks::WebhookRegistry;
 use sqlx::PgPool;
 use std::env;
-use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::sync::Arc;
 use tokio::sync::mpsc::Sender;
 
@@ -199,6 +199,92 @@ pub fn read_production_mode_from_config() -> bool {
     false
 }
 
+/// Returns true only if QuestDB is explicitly enabled via environment variable or config.yaml (default false for 4-core).
+pub fn is_questdb_enabled() -> bool {
+    if let Ok(val) = env::var("QUESTDB_ENABLED") {
+        let val = val.trim().to_lowercase();
+        return val == "1" || val == "true" || val == "yes" || val == "on";
+    }
+    read_questdb_enabled_from_config()
+}
+
+/// Reads `questdb.enabled` from configuration file (default false).
+pub fn read_questdb_enabled_from_config() -> bool {
+    let config_paths = [
+        env::var("CONFIG_PATH").unwrap_or_default(),
+        "config/config.yaml".to_string(),
+        "config.yaml".to_string(),
+        "../config/config.yaml".to_string(),
+        "../../config/config.yaml".to_string(),
+    ];
+
+    for path in &config_paths {
+        if path.is_empty() {
+            continue;
+        }
+        if let Ok(content) = std::fs::read_to_string(path) {
+            let mut in_questdb = false;
+            for line in content.lines() {
+                let trimmed = line.trim();
+                if trimmed.starts_with('#') || trimmed.is_empty() {
+                    continue;
+                }
+                if !line.starts_with(' ') && !line.starts_with('\t') {
+                    in_questdb = trimmed.starts_with("questdb:");
+                    continue;
+                }
+                if in_questdb && trimmed.starts_with("enabled:") {
+                    let parts: Vec<&str> = trimmed.split(':').collect();
+                    if parts.len() > 1 {
+                        let val = parts[1]
+                            .split('#')
+                            .next()
+                            .unwrap_or("")
+                            .trim()
+                            .trim_matches('"')
+                            .trim_matches('\'')
+                            .to_lowercase();
+                        return val == "true" || val == "1" || val == "yes";
+                    }
+                }
+            }
+        }
+    }
+    false
+}
+
+/// Returns the QuestDB URL from environment or configuration.
+pub fn get_questdb_url() -> String {
+    env::var("QUESTDB_URL").unwrap_or_else(|_| "http://localhost:9000".to_string())
+}
+
+/// Performs an asynchronous health check probe against QuestDB with a 2-second timeout.
+pub async fn get_questdb_health() -> bool {
+    if !is_questdb_enabled() {
+        return false;
+    }
+    let url = get_questdb_url();
+    let status_url = format!("{}/status", url.trim_end_matches('/'));
+    let client = match reqwest::Client::builder()
+        .timeout(std::time::Duration::from_millis(2000))
+        .build()
+    {
+        Ok(c) => c,
+        Err(_) => return false,
+    };
+
+    match client.get(&status_url).send().await {
+        Ok(resp) => resp.status().is_success(),
+        Err(_) => {
+            let exec_url = format!("{}/exec?query=SELECT%201;", url.trim_end_matches('/'));
+            match client.get(&exec_url).send().await {
+                Ok(resp) => resp.status().is_success(),
+                Err(_) => false,
+            }
+        }
+    }
+}
+
 /// Returns true only if QuestDB mock fallback is explicitly enabled AND production mode is inactive.
 pub fn is_questdb_mock_fallback_enabled() -> bool {
     if is_production_mode() {
@@ -309,6 +395,8 @@ pub struct AppState {
     pub db_circuit_breaker: Arc<crate::resilience::DbCircuitBreaker>,
     pub cache_config: crate::cache::CacheConfig,
     pub provider_health_store: Arc<crate::handlers::provider_health::ProviderHealthStore>,
+    pub timescale_fallback_count: Arc<AtomicU64>,
+    pub questdb_health_up: Arc<AtomicBool>,
 }
 
 fn read_enable_fix_bridge() -> bool {
@@ -447,6 +535,8 @@ impl AppState {
             provider_health_store: Arc::new(
                 crate::handlers::provider_health::ProviderHealthStore::new(),
             ),
+            timescale_fallback_count: Arc::new(AtomicU64::new(0)),
+            questdb_health_up: Arc::new(AtomicBool::new(is_questdb_enabled())),
         }
     }
 }
@@ -455,6 +545,34 @@ impl AppState {
     /// Returns true if TimescaleDB is designated as the primary sentiment query store.
     pub fn timescaledb_primary(&self) -> bool {
         self.timescaledb_primary || self.timescaledb_client.is_primary()
+    }
+
+    /// Returns true if QuestDB is enabled via environment variable or config.yaml.
+    pub fn questdb_enabled(&self) -> bool {
+        is_questdb_enabled()
+    }
+
+    /// Returns the configured QuestDB URL.
+    pub fn get_questdb_url(&self) -> String {
+        get_questdb_url()
+    }
+
+    /// Probes QuestDB health asynchronously and caches the state.
+    pub async fn check_questdb_health(&self) -> bool {
+        let healthy = get_questdb_health().await;
+        self.questdb_health_up.store(healthy, Ordering::Relaxed);
+        healthy
+    }
+
+    /// Increments the count of TimescaleDB fallbacks triggered due to QuestDB absence or error.
+    pub fn record_timescale_fallback(&self) {
+        self.timescale_fallback_count
+            .fetch_add(1, Ordering::Relaxed);
+    }
+
+    /// Returns the total number of TimescaleDB fallbacks recorded since startup.
+    pub fn get_timescale_fallback_count(&self) -> u64 {
+        self.timescale_fallback_count.load(Ordering::Relaxed)
     }
 
     /// Returns a clone of current ModelMetadata snapshot.
@@ -475,6 +593,16 @@ impl AppState {
     /// Returns current data provenance source list.
     pub fn get_data_provenance(&self) -> Vec<String> {
         self.model_metadata.read().unwrap().data_provenance.clone()
+    }
+
+    /// Returns true if in-memory fallback is permitted in the current mode.
+    pub fn allow_in_memory_fallback(&self) -> bool {
+        allow_in_memory_fallback()
+    }
+
+    /// Returns true if production mode guard is active.
+    pub fn is_production_mode(&self) -> bool {
+        is_production_mode()
     }
 }
 

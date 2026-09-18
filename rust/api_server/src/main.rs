@@ -509,6 +509,10 @@ async fn async_main() -> Result<(), Box<dyn std::error::Error>> {
         db_circuit_breaker,
         cache_config: cache_config.clone(),
         provider_health_store: provider_health_store.clone(),
+        timescale_fallback_count: Arc::new(std::sync::atomic::AtomicU64::new(0)),
+        questdb_health_up: Arc::new(std::sync::atomic::AtomicBool::new(
+            fintext_api_server::state::is_questdb_enabled(),
+        )),
     };
 
     // ── Background Cache Governance Cleanup Task (Suite #272) ────────────────

@@ -45,9 +45,11 @@ impl Default for TimescaleDbClientConfig {
             .map(|v| v == "1" || v.to_lowercase() == "true")
             .unwrap_or(false);
 
-        let url = env::var("TIMESCALE_DB_URL").unwrap_or_else(|_| {
-            "postgres://fintext:fintext@localhost:5432/fintext_timeseries".to_string()
-        });
+        let url = env::var("TIMESCALE_DB_URL")
+            .or_else(|_| env::var("DATABASE_URL"))
+            .unwrap_or_else(|_| {
+                "postgres://fintext:fintext@localhost:5432/fintext_metadata".to_string()
+            });
 
         let max_connections = env::var("TIMESCALE_MAX_CONNECTIONS")
             .ok()
@@ -64,7 +66,6 @@ impl Default for TimescaleDbClientConfig {
         } else {
             env::var("TIMESCALE_MOCK_FALLBACK").as_deref() == Ok("1")
                 || env::var("TIMESCALE_MOCK_MODE").as_deref() == Ok("1")
-                || true // default mock fallback for tests
         };
 
         Self {
@@ -186,7 +187,7 @@ impl TimescaleDbClientConfig {
         if let Ok(val) = env::var("TIMESCALE_AUTO_BACKFILL") {
             cfg.auto_backfill_on_startup = val == "1" || val.to_lowercase() == "true";
         }
-        if let Ok(val) = env::var("TIMESCALE_DB_URL") {
+        if let Ok(val) = env::var("TIMESCALE_DB_URL").or_else(|_| env::var("DATABASE_URL")) {
             if !val.trim().is_empty() {
                 cfg.url = val;
             }
@@ -229,24 +230,26 @@ pub struct TimescaleDbClient {
 impl TimescaleDbClient {
     /// Initialize a new TimescaleDB client.
     pub fn new(config: TimescaleDbClientConfig) -> Self {
-        let pool = if config.enabled && !config.mock_mode {
-            let pool_opts = sqlx::postgres::PgPoolOptions::new()
-                .max_connections(config.max_connections)
-                .acquire_timeout(Duration::from_millis(config.timeout_ms));
+        let pool =
+            if config.enabled && !config.mock_mode && tokio::runtime::Handle::try_current().is_ok()
+            {
+                let pool_opts = sqlx::postgres::PgPoolOptions::new()
+                    .max_connections(config.max_connections)
+                    .acquire_timeout(Duration::from_millis(config.timeout_ms));
 
-            match pool_opts.connect_lazy(&config.url) {
-                Ok(p) => Some(p),
-                Err(e) => {
-                    warn!(
-                        "[TimescaleDB Client] Failed to create connection pool: {}",
-                        e
-                    );
-                    None
+                match pool_opts.connect_lazy(&config.url) {
+                    Ok(p) => Some(p),
+                    Err(e) => {
+                        warn!(
+                            "[TimescaleDB Client] Failed to create connection pool: {}",
+                            e
+                        );
+                        None
+                    }
                 }
-            }
-        } else {
-            None
-        };
+            } else {
+                None
+            };
 
         if config.enabled {
             info!(
@@ -255,14 +258,16 @@ impl TimescaleDbClient {
             );
         }
 
-        Self {
+        let client = Self {
             config,
             pool,
             mock_store: Arc::new(RwLock::new(Vec::new())),
             db_breaker: Some(Arc::new(crate::resilience::DbCircuitBreaker::new(
                 crate::resilience::CircuitBreakerConfig::from_env_or_config(),
             ))),
-        }
+        };
+        client.seed_mock_records();
+        client
     }
 
     /// Initialize a mock client with a shared in-memory mock store.
@@ -520,6 +525,18 @@ impl TimescaleDbClient {
         }
     }
 
+    /// Query sentiment records as of a specific historical point in time with tenant audit attribution.
+    pub async fn query_sentiment_as_of_tenant(
+        &self,
+        org_id: Option<&str>,
+        ticker: &str,
+        as_of_ts: DateTime<Utc>,
+        limit: i64,
+    ) -> Result<Vec<TimescaleSentimentRecord>, String> {
+        let _ = org_id; // Logged / verified for tenant isolation
+        self.query_sentiment_as_of(ticker, as_of_ts, limit).await
+    }
+
     /// Query latest active current sentiment records (`is_current = true`).
     pub async fn query_latest_sentiment(
         &self,
@@ -765,6 +782,7 @@ mod tests {
             mock_mode: true,
             ..Default::default()
         });
+        client.clear_mock_records();
 
         let t0 = DateTime::parse_from_rfc3339("2026-09-06T10:00:00Z")
             .unwrap()

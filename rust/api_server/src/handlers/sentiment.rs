@@ -1,12 +1,12 @@
 //! ═══════════════════════════════════════════════════════════════════════════════
-//! FinText-Alpha-Vectorizer — Sentiment Query Handler (QuestDB SQL Engine)
+//! FinText-Alpha-Vectorizer — Sentiment Query Handler (TimescaleDB / QuestDB Engine)
 //! ═══════════════════════════════════════════════════════════════════════════════
 
 use crate::models::{SentimentQuery, SentimentResponse};
 use crate::state::AppState;
 use crate::storage::{QuestDbClient, QuestDbClientConfig};
 use axum::extract::{Query, State};
-use axum::http::{header, HeaderMap, HeaderValue, StatusCode};
+use axum::http::{HeaderMap, HeaderValue, StatusCode};
 use axum::response::{IntoResponse, Json, Response};
 use chrono::Utc;
 use once_cell::sync::Lazy;
@@ -18,20 +18,24 @@ static QUESTDB_CLIENT: Lazy<QuestDbClient> =
 /// Query Point-in-Time Asset Sentiment.
 ///
 /// Retrieves the aggregated point-in-time financial sentiment score, classification label,
-/// and publication timestamp for a given stock ticker from QuestDB.
+/// and publication timestamp for a given stock ticker from QuestDB hot cache or TimescaleDB primary store.
 #[utoipa::path(
     get,
     path = "/sentiment",
     tag = "Sentiment Analysis",
     params(
         ("ticker" = String, Query, description = "Target stock ticker symbol (e.g., 'AAPL', 'NVDA', 'MSFT')"),
-        ("date" = Option<String>, Query, description = "Optional date filter formatted as YYYY-MM-DD (defaults to latest available sentiment)")
+        ("date" = Option<String>, Query, description = "Optional date filter formatted as YYYY-MM-DD (defaults to latest available sentiment)"),
+        ("as_of_utc" = Option<String>, Query, description = "Optional point-in-time timestamp in RFC3339 format"),
+        ("language" = Option<String>, Query, description = "Optional target language filter")
     ),
     responses(
         (status = 200, description = "Sentiment signal retrieved successfully", body = SentimentResponse),
         (status = 400, description = "Invalid or empty ticker parameter", body = crate::auth::AuthErrorResponse),
         (status = 401, description = "Unauthorized (missing or invalid Bearer JWT)", body = crate::auth::AuthErrorResponse),
-        (status = 429, description = "Rate limit exceeded", body = crate::rate_limit::RateLimitErrorResponse)
+        (status = 404, description = "No sentiment signal found for requested asset", body = crate::auth::AuthErrorResponse),
+        (status = 429, description = "Rate limit exceeded", body = crate::rate_limit::RateLimitErrorResponse),
+        (status = 503, description = "Data store temporarily unreachable in strict production mode")
     ),
     security(
         ("bearerAuth" = [])
@@ -54,7 +58,7 @@ pub async fn get_sentiment_handler(
     };
 
     let date = params.date.filter(|d| !d.trim().is_empty());
-    let date_str = date.as_deref().unwrap_or_else(|| "LATEST");
+    let date_str = date.as_deref().unwrap_or("LATEST");
 
     // Validate as_of_utc format (RFC3339)
     if let Some(ref as_of_str) = params.as_of_utc {
@@ -84,34 +88,10 @@ pub async fn get_sentiment_handler(
     let pipeline_version = Some(state.get_pipeline_version());
     let data_provenance = Some(state.get_data_provenance());
 
-    let is_primary = state.timescaledb_primary();
-
-    // 1. If TimescaleDB is primary, query TimescaleDB first
-    if is_primary {
-        if let Some(resp) = fetch_timescaledb_sentiment(
-            &state,
-            &ticker,
-            params.as_of_utc.as_deref(),
-            date_str,
-            &requested_language,
-            model_version.clone(),
-            pipeline_version.clone(),
-            data_provenance.clone(),
-            true,
-        )
-        .await
-        {
-            return (StatusCode::OK, Json(resp)).into_response();
-        }
-        warn!(
-            "[TimescaleDB Primary] No sentiment record found for ticker '{}'. Falling back to QuestDB",
-            ticker
-        );
-    }
-
-    // Fast-path mock mode for isolated unit/integration tests without running Docker
+    // ─────────────────────────────────────────────────────────────────────────
+    // STEP 1: Fast-path mock mode for isolated unit/integration tests
+    // ─────────────────────────────────────────────────────────────────────────
     if crate::state::is_questdb_mock_fallback_enabled() {
-        // Check if ticker has SCD2 revisions registered in state
         if !state
             .scd2_registry
             .get_revisions_for_ticker(&ticker)
@@ -159,9 +139,16 @@ pub async fn get_sentiment_handler(
                     valid_to: record.valid_to,
                     revision_number: record.revision_number,
                     is_current: record.is_current,
+                    degraded: None,
+                    storage: Some("in-memory-scd2".to_string()),
+                    warning: None,
                     ..Default::default()
                 };
-                return (StatusCode::OK, Json(mock)).into_response();
+                let mut headers = HeaderMap::new();
+                headers.insert("X-Degraded", HeaderValue::from_static("false"));
+                headers.insert("X-Storage-Primary", HeaderValue::from_static("timescale"));
+                headers.insert("X-Cache", HeaderValue::from_static("in-memory-scd2"));
+                return (StatusCode::OK, headers, Json(mock)).into_response();
             } else {
                 let not_found_body = serde_json::json!({
                     "error": format!("No sentiment events found as of '{}' for ticker '{}'", params.as_of_utc.as_deref().unwrap_or("latest"), ticker),
@@ -172,7 +159,114 @@ pub async fn get_sentiment_handler(
                 return (StatusCode::NOT_FOUND, Json(not_found_body)).into_response();
             }
         }
+    }
 
+    // ─────────────────────────────────────────────────────────────────────────
+    // STEP 2: Probe QuestDB hot cache if enabled and healthy
+    // ─────────────────────────────────────────────────────────────────────────
+    let questdb_enabled = state.questdb_enabled();
+    let mut questdb_err_detail: Option<String> = None;
+
+    if questdb_enabled {
+        let is_healthy = state.check_questdb_health().await;
+        if is_healthy {
+            info!(
+                "Executing QuestDB hot-cache sentiment lookup for ticker='{}', date='{}'",
+                ticker, date_str
+            );
+            match QUESTDB_CLIENT
+                .query_latest_sentiment(&ticker, date.as_deref())
+                .await
+            {
+                Ok(Some(mut sentiment)) => {
+                    if sentiment.valid_from.is_none() {
+                        sentiment.valid_from = sentiment.db_commit_utc.clone();
+                    }
+                    if sentiment.revision_number.is_none() {
+                        sentiment.revision_number = Some(1);
+                    }
+                    if sentiment.is_current.is_none() {
+                        sentiment.is_current = Some(true);
+                    }
+                    if is_non_english {
+                        sentiment.language = requested_language.clone();
+                        sentiment.model_version =
+                            Some(crate::language::MULTILINGUAL_MODEL_VERSION.to_string());
+                    }
+                    if sentiment.model_version.is_none() {
+                        sentiment.model_version = model_version.clone();
+                    }
+                    if sentiment.pipeline_version.is_none() {
+                        sentiment.pipeline_version = pipeline_version.clone();
+                    }
+                    if sentiment.data_provenance.is_none() {
+                        sentiment.data_provenance = data_provenance.clone();
+                    }
+                    sentiment.degraded = None;
+                    sentiment.storage = Some("questdb-hot".to_string());
+                    sentiment.warning = None;
+
+                    let mut headers = HeaderMap::new();
+                    headers.insert("X-Degraded", HeaderValue::from_static("false"));
+                    headers.insert("X-Storage-Primary", HeaderValue::from_static("questdb"));
+                    headers.insert("X-Cache", HeaderValue::from_static("questdb-hot"));
+                    return (StatusCode::OK, headers, Json(sentiment)).into_response();
+                }
+                Ok(None) => {
+                    warn!("[QuestDB Hot Cache] No record found for ticker '{}'. Falling back to TimescaleDB primary", ticker);
+                }
+                Err(err) => {
+                    warn!("[QuestDB Hot Cache] Query failed for ticker '{}': {}. Falling back to TimescaleDB", ticker, err);
+                    questdb_err_detail = Some(err);
+                }
+            }
+        } else {
+            warn!("[QuestDB Hot Cache] Health probe failed/unreachable. Falling back to TimescaleDB primary");
+            questdb_err_detail = Some("QuestDB probe unreachable".to_string());
+        }
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // STEP 3: Fallback to TimescaleDB primary store (SCD2 bi-temporal)
+    // ─────────────────────────────────────────────────────────────────────────
+    state.record_timescale_fallback();
+    warn!(
+        "QuestDB unreachable or disabled, falling back to TimescaleDB primary, ticker='{}'",
+        ticker
+    );
+
+    if let Some(mut resp) = fetch_timescaledb_sentiment(
+        &state,
+        &ticker,
+        params.as_of_utc.as_deref(),
+        date_str,
+        &requested_language,
+        model_version.clone(),
+        pipeline_version.clone(),
+        data_provenance.clone(),
+        true,
+    )
+    .await
+    {
+        resp.degraded = Some(true);
+        resp.storage = Some("timescale-primary".to_string());
+        resp.warning = Some(
+            questdb_err_detail
+                .map(|e| format!("QuestDB unreachable or query error ({}); serving from TimescaleDB primary store - degraded mode", e))
+                .unwrap_or_else(|| "QuestDB unreachable or disabled; serving from TimescaleDB primary store - degraded mode".to_string()),
+        );
+
+        let mut headers = HeaderMap::new();
+        headers.insert("X-Degraded", HeaderValue::from_static("true"));
+        headers.insert("X-Storage-Primary", HeaderValue::from_static("timescale"));
+        headers.insert("X-Cache", HeaderValue::from_static("timescale-primary"));
+        return (StatusCode::OK, headers, Json(resp)).into_response();
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // STEP 4: In-Memory / Dev Mock Fallback (when allowed)
+    // ─────────────────────────────────────────────────────────────────────────
+    if state.allow_in_memory_fallback() || !crate::state::is_production_mode() {
         let (sentiment_score, sentiment_label, _raw_conf, effective_model) = if is_non_english {
             crate::language::compute_multilingual_sentiment(
                 &ticker,
@@ -215,7 +309,8 @@ pub async fn get_sentiment_handler(
             probabilities,
             signal_available_ts_us: Utc::now().timestamp_micros() as u64,
             data_quality_score,
-            message: "Mock fallback sentiment (QuestDB mock mode)".to_string(),
+            message: "Point-in-time sentiment signal retrieved (degraded fallback mode)"
+                .to_string(),
             model_version: Some(effective_model),
             pipeline_version,
             data_provenance,
@@ -227,118 +322,37 @@ pub async fn get_sentiment_handler(
             valid_to: None,
             revision_number: Some(1),
             is_current: Some(true),
+            degraded: Some(true),
+            storage: Some("in-memory-fallback".to_string()),
+            warning: Some(
+                "Synthetic development fallback; record not found in primary store".to_string(),
+            ),
             ..Default::default()
         };
-        return (StatusCode::OK, Json(mock)).into_response();
+
+        let mut headers = HeaderMap::new();
+        headers.insert("X-Degraded", HeaderValue::from_static("true"));
+        headers.insert("X-Storage-Primary", HeaderValue::from_static("timescale"));
+        headers.insert("X-Cache", HeaderValue::from_static("in-memory-fallback"));
+        return (StatusCode::OK, headers, Json(mock)).into_response();
     }
 
-    info!(
-        "Executing QuestDB sentiment lookup for ticker='{}', date='{}'",
-        ticker, date_str
-    );
+    // ─────────────────────────────────────────────────────────────────────────
+    // STEP 5: Strict Production 404 Not Found (no synthetic data in production)
+    // ─────────────────────────────────────────────────────────────────────────
+    let mut headers = HeaderMap::new();
+    headers.insert("X-Degraded", HeaderValue::from_static("true"));
+    headers.insert("X-Storage-Primary", HeaderValue::from_static("timescale"));
 
-    match QUESTDB_CLIENT
-        .query_latest_sentiment(&ticker, date.as_deref())
-        .await
-    {
-        Ok(Some(mut sentiment)) => {
-            if sentiment.valid_from.is_none() {
-                sentiment.valid_from = sentiment.db_commit_utc.clone();
-            }
-            if sentiment.revision_number.is_none() {
-                sentiment.revision_number = Some(1);
-            }
-            if sentiment.is_current.is_none() {
-                sentiment.is_current = Some(true);
-            }
-            if is_non_english {
-                sentiment.language = requested_language;
-                sentiment.model_version =
-                    Some(crate::language::MULTILINGUAL_MODEL_VERSION.to_string());
-            }
-            if sentiment.model_version.is_none() {
-                sentiment.model_version = model_version;
-            }
-            if sentiment.pipeline_version.is_none() {
-                sentiment.pipeline_version = pipeline_version;
-            }
-            if sentiment.data_provenance.is_none() {
-                sentiment.data_provenance = data_provenance;
-            }
-            (StatusCode::OK, Json(sentiment)).into_response()
-        }
-
-        Ok(None) => {
-            // If primary is false, check TimescaleDB fallback before returning 404
-            if !is_primary && state.timescaledb_client.is_enabled() {
-                if let Some(resp) = fetch_timescaledb_sentiment(
-                    &state,
-                    &ticker,
-                    params.as_of_utc.as_deref(),
-                    date_str,
-                    &requested_language,
-                    model_version.clone(),
-                    pipeline_version.clone(),
-                    data_provenance.clone(),
-                    false,
-                )
-                .await
-                {
-                    return (StatusCode::OK, Json(resp)).into_response();
-                }
-            }
-
-            let not_found_body = serde_json::json!({
-                "error": format!("No sentiment events found in QuestDB for ticker '{}'", ticker),
-                "ticker": ticker,
-                "date": date_str,
-                "status": "not_found"
-            });
-            (StatusCode::NOT_FOUND, Json(not_found_body)).into_response()
-        }
-        Err(err) => {
-            warn!("QuestDB error during sentiment lookup: {}", err);
-
-            // If primary is false, check TimescaleDB fallback before returning 503
-            if !is_primary && state.timescaledb_client.is_enabled() {
-                if let Some(resp) = fetch_timescaledb_sentiment(
-                    &state,
-                    &ticker,
-                    params.as_of_utc.as_deref(),
-                    date_str,
-                    &requested_language,
-                    model_version.clone(),
-                    pipeline_version.clone(),
-                    data_provenance.clone(),
-                    false,
-                )
-                .await
-                {
-                    return (StatusCode::OK, Json(resp)).into_response();
-                }
-            }
-
-            let mut headers = HeaderMap::new();
-            headers.insert(header::RETRY_AFTER, HeaderValue::from_static("5"));
-
-            let err_body = if crate::state::is_production_mode() {
-                serde_json::json!({
-                    "error": "Service Unavailable",
-                    "message": "Required data source unavailable in production mode.",
-                    "detail": err,
-                    "status": "service_unavailable"
-                })
-            } else {
-                serde_json::json!({
-                    "error": "QuestDB time-series database is temporarily unreachable.",
-                    "detail": err,
-                    "status": "service_unavailable"
-                })
-            };
-
-            (StatusCode::SERVICE_UNAVAILABLE, headers, Json(err_body)).into_response()
-        }
-    }
+    let not_found_body = serde_json::json!({
+        "error": format!("No sentiment events found for ticker '{}'", ticker),
+        "ticker": ticker,
+        "date": date_str,
+        "status": "not_found",
+        "degraded": true,
+        "storage": "timescale-primary"
+    });
+    (StatusCode::NOT_FOUND, headers, Json(not_found_body)).into_response()
 }
 
 /// Helper function to query TimescaleDB for sentiment record and format SentimentResponse.
@@ -414,6 +428,9 @@ async fn fetch_timescaledb_sentiment(
                 valid_to: record.valid_to.map(|dt| dt.to_rfc3339()),
                 revision_number: Some(record.revision_number),
                 is_current: Some(record.is_current),
+                degraded: Some(true),
+                storage: Some("timescale-primary".to_string()),
+                warning: None,
                 ..Default::default()
             });
         }
