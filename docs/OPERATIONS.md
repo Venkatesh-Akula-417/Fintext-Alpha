@@ -59,7 +59,7 @@ Provision the `fintext-alerting` secret with your institutional Slack Incoming W
 
 ```bash
 kubectl create secret generic fintext-alerting \
-  --from-literal=slack-webhook-url="https://hooks.slack.com/services/T00000000/B00000000/XXXXXXXXXXXXXXXXXXXXXXXX" \
+  --from-literal=slack-webhook-url="${SLACK_WEBHOOK_URL}" \
   --namespace=default
 ```
 
