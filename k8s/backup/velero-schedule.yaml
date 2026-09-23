@@ -1,0 +1,21 @@
+# FinText Alpha Vectorizer — Velero Cluster Backup Schedule
+apiVersion: velero.io/v1
+kind: Schedule
+metadata:
+  name: fintext-daily-backup
+  namespace: velero
+  labels:
+    app.kubernetes.io/name: velero-backup
+    app.kubernetes.io/part-of: fintext-alpha-vectorizer
+    app.kubernetes.io/component: disaster-recovery
+spec:
+  schedule: "0 2 * * *" # Daily at 02:00 UTC
+  template:
+    ttl: 720h0m0s # 30 Days Retention
+    includedNamespaces:
+      - default
+    labelSelector:
+      matchLabels:
+        app.kubernetes.io/part-of: fintext-alpha-vectorizer
+    snapshotVolumes: true
+    defaultVolumesToFsBackup: false

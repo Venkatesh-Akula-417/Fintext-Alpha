@@ -1,0 +1,122 @@
+# ══════════════════════════════════════════════════════════════════════════════
+# FinText-Alpha-Vectorizer — Monthly Automated Disaster Recovery & Restore Test
+# ══════════════════════════════════════════════════════════════════════════════
+# Runs on the 1st of every month at 03:00 UTC to execute an isolated, non-destructive
+# restoration drill. Spins up a temporary database, restores the latest S3 backup,
+# validates 4 PIT tables + sentiment_records count, verifies SCD2 valid_from/to intervals,
+# verifies org_id tenant isolation, tests historical backfill replay, measures RTO,
+# pushes metrics to Prometheus Pushgateway, and alerts if RTO > 4h or check fails.
+# ══════════════════════════════════════════════════════════════════════════════
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: restore-test-script
+  namespace: default
+  labels:
+    app.kubernetes.io/name: restore-test
+    app.kubernetes.io/part-of: fintext-alpha-vectorizer
+    app.kubernetes.io/component: disaster-recovery-drill
+data:
+  run_restore_test.sh: |
+    #!/usr/bin/env bash
+    set -euo pipefail
+
+    echo "================================================================="
+    echo " FinText Alpha Vectorizer — Monthly Automated Disaster Recovery Drill"
+    echo "================================================================="
+    echo "Timestamp: $(date -u +"%Y-%m-%dT%H:%M:%SZ")"
+    echo "SLA Targets: RTO <= 4h (14400s) | RPO <= 1h (3600s)"
+
+    python3 /scripts/test_restore.py --isolated-mode --json-report /tmp/restore_report.json
+
+    EXIT_CODE=$?
+    if [ ${EXIT_CODE} -eq 0 ]; then
+      echo ">> Disaster Recovery Drill Status: SUCCESS"
+      cat /tmp/restore_report.json
+    else
+      echo ">> Disaster Recovery Drill Status: FAILED (Exit Code ${EXIT_CODE})" >&2
+      exit ${EXIT_CODE}
+    fi
+
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: restore-test-cronjob
+  namespace: default
+  labels:
+    app.kubernetes.io/name: restore-test
+    app.kubernetes.io/part-of: fintext-alpha-vectorizer
+    app.kubernetes.io/component: disaster-recovery-drill
+spec:
+  schedule: "0 3 1 * *" # Monthly on the 1st at 03:00 UTC
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      backoffLimit: 1
+      template:
+        metadata:
+          labels:
+            app.kubernetes.io/name: restore-test
+            app.kubernetes.io/part-of: fintext-alpha-vectorizer
+            app.kubernetes.io/component: disaster-recovery-drill
+        spec:
+          restartPolicy: Never
+          containers:
+            - name: restore-test-runner
+              image: python:3.11-slim
+              imagePullPolicy: IfNotPresent
+              command: ["/bin/bash", "/scripts/run_restore_test.sh"]
+              env:
+                - name: POSTGRES_HOST
+                  value: "postgres-meta"
+                - name: POSTGRES_PORT
+                  value: "5432"
+                - name: POSTGRES_DB
+                  valueFrom:
+                    secretKeyRef:
+                      name: postgres-meta-secret
+                      key: POSTGRES_DB
+                - name: POSTGRES_USER
+                  valueFrom:
+                    secretKeyRef:
+                      name: postgres-meta-secret
+                      key: POSTGRES_USER
+                - name: POSTGRES_PASSWORD
+                  valueFrom:
+                    secretKeyRef:
+                      name: postgres-meta-secret
+                      key: POSTGRES_PASSWORD
+                - name: S3_BUCKET
+                  valueFrom:
+                    secretKeyRef:
+                      name: fintext-backup-s3-secret
+                      key: backup-s3-bucket
+                      optional: true
+                - name: PUSHGATEWAY_URL
+                  value: "http://prometheus-pushgateway:9091"
+              resources:
+                requests:
+                  cpu: "250m"
+                  memory: "512Mi"
+                limits:
+                  cpu: "1000m"
+                  memory: "2Gi"
+              volumeMounts:
+                - name: test-script-volume
+                  mountPath: /scripts
+                - name: app-scripts
+                  mountPath: /scripts/test_restore.py
+                  subPath: test_restore.py
+          volumes:
+            - name: test-script-volume
+              configMap:
+                name: restore-test-script
+                defaultMode: 0755
+            - name: app-scripts
+              configMap:
+                name: restore-test-python-script
+                defaultMode: 0755

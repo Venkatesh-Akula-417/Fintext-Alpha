@@ -315,6 +315,12 @@ The final electronic diagnostics before green flag departure. All 5 automated Gi
   - **Evidence**: `.github/workflows/model-validation.yml`, `.github/workflows/model-drift.yml`, `.github/workflows/pit-validation.yml`
   - **How to Verify**: GitHub Actions Workflows `model-validation`, `model-drift`, `pit-validation`
 
+- [x] **Check 7.5: Automated Disaster Recovery & Restore Test Suite (RPO <= 1h, RTO <= 4h)**
+  - **Status**: PASS
+  - **Description**: Non-destructive isolated database restoration drill executed via `scripts/test_restore.py`. Verifies row counts across 4 PIT tables (`instrument_master`, `filings_raw`, `filings_normalized`, `sentiment_records`), asserts SCD Type 2 bi-temporal validity, verifies multi-tenant `org_id` isolation, confirms historical replay via backfill worker, and certifies recovery time (measured RTO < 4h) and backup freshness (RPO target <= 1h).
+  - **Evidence**: `scripts/test_restore.py`, `scripts/test_backup_restore.sh`, `k8s/backups/restore-test-cronjob.yaml`, `docs/BACKUP_RESTORE_RUNBOOK.md`, `logs/backup_restore_test_report.json`
+  - **How to Verify**: `python scripts/test_restore.py --json-report logs/backup_restore_test_report.json`
+
 ---
 
 ## Final Certification & Sign-off

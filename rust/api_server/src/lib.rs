@@ -87,29 +87,30 @@ pub use digest::{
 };
 pub use handlers::health::readyz_handler;
 pub use handlers::{
-    activate_sandbox_handler, backfill_sentiment_handler, cancel_retraining_job_handler,
-    create_digest_subscription_handler, create_retention_policy_handler,
-    create_retraining_job_handler, create_transcript_handler, deactivate_sandbox_handler,
-    delete_digest_subscription_handler, delete_retention_policy_handler, delete_transcript_handler,
-    export_audit_logs_handler, export_csv_handler, export_parquet_handler, get_8k_events_handler,
-    get_audit_logs_handler, get_batch_sentiment_handler, get_digest_subscription_handler,
-    get_dlq_event_handler, get_earnings_surprise_handler, get_insider_trading_handler,
-    get_kafka_credentials_handler, get_model_card_handler, get_model_validation_handler,
-    get_news_article_handler, get_options_iv_handler, get_options_microstructure_handler,
-    get_options_vol_surface_handler, get_pit_certificate_handler, get_pit_replay_handler,
-    get_provenance_handler, get_provider_health_handler, get_put_call_ratio_handler,
-    get_retraining_job_handler, get_sandbox_status_handler, get_search_handler,
-    get_sector_sentiment_handler, get_sentiment_anomalies_handler,
-    get_sentiment_disagreement_handler, get_sentiment_entities_handler, get_sentiment_feed_handler,
-    get_sentiment_handler, get_sentiment_history_handler, get_sentiment_revisions_handler,
-    get_sla_status_handler, get_supply_chain_risk_handler, get_symbol_map_handler,
-    get_transcript_handler, get_unusual_options_handler, get_usage_stats_handler,
-    health_check_handler, list_dlq_events_handler, list_kafka_topics_handler,
-    list_news_articles_handler, list_retention_policies_handler, list_retraining_jobs_handler,
-    list_transcripts_handler, post_sentiment_revision_handler, post_signal_quality_report_handler,
-    purge_dlq_event_handler, reload_pit_data_handler, reprocess_dlq_event_handler,
-    revoke_kafka_credentials_handler, sla_latency_handler, transcribe_audio_handler,
-    trigger_digest_send_handler, websocket_handler,
+    activate_sandbox_handler, backfill_sentiment_handler, backup_status_handler,
+    cancel_retraining_job_handler, create_digest_subscription_handler,
+    create_retention_policy_handler, create_retraining_job_handler, create_transcript_handler,
+    deactivate_sandbox_handler, delete_digest_subscription_handler,
+    delete_retention_policy_handler, delete_transcript_handler, export_audit_logs_handler,
+    export_csv_handler, export_parquet_handler, get_8k_events_handler, get_audit_logs_handler,
+    get_batch_sentiment_handler, get_digest_subscription_handler, get_dlq_event_handler,
+    get_earnings_surprise_handler, get_insider_trading_handler, get_kafka_credentials_handler,
+    get_model_card_handler, get_model_validation_handler, get_news_article_handler,
+    get_options_iv_handler, get_options_microstructure_handler, get_options_vol_surface_handler,
+    get_pit_certificate_handler, get_pit_replay_handler, get_provenance_handler,
+    get_provider_health_handler, get_put_call_ratio_handler, get_retraining_job_handler,
+    get_sandbox_status_handler, get_search_handler, get_sector_sentiment_handler,
+    get_sentiment_anomalies_handler, get_sentiment_disagreement_handler,
+    get_sentiment_entities_handler, get_sentiment_feed_handler, get_sentiment_handler,
+    get_sentiment_history_handler, get_sentiment_revisions_handler, get_sla_status_handler,
+    get_supply_chain_risk_handler, get_symbol_map_handler, get_transcript_handler,
+    get_unusual_options_handler, get_usage_stats_handler, health_check_handler,
+    list_dlq_events_handler, list_kafka_topics_handler, list_news_articles_handler,
+    list_retention_policies_handler, list_retraining_jobs_handler, list_transcripts_handler,
+    post_sentiment_revision_handler, post_signal_quality_report_handler,
+    prometheus_metrics_handler, purge_dlq_event_handler, reload_pit_data_handler,
+    reprocess_dlq_event_handler, revoke_kafka_credentials_handler, sla_latency_handler,
+    transcribe_audio_handler, trigger_digest_send_handler, websocket_handler,
 };
 pub use ip_whitelist::{
     add_ip_whitelist_handler, delete_ip_whitelist_handler, get_ip_whitelist_handler,
@@ -554,6 +555,8 @@ pub fn create_app_with_state(state: AppState) -> Router {
         )
         .route("/health", get(health_check_handler))
         .route("/readyz", get(readyz_handler))
+        .route("/metrics", get(prometheus_metrics_handler))
+        .route("/admin/backup/status", get(backup_status_handler))
         .route("/auth/token", post(issue_token_handler))
         .route("/auth/register", any(gone_handler))
         .route("/news/articles/:id", any(gone_handler))
@@ -666,6 +669,8 @@ pub fn public_v1_router(state: AppState) -> Router<AppState> {
     let v1_public = Router::new()
         .route("/health", get(health_check_handler))
         .route("/readyz", get(readyz_handler))
+        .route("/metrics", get(prometheus_metrics_handler))
+        .route("/admin/backup/status", get(backup_status_handler))
         .route("/auth/token", post(issue_token_handler))
         .route("/auth/register", any(gone_handler))
         .route("/news/articles/:id", any(gone_handler))
@@ -739,6 +744,48 @@ mod tests {
         };
         state.user_registry.insert(user.clone());
         user
+    }
+
+    #[tokio::test]
+    async fn test_admin_backup_status_endpoint() {
+        let app = create_app();
+
+        let req = Request::builder()
+            .uri("/admin/backup/status")
+            .body(Body::empty())
+            .unwrap();
+
+        let response = app.oneshot(req).await.unwrap();
+        assert_eq!(response.status(), StatusCode::OK);
+
+        let body = response.into_body().collect().await.unwrap().to_bytes();
+        let json_val: serde_json::Value = serde_json::from_slice(&body).unwrap();
+
+        assert_eq!(json_val["status"], "healthy");
+        assert_eq!(json_val["rpo_target_hours"], 1.0);
+        assert_eq!(json_val["rto_target_hours"], 4.0);
+        assert_eq!(json_val["rpo_compliant"], true);
+        assert_eq!(json_val["rto_compliant"], true);
+    }
+
+    #[tokio::test]
+    async fn test_prometheus_metrics_endpoint() {
+        let app = create_app();
+
+        let req = Request::builder()
+            .uri("/metrics")
+            .body(Body::empty())
+            .unwrap();
+
+        let response = app.oneshot(req).await.unwrap();
+        assert_eq!(response.status(), StatusCode::OK);
+
+        let body = response.into_body().collect().await.unwrap().to_bytes();
+        let body_str = String::from_utf8(body.to_vec()).unwrap();
+
+        assert!(body_str.contains("fintext_backup_last_success_timestamp"));
+        assert!(body_str.contains("fintext_backup_age_hours"));
+        assert!(body_str.contains("fintext_restore_test_duration_seconds"));
     }
 
     #[tokio::test]

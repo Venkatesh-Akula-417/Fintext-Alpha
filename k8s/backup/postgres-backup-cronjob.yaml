@@ -35,7 +35,6 @@ data:
     BACKUP_PATH="${BACKUP_DIR}/${BACKUP_NAME}"
     CHECKSUM_PATH="${BACKUP_PATH}.sha256"
 
-    # Export password for pg_dump and psql operations
     export PGPASSWORD="${POSTGRES_PASSWORD}"
 
     echo "[1/6] Dumping PostgreSQL database '${POSTGRES_DB}' from host '${POSTGRES_HOST}'..."
@@ -90,7 +89,6 @@ data:
     echo "[6/6] Pruning backups older than ${RETENTION_DAYS:-7} days..."
     find "${BACKUP_DIR}" -type f -name "fintext_pg_meta_*.sql.gz*" -mtime "+${RETENTION_DAYS:-7}" -exec rm -f {} + || true
 
-    # Push Prometheus metrics if Pushgateway is reachable
     if [ -n "${PUSHGATEWAY_URL:-}" ]; then
       cat <<EOF | curl --silent --data-binary @- "${PUSHGATEWAY_URL}/metrics/job/fintext_postgres_backup" || true
 # HELP fintext_backup_last_success_timestamp Unix timestamp of latest successful backup

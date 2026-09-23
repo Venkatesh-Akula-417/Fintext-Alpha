@@ -123,12 +123,46 @@ data:
       - name: fintext_backup_governance_alerts
         rules:
           - alert: DatabaseBackupFailed
-            expr: backup_status{status="failed"} == 1
+            expr: backup_status{status="failed"} == 1 or fintext_backup_failure_total > 0
             for: 2m
             labels:
               severity: critical
               tier: backups
             annotations:
               summary: "Automated database backup job failed"
-              description: "Scheduled backup CronJob {{ $labels.job_name }} for component {{ $labels.component }} failed to upload snapshot."
+              description: "Scheduled backup CronJob {{ $labels.job_name }} failed to generate and upload archive."
               runbook_url: "https://docs.fintext.internal/ops/runbooks/database-backup-failure"
+
+          - alert: BackupAgeTooHigh
+            expr: fintext_backup_age_hours > 7
+            for: 15m
+            labels:
+              severity: critical
+              tier: backups
+            annotations:
+              summary: "PostgreSQL backup age exceeded 7 hours (RPO breach risk)"
+              description: "The latest verified backup is {{ $value | printf \"%.1f\" }} hours old (threshold > 7h; SLA target <= 1h)."
+              runbook_url: "https://docs.fintext.internal/ops/runbooks/database-backup-age"
+
+          - alert: RestoreTestOverdue
+            expr: fintext_restore_test_age_hours > 720
+            for: 1h
+            labels:
+              severity: warning
+              tier: disaster-recovery
+            annotations:
+              summary: "Automated disaster recovery restoration test drill is overdue (> 30 days)"
+              description: "No verified restore drill has been recorded in the past {{ $value | printf \"%.1f\" }} hours."
+              runbook_url: "https://docs.fintext.internal/ops/runbooks/restore-test-overdue"
+
+          - alert: RestoreTestFailed
+            expr: fintext_restore_test_failure_total > 0
+            for: 1m
+            labels:
+              severity: critical
+              tier: disaster-recovery
+            annotations:
+              summary: "Disaster recovery restoration test drill failed"
+              description: "Automated monthly restore test encountered validation error or breached 4h RTO threshold."
+              runbook_url: "https://docs.fintext.internal/ops/runbooks/restore-test-failure"
+

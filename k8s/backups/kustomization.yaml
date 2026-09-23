@@ -10,3 +10,4 @@ commonLabels:
 resources:
   - postgres-backup-cronjob.yaml
   - questdb-backup-cronjob.yaml
+  - restore-test-cronjob.yaml

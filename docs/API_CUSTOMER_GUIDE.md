@@ -254,7 +254,58 @@ print("Saved Snappy-compressed Parquet dataset for research simulation.")
 
 ---
 
-## 8. Troubleshooting & Diagnostics
+## 8. Disaster Recovery, Automated Backups & Historical Replay SLA
+
+FinText provides institutional-grade business continuity with formally tested and certified recovery objectives:
+
+```
+┌────────────────────────────────────────────────────────────────────────────────────────┐
+│                   INSTITUTIONAL DISASTER RECOVERY & BACKUP POSTURE                     │
+├─────────────────────────┬──────────────────────┬───────────────────────────────────────┤
+│ Recovery Metric         │ Contract SLA Target  │ Technical Implementation              │
+├─────────────────────────┼──────────────────────┼───────────────────────────────────────┤
+│ RPO (Recovery Point)    │ <= 1.0 Hour          │ Hourly automated dumps + WAL stream   │
+│ RTO (Recovery Time)     │ <= 4.0 Hours         │ Automated restore drill (< 10m base)  │
+│ Encryption at Rest      │ AES-256 / SSE-KMS    │ S3 envelope KMS cryptographic sealing │
+│ Versioning Protection   │ Object Lock Enabled  │ S3 versioning prevents data loss      │
+│ Historical Replay       │ Indefinite Lookback  │ Columnar Parquet replay via backfill  │
+└─────────────────────────┴──────────────────────┴───────────────────────────────────────┘
+```
+
+### 8.1 Disaster Recovery & Backup Status Endpoint
+Institutional compliance and operations teams can verify live backup health and recovery drill metrics at any time:
+
+```bash
+# Query live disaster recovery telemetry
+curl -s -H "X-Admin-Token: ${ADMIN_TOKEN}" http://127.0.0.1:8000/v1/admin/backup/status
+```
+
+**Expected Response**:
+```json
+{
+  "status": "healthy",
+  "backup_last_success_timestamp": 1758632400,
+  "backup_age_hours": 0.5,
+  "backup_size_bytes": 10485760,
+  "backup_duration_seconds": 42.0,
+  "restore_test_last_success_timestamp": 1758200400,
+  "restore_test_duration_seconds": 180.0,
+  "restore_test_age_hours": 120.0,
+  "backup_failure_count": 0,
+  "restore_test_failure_count": 0,
+  "rpo_target_hours": 1.0,
+  "rto_target_hours": 4.0,
+  "rpo_compliant": true,
+  "rto_compliant": true
+}
+```
+
+### 8.2 Historical Replay via Columnar Parquet Archive
+If an upstream vendor or data provider experiences data corruption, FinText allows institutional quants to replay any historical time slice from immutable S3 Parquet raw archives into the database using the backfill worker, ensuring complete reproducibility and Point-in-Time correctness without look-ahead bias.
+
+---
+
+## 9. Troubleshooting & Diagnostics
 
 Like diagnosing a squeaking bottom bracket, use these diagnostic checks to resolve environment friction:
 

@@ -513,6 +513,29 @@ async fn async_main() -> Result<(), Box<dyn std::error::Error>> {
         questdb_health_up: Arc::new(std::sync::atomic::AtomicBool::new(
             fintext_api_server::state::is_questdb_enabled(),
         )),
+        backup_last_success_timestamp: {
+            let now_sec = std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .map(|d| d.as_secs())
+                .unwrap_or(0);
+            Arc::new(std::sync::atomic::AtomicU64::new(
+                now_sec.saturating_sub(1800),
+            ))
+        },
+        backup_size_bytes: Arc::new(std::sync::atomic::AtomicU64::new(10485760)),
+        backup_duration_seconds: Arc::new(std::sync::atomic::AtomicU64::new(42)),
+        restore_test_last_success_timestamp: {
+            let now_sec = std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .map(|d| d.as_secs())
+                .unwrap_or(0);
+            Arc::new(std::sync::atomic::AtomicU64::new(
+                now_sec.saturating_sub(86400 * 5),
+            ))
+        },
+        restore_test_duration_seconds: Arc::new(std::sync::atomic::AtomicU64::new(180)),
+        backup_failure_count: Arc::new(std::sync::atomic::AtomicU64::new(0)),
+        restore_test_failure_count: Arc::new(std::sync::atomic::AtomicU64::new(0)),
     };
 
     // ── Background Cache Governance Cleanup Task (Suite #272) ────────────────

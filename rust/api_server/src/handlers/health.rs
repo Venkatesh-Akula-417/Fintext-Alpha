@@ -130,3 +130,94 @@ pub async fn readyz_handler(
         )
     }
 }
+
+/// Administrative Backup & Disaster Recovery Telemetry Probe.
+#[utoipa::path(
+    get,
+    path = "/admin/backup/status",
+    tag = "Admin",
+    responses(
+        (status = 200, description = "Backup & Disaster Recovery operational telemetry", body = BackupStatus)
+    )
+)]
+pub async fn backup_status_handler(
+    State(state): State<AppState>,
+) -> Json<crate::state::BackupStatus> {
+    Json(state.get_backup_status())
+}
+
+/// Prometheus Metrics Exporter Endpoint (/metrics).
+pub async fn prometheus_metrics_handler(
+    State(state): State<AppState>,
+) -> (
+    StatusCode,
+    [(axum::http::header::HeaderName, &'static str); 1],
+    String,
+) {
+    let status = state.get_backup_status();
+    let questdb_up = if state
+        .questdb_health_up
+        .load(std::sync::atomic::Ordering::Relaxed)
+    {
+        1
+    } else {
+        0
+    };
+    let fallback_total = state.get_timescale_fallback_count();
+
+    let output = format!(
+        "# HELP fintext_backup_last_success_timestamp Unix timestamp of latest successful backup\n\
+         # TYPE fintext_backup_last_success_timestamp gauge\n\
+         fintext_backup_last_success_timestamp {}\n\
+         # HELP fintext_backup_age_hours Hours elapsed since latest successful backup\n\
+         # TYPE fintext_backup_age_hours gauge\n\
+         fintext_backup_age_hours {}\n\
+         # HELP fintext_backup_size_bytes Compressed size of latest backup archive in bytes\n\
+         # TYPE fintext_backup_size_bytes gauge\n\
+         fintext_backup_size_bytes {}\n\
+         # HELP fintext_backup_duration_seconds Execution duration of latest backup in seconds\n\
+         # TYPE fintext_backup_duration_seconds gauge\n\
+         fintext_backup_duration_seconds {}\n\
+         # HELP fintext_restore_test_last_success_timestamp Unix timestamp of latest successful restore drill\n\
+         # TYPE fintext_restore_test_last_success_timestamp gauge\n\
+         fintext_restore_test_last_success_timestamp {}\n\
+         # HELP fintext_restore_test_duration_seconds Measured RTO duration of latest restore drill\n\
+         # TYPE fintext_restore_test_duration_seconds gauge\n\
+         fintext_restore_test_duration_seconds {}\n\
+         # HELP fintext_restore_test_age_hours Hours elapsed since latest restore drill\n\
+         # TYPE fintext_restore_test_age_hours gauge\n\
+         fintext_restore_test_age_hours {}\n\
+         # HELP fintext_backup_failure_total Total count of failed backup attempts\n\
+         # TYPE fintext_backup_failure_total counter\n\
+         fintext_backup_failure_total {}\n\
+         # HELP fintext_restore_test_failure_total Total count of failed restore drills\n\
+         # TYPE fintext_restore_test_failure_total counter\n\
+         fintext_restore_test_failure_total {}\n\
+         # HELP fintext_timescale_fallback_total Total count of TimescaleDB fallbacks triggered\n\
+         # TYPE fintext_timescale_fallback_total counter\n\
+         fintext_timescale_fallback_total {}\n\
+         # HELP fintext_questdb_health_up Binary indicator whether QuestDB time-series node is reachable\n\
+         # TYPE fintext_questdb_health_up gauge\n\
+         fintext_questdb_health_up {}\n",
+        status.backup_last_success_timestamp,
+        status.backup_age_hours,
+        status.backup_size_bytes,
+        status.backup_duration_seconds,
+        status.restore_test_last_success_timestamp,
+        status.restore_test_duration_seconds,
+        status.restore_test_age_hours,
+        status.backup_failure_count,
+        status.restore_test_failure_count,
+        fallback_total,
+        questdb_up
+    );
+
+    (
+        StatusCode::OK,
+        [(
+            axum::http::header::CONTENT_TYPE,
+            "text/plain; version=0.0.4; charset=utf-8",
+        )],
+        output,
+    )
+}
