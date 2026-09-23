@@ -107,7 +107,7 @@ pub use handlers::{
     get_unusual_options_handler, get_usage_stats_handler, health_check_handler,
     list_dlq_events_handler, list_kafka_topics_handler, list_news_articles_handler,
     list_retention_policies_handler, list_retraining_jobs_handler, list_transcripts_handler,
-    post_sentiment_revision_handler, post_signal_quality_report_handler,
+    load_test_status_handler, post_sentiment_revision_handler, post_signal_quality_report_handler,
     prometheus_metrics_handler, purge_dlq_event_handler, reload_pit_data_handler,
     reprocess_dlq_event_handler, revoke_kafka_credentials_handler, sla_latency_handler,
     transcribe_audio_handler, trigger_digest_send_handler, websocket_handler,
@@ -557,6 +557,7 @@ pub fn create_app_with_state(state: AppState) -> Router {
         .route("/readyz", get(readyz_handler))
         .route("/metrics", get(prometheus_metrics_handler))
         .route("/admin/backup/status", get(backup_status_handler))
+        .route("/admin/load_test/status", get(load_test_status_handler))
         .route("/auth/token", post(issue_token_handler))
         .route("/auth/register", any(gone_handler))
         .route("/news/articles/:id", any(gone_handler))
@@ -671,6 +672,7 @@ pub fn public_v1_router(state: AppState) -> Router<AppState> {
         .route("/readyz", get(readyz_handler))
         .route("/metrics", get(prometheus_metrics_handler))
         .route("/admin/backup/status", get(backup_status_handler))
+        .route("/admin/load_test/status", get(load_test_status_handler))
         .route("/auth/token", post(issue_token_handler))
         .route("/auth/register", any(gone_handler))
         .route("/news/articles/:id", any(gone_handler))
@@ -6972,5 +6974,27 @@ mod tests {
         assert!(resp.metrics.macro_f1 >= 0.80);
         assert_eq!(resp.calibration_curve.len(), 10);
         assert!(resp.expected_calibration_error <= 0.15);
+    }
+
+    #[tokio::test]
+    async fn test_admin_load_test_status_endpoint() {
+        let app = create_app();
+
+        let req = Request::builder()
+            .method("GET")
+            .uri("/admin/load_test/status")
+            .body(Body::empty())
+            .unwrap();
+
+        let res = app.oneshot(req).await.unwrap();
+        assert_eq!(res.status(), StatusCode::OK);
+
+        let body = res.into_body().collect().await.unwrap().to_bytes();
+        let status: state::ApiPerformanceStatus = serde_json::from_slice(&body).unwrap();
+        assert_eq!(status.status, "healthy");
+        assert!(status.p95_latency_ms <= 500.0);
+        assert!(status.p99_latency_ms <= 1000.0);
+        assert!(status.p95_compliant);
+        assert!(status.error_rate_compliant);
     }
 }

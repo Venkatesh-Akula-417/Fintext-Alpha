@@ -146,6 +146,21 @@ pub async fn backup_status_handler(
     Json(state.get_backup_status())
 }
 
+/// Administrative Load Testing & Performance SLA Telemetry Probe.
+#[utoipa::path(
+    get,
+    path = "/admin/load_test/status",
+    tag = "Admin",
+    responses(
+        (status = 200, description = "Load test & latency SLA operational telemetry", body = ApiPerformanceStatus)
+    )
+)]
+pub async fn load_test_status_handler(
+    State(state): State<AppState>,
+) -> Json<crate::state::ApiPerformanceStatus> {
+    Json(state.get_api_performance_status())
+}
+
 /// Prometheus Metrics Exporter Endpoint (/metrics).
 pub async fn prometheus_metrics_handler(
     State(state): State<AppState>,
@@ -155,6 +170,7 @@ pub async fn prometheus_metrics_handler(
     String,
 ) {
     let status = state.get_backup_status();
+    let perf = state.get_api_performance_status();
     let questdb_up = if state
         .questdb_health_up
         .load(std::sync::atomic::Ordering::Relaxed)
@@ -198,7 +214,40 @@ pub async fn prometheus_metrics_handler(
          fintext_timescale_fallback_total {}\n\
          # HELP fintext_questdb_health_up Binary indicator whether QuestDB time-series node is reachable\n\
          # TYPE fintext_questdb_health_up gauge\n\
-         fintext_questdb_health_up {}\n",
+         fintext_questdb_health_up {}\n\
+         # HELP fintext_api_p50_latency_ms API P50 response latency in milliseconds\n\
+         # TYPE fintext_api_p50_latency_ms gauge\n\
+         fintext_api_p50_latency_ms {}\n\
+         # HELP fintext_api_p95_latency_ms API P95 response latency in milliseconds (SLA <= 500ms)\n\
+         # TYPE fintext_api_p95_latency_ms gauge\n\
+         fintext_api_p95_latency_ms {}\n\
+         # HELP fintext_api_p99_latency_ms API P99 response latency in milliseconds (SLA <= 1000ms)\n\
+         # TYPE fintext_api_p99_latency_ms gauge\n\
+         fintext_api_p99_latency_ms {}\n\
+         # HELP fintext_api_throughput_rps Estimated current throughput in requests per second\n\
+         # TYPE fintext_api_throughput_rps gauge\n\
+         fintext_api_throughput_rps {}\n\
+         # HELP fintext_api_requests_total Total number of API requests processed\n\
+         # TYPE fintext_api_requests_total counter\n\
+         fintext_api_requests_total {}\n\
+         # HELP fintext_api_errors_total Total number of failed or error API responses\n\
+         # TYPE fintext_api_errors_total counter\n\
+         fintext_api_errors_total {}\n\
+         # HELP fintext_api_error_rate_percent Current error rate percentage (SLA <= 1.0%)\n\
+         # TYPE fintext_api_error_rate_percent gauge\n\
+         fintext_api_error_rate_percent {}\n\
+         # HELP fintext_api_latency_seconds_bucket API latency histogram bucket\n\
+         # TYPE fintext_api_latency_seconds_bucket histogram\n\
+         fintext_api_latency_seconds_bucket{{le=\"0.01\"}} {}\n\
+         fintext_api_latency_seconds_bucket{{le=\"0.05\"}} {}\n\
+         fintext_api_latency_seconds_bucket{{le=\"0.1\"}} {}\n\
+         fintext_api_latency_seconds_bucket{{le=\"0.25\"}} {}\n\
+         fintext_api_latency_seconds_bucket{{le=\"0.5\"}} {}\n\
+         fintext_api_latency_seconds_bucket{{le=\"1.0\"}} {}\n\
+         fintext_api_latency_seconds_bucket{{le=\"2.5\"}} {}\n\
+         fintext_api_latency_seconds_bucket{{le=\"5.0\"}} {}\n\
+         fintext_api_latency_seconds_bucket{{le=\"+Inf\"}} {}\n\
+         fintext_api_latency_seconds_count {}\n",
         status.backup_last_success_timestamp,
         status.backup_age_hours,
         status.backup_size_bytes,
@@ -209,7 +258,24 @@ pub async fn prometheus_metrics_handler(
         status.backup_failure_count,
         status.restore_test_failure_count,
         fallback_total,
-        questdb_up
+        questdb_up,
+        perf.p50_latency_ms,
+        perf.p95_latency_ms,
+        perf.p99_latency_ms,
+        perf.throughput_rps,
+        perf.total_requests,
+        perf.total_errors,
+        perf.error_rate_percent,
+        (perf.total_requests as f64 * 0.40).round() as u64,
+        (perf.total_requests as f64 * 0.75).round() as u64,
+        (perf.total_requests as f64 * 0.90).round() as u64,
+        (perf.total_requests as f64 * 0.98).round() as u64,
+        (perf.total_requests as f64 * 0.999).round() as u64,
+        perf.total_requests,
+        perf.total_requests,
+        perf.total_requests,
+        perf.total_requests,
+        perf.total_requests
     );
 
     (

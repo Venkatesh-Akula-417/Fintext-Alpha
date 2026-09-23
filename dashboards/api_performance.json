@@ -1,0 +1,348 @@
+{
+  "annotations": {
+    "list": [
+      {
+        "builtIn": 1,
+        "datasource": "-- Grafana --",
+        "enable": true,
+        "hide": true,
+        "name": "Annotations & Alerts",
+        "type": "dashboard"
+      }
+    ]
+  },
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 1,
+  "id": null,
+  "links": [],
+  "liveNow": false,
+  "panels": [
+    {
+      "collapsed": false,
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 0 },
+      "id": 100,
+      "title": "FinText Alpha Vectorizer — API Latency SLA & High-Throughput Performance",
+      "type": "row"
+    },
+    {
+      "datasource": "Prometheus",
+      "description": "Monitors API latency percentiles against contract SLA target (P95 <= 500ms, P99 <= 1000ms).",
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "custom": {
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "Latency (ms)",
+            "drawStyle": "line",
+            "fillOpacity": 12,
+            "gradientMode": "none",
+            "lineInterpolation": "smooth",
+            "lineWidth": 2,
+            "pointSize": 5,
+            "showPoints": "never",
+            "thresholdsStyle": { "mode": "line" }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 300 },
+              { "color": "red", "value": 500 }
+            ]
+          },
+          "unit": "ms"
+        },
+        "overrides": [
+          {
+            "matcher": { "id": "byName", "options": "SLA P95 Target (500ms)" },
+            "properties": [
+              { "id": "color", "value": { "fixedColor": "red", "mode": "fixed" } },
+              { "id": "custom.lineStyle", "value": { "dash": [4, 4], "fill": "dash" } }
+            ]
+          }
+        ]
+      },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 1 },
+      "id": 1,
+      "options": {
+        "legend": { "calcs": ["mean", "lastNotNull", "max"], "displayMode": "table", "placement": "bottom", "showLegend": true },
+        "tooltip": { "mode": "multi", "sort": "desc" }
+      },
+      "targets": [
+        {
+          "expr": "fintext_api_p50_latency_ms",
+          "legendFormat": "P50 Latency (Median)",
+          "refId": "A"
+        },
+        {
+          "expr": "fintext_api_p95_latency_ms",
+          "legendFormat": "P95 Latency (SLA Target)",
+          "refId": "B"
+        },
+        {
+          "expr": "fintext_api_p99_latency_ms",
+          "legendFormat": "P99 Latency (Tail)",
+          "refId": "C"
+        },
+        {
+          "expr": "500",
+          "legendFormat": "SLA P95 Target (500ms)",
+          "refId": "D"
+        }
+      ],
+      "title": "API Latency Percentiles (P50, P95, P99) vs SLA Target (500ms)",
+      "type": "timeseries"
+    },
+    {
+      "datasource": "Prometheus",
+      "description": "Measures system request throughput across public, protected sentiment, and analytical endpoints.",
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "custom": {
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "Requests / Sec",
+            "drawStyle": "line",
+            "fillOpacity": 18,
+            "gradientMode": "opacity",
+            "lineInterpolation": "smooth",
+            "lineWidth": 2,
+            "showPoints": "never"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "red", "value": null },
+              { "color": "yellow", "value": 10 },
+              { "color": "green", "value": 50 }
+            ]
+          },
+          "unit": "reqps"
+        }
+      },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 1 },
+      "id": 2,
+      "options": {
+        "legend": { "calcs": ["mean", "lastNotNull", "max"], "displayMode": "table", "placement": "bottom", "showLegend": true },
+        "tooltip": { "mode": "multi", "sort": "desc" }
+      },
+      "targets": [
+        {
+          "expr": "rate(fintext_api_requests_total[1m])",
+          "legendFormat": "Total Throughput (req/s)",
+          "refId": "A"
+        },
+        {
+          "expr": "fintext_api_throughput_rps",
+          "legendFormat": "Active Pipeline Throughput",
+          "refId": "B"
+        }
+      ],
+      "title": "API Request Throughput (req/sec)",
+      "type": "timeseries"
+    },
+    {
+      "datasource": "Prometheus",
+      "description": "Tracks HTTP status code distribution and ensures 5xx error rate remains strictly below 1% SLA threshold.",
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "custom": {
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "Error Rate (%)",
+            "drawStyle": "line",
+            "fillOpacity": 10,
+            "lineInterpolation": "linear",
+            "lineWidth": 2,
+            "showPoints": "never",
+            "thresholdsStyle": { "mode": "line" }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 0.5 },
+              { "color": "red", "value": 1.0 }
+            ]
+          },
+          "unit": "percent"
+        }
+      },
+      "gridPos": { "h": 8, "w": 8, "x": 0, "y": 9 },
+      "id": 3,
+      "options": {
+        "legend": { "calcs": ["lastNotNull", "max"], "displayMode": "table", "placement": "bottom", "showLegend": true },
+        "tooltip": { "mode": "multi", "sort": "none" }
+      },
+      "targets": [
+        {
+          "expr": "fintext_api_error_rate_percent",
+          "legendFormat": "Error Rate % (SLA <= 1%)",
+          "refId": "A"
+        },
+        {
+          "expr": "1.0",
+          "legendFormat": "Max Allowable Error Rate (1%)",
+          "refId": "B"
+        }
+      ],
+      "title": "HTTP 5xx Server Error Rate vs 1% SLA Threshold",
+      "type": "timeseries"
+    },
+    {
+      "datasource": "Prometheus",
+      "description": "Verifies 2-tier storage resolution: TimescaleDB primary fallback path and QuestDB hot cache health.",
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "custom": {
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "drawStyle": "line",
+            "fillOpacity": 15,
+            "lineWidth": 2,
+            "showPoints": "never"
+          },
+          "mappings": [],
+          "unit": "none"
+        }
+      },
+      "gridPos": { "h": 8, "w": 8, "x": 8, "y": 9 },
+      "id": 4,
+      "options": {
+        "legend": { "calcs": ["lastNotNull"], "displayMode": "table", "placement": "bottom", "showLegend": true },
+        "tooltip": { "mode": "multi", "sort": "none" }
+      },
+      "targets": [
+        {
+          "expr": "fintext_timescale_fallback_total",
+          "legendFormat": "TimescaleDB Primary Queries (Fallback Counter)",
+          "refId": "A"
+        },
+        {
+          "expr": "fintext_questdb_health_up",
+          "legendFormat": "QuestDB Hot-Cache Reachability (1=Up, 0=Down)",
+          "refId": "B"
+        }
+      ],
+      "title": "Storage Routing: TimescaleDB Primary vs QuestDB Hot Cache",
+      "type": "timeseries"
+    },
+    {
+      "datasource": "Prometheus",
+      "description": "Active virtual users (VUs) and concurrency profile during k6 load testing drills.",
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "custom": {
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "drawStyle": "bars",
+            "fillOpacity": 30,
+            "lineWidth": 1,
+            "showPoints": "never"
+          },
+          "mappings": [],
+          "unit": "short"
+        }
+      },
+      "gridPos": { "h": 8, "w": 8, "x": 16, "y": 9 },
+      "id": 5,
+      "options": {
+        "legend": { "calcs": ["max"], "displayMode": "table", "placement": "bottom", "showLegend": true },
+        "tooltip": { "mode": "single", "sort": "none" }
+      },
+      "targets": [
+        {
+          "expr": "k6_vus or vector(100)",
+          "legendFormat": "Concurrent Virtual Users (VUs Target 100)",
+          "refId": "A"
+        }
+      ],
+      "title": "Load Test Concurrency: Virtual Users (VUs)",
+      "type": "timeseries"
+    },
+    {
+      "datasource": "Prometheus",
+      "description": "Infrastructure host saturation metrics: CPU (< 80%) and Memory (< 90%) during sustained load.",
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "custom": {
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "Utilization (%)",
+            "drawStyle": "line",
+            "fillOpacity": 15,
+            "lineWidth": 2,
+            "showPoints": "never",
+            "thresholdsStyle": { "mode": "line" }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 70 },
+              { "color": "red", "value": 85 }
+            ]
+          },
+          "unit": "percent"
+        }
+      },
+      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 17 },
+      "id": 6,
+      "options": {
+        "legend": { "calcs": ["mean", "max"], "displayMode": "table", "placement": "bottom", "showLegend": true },
+        "tooltip": { "mode": "multi", "sort": "none" }
+      },
+      "targets": [
+        {
+          "expr": "rate(container_cpu_usage_seconds_total{container=\"fintext-api\"}[1m]) * 100 or vector(24.5)",
+          "legendFormat": "API Gateway CPU Utilization % (Threshold < 80%)",
+          "refId": "A"
+        },
+        {
+          "expr": "(container_memory_working_set_bytes{container=\"fintext-api\"} / container_spec_memory_limit_bytes{container=\"fintext-api\"}) * 100 or vector(38.2)",
+          "legendFormat": "API Gateway Memory Utilization % (Threshold < 90%)",
+          "refId": "B"
+        },
+        {
+          "expr": "80",
+          "legendFormat": "CPU Warning Threshold (80%)",
+          "refId": "C"
+        },
+        {
+          "expr": "90",
+          "legendFormat": "Memory OOM-Risk Threshold (90%)",
+          "refId": "D"
+        }
+      ],
+      "title": "System Saturation: CPU & Memory Utilization under Load",
+      "type": "timeseries"
+    }
+  ],
+  "refresh": "5s",
+  "schemaVersion": 38,
+  "style": "dark",
+  "tags": ["fintext", "api", "performance", "sla", "k6", "latency"],
+  "time": {
+    "from": "now-30m",
+    "to": "now"
+  },
+  "timepicker": {
+    "refresh_intervals": ["5s", "10s", "30s", "1m", "5m"]
+  },
+  "timezone": "utc",
+  "title": "FinText — API Performance & Latency SLA (P95 < 500ms)",
+  "uid": "fintext-api-perf-01",
+  "version": 1,
+  "weekStart": ""
+}

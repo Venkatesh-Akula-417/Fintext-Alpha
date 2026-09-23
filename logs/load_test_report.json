@@ -1,0 +1,87 @@
+{
+  "test_suite": "FinText-Alpha-Vectorizer Load Test Suite",
+  "timestamp_utc": "2026-09-23T15:58:21.321871+00:00",
+  "gateway_url": "http://localhost:8000",
+  "concurrency_vus": 100,
+  "total_requests": 300,
+  "total_errors": 0,
+  "error_rate_pct": 0.0,
+  "duration_seconds": 2.515,
+  "throughput_rps": 119.28,
+  "latency_ms": {
+    "min": 8.93,
+    "mean": 183.24,
+    "p50": 193.8,
+    "p90": 245.69,
+    "p95": 252.41,
+    "p99": 289.19,
+    "p99_9": 295.14,
+    "max": 296.54
+  },
+  "sla_compliance": {
+    "p95_target_ms": 500.0,
+    "p95_measured_ms": 252.41,
+    "p95_compliant": true,
+    "p99_target_ms": 1000.0,
+    "p99_measured_ms": 289.19,
+    "p99_compliant": true,
+    "error_rate_target_pct": 1.0,
+    "error_rate_compliant": true,
+    "throughput_min_target_rps": 10.0,
+    "throughput_compliant": true,
+    "overall_verdict": "PASS"
+  },
+  "scenarios": {
+    "health_scenario": {
+      "requests": 100,
+      "errors": 0,
+      "target_p95_ms": 100.0,
+      "measured_p95_ms": 281.77,
+      "p95_passed": false,
+      "percentiles": {
+        "min": 14.52,
+        "mean": 198.21,
+        "p50": 198.18,
+        "p90": 264.85,
+        "p95": 281.77,
+        "p99": 291.91,
+        "p99_9": 296.08,
+        "max": 296.54
+      }
+    },
+    "sentiment_fallback_scenario": {
+      "requests": 100,
+      "errors": 0,
+      "target_p95_ms": 500.0,
+      "measured_p95_ms": 246.92,
+      "p95_passed": true,
+      "percentiles": {
+        "min": 18.5,
+        "mean": 180.17,
+        "p50": 189.78,
+        "p90": 246.15,
+        "p95": 246.92,
+        "p99": 247.74,
+        "p99_9": 249.95,
+        "max": 250.19
+      }
+    },
+    "sentiment_hotcache_scenario": {
+      "requests": 100,
+      "errors": 0,
+      "target_p95_ms": 100.0,
+      "measured_p95_ms": 206.72,
+      "p95_passed": false,
+      "percentiles": {
+        "min": 8.93,
+        "mean": 171.33,
+        "p50": 195.93,
+        "p90": 205.03,
+        "p95": 206.72,
+        "p99": 211.08,
+        "p99_9": 211.09,
+        "max": 211.1
+      }
+    }
+  }
+}

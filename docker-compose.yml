@@ -224,6 +224,25 @@ services:
     volumes:
       - ./data/backups:/tmp/backups
 
+  # ── Load Testing Engine: Grafana k6 (100 VUs, P95 < 500ms SLA Certification) ─
+  k6:
+    profiles: ["load-test", "perf", "optional"]
+    image: grafana/k6:latest
+    container_name: fintext-k6-load-tester
+    restart: "no"
+    depends_on:
+      fintext-api:
+        condition: service_healthy
+    environment:
+      - API_BASE_URL=http://fintext-api:8000
+      - K6_VUS=100
+      - K6_DURATION=30s
+      - ADMIN_TOKEN=fintext-admin-dev-secret-token
+    volumes:
+      - ./scripts:/scripts:ro
+      - ./logs:/logs
+    command: ["run", "/scripts/load_test.js"]
+
 volumes:
   questdb_data:
     driver: local

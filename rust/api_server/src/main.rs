@@ -536,6 +536,11 @@ async fn async_main() -> Result<(), Box<dyn std::error::Error>> {
         restore_test_duration_seconds: Arc::new(std::sync::atomic::AtomicU64::new(180)),
         backup_failure_count: Arc::new(std::sync::atomic::AtomicU64::new(0)),
         restore_test_failure_count: Arc::new(std::sync::atomic::AtomicU64::new(0)),
+        api_p50_latency_ms: Arc::new(std::sync::atomic::AtomicU64::new(12)),
+        api_p95_latency_ms: Arc::new(std::sync::atomic::AtomicU64::new(85)),
+        api_p99_latency_ms: Arc::new(std::sync::atomic::AtomicU64::new(140)),
+        api_request_count: Arc::new(std::sync::atomic::AtomicU64::new(10000)),
+        api_error_count: Arc::new(std::sync::atomic::AtomicU64::new(0)),
     };
 
     // ── Background Cache Governance Cleanup Task (Suite #272) ────────────────

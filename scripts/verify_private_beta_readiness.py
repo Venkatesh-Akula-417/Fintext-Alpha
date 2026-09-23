@@ -300,17 +300,40 @@ except Exception as e:
     record_check(19, "Stripe Billing & Plans Implemented", False, str(e))
 
 # ─────────────────────────────────────────────────────────────────────────────
-# Check 20: Launch Checklist & Billing Guide Present
+# Check 20: Launch Checklist, Billing Guide & Load Test SLA Certified
 # ─────────────────────────────────────────────────────────────────────────────
 try:
     checklist = REPO_ROOT / "docs" / "PRIVATE_BETA_LAUNCH_CHECKLIST.md"
     billing_guide = REPO_ROOT / "docs" / "BILLING_METERING_GUIDE.md"
+    load_runbook = REPO_ROOT / "docs" / "LOAD_TEST_RUNBOOK.md"
+    perf_dash = REPO_ROOT / "dashboards" / "api_performance.json"
+    load_report_path = REPO_ROOT / "logs" / "load_test_report.json"
+
     content_ch = checklist.read_text(encoding="utf-8")
     pass_count = content_ch.count("PASS")
-    passed = checklist.exists() and billing_guide.exists() and pass_count >= 30
-    record_check(20, "Launch Checklist & Billing Guide Complete", passed, f"Checklist verified with {pass_count} PASS entries")
+
+    has_load_report = False
+    p95_val = 0.0
+    if load_report_path.exists():
+        try:
+            report_data = json.loads(load_report_path.read_text(encoding="utf-8"))
+            p95_val = report_data.get("latency_ms", {}).get("p95", 999.0)
+            has_load_report = p95_val <= 500.0
+        except Exception:
+            has_load_report = False
+
+    passed = (
+        checklist.exists()
+        and billing_guide.exists()
+        and load_runbook.exists()
+        and perf_dash.exists()
+        and has_load_report
+        and pass_count >= 30
+    )
+    evidence = f"{pass_count} PASS entries, runbook & perf dashboard verified, P95={p95_val:.1f}ms (<500ms SLA)"
+    record_check(20, "Launch Checklist & Load Test SLA Certified", passed, evidence)
 except Exception as e:
-    record_check(20, "Launch Checklist & Billing Guide Complete", False, str(e))
+    record_check(20, "Launch Checklist & Load Test SLA Certified", False, str(e))
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Print Results Table

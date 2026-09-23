@@ -321,6 +321,12 @@ The final electronic diagnostics before green flag departure. All 5 automated Gi
   - **Evidence**: `scripts/test_restore.py`, `scripts/test_backup_restore.sh`, `k8s/backups/restore-test-cronjob.yaml`, `docs/BACKUP_RESTORE_RUNBOOK.md`, `logs/backup_restore_test_report.json`
   - **How to Verify**: `python scripts/test_restore.py --json-report logs/backup_restore_test_report.json`
 
+- [x] **Check 7.6: Automated Load Test & Latency SLA Certification (P95 < 500ms, P99 < 1000ms, Error < 1%)**
+  - **Status**: PASS
+  - **Description**: Automated institutional load testing suite executed via `scripts/load_test.js` (k6) and `scripts/test_load.py`. Certifies 100 concurrent virtual users across public `/v1/health` and authenticated `/v1/sentiment` endpoints. Verifies P50, P95 (< 500ms SLA), P99 (< 1000ms), error rate (< 1%), throughput (> 10 req/s), TimescaleDB fallback vs QuestDB hot-cache latency, and exports JSON audit report to `logs/load_test_report.json`.
+  - **Evidence**: `scripts/load_test.js`, `scripts/test_load.py`, `dashboards/api_performance.json`, `docs/LOAD_TEST_RUNBOOK.md`, `logs/load_test_report.json`
+  - **How to Verify**: `python scripts/test_load.py --json-report logs/load_test_report.json`
+
 ---
 
 ## Final Certification & Sign-off

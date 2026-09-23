@@ -44,6 +44,30 @@ data:
               description: "API 5xx error rate reached {{ $value | humanizePercentage }} (threshold > 1%) across endpoints."
               runbook_url: "https://docs.fintext.internal/ops/runbooks/api-5xx-error-rate"
 
+          - alert: APIP99LatencyHigh
+            expr: histogram_quantile(0.99, sum(rate(http_request_duration_seconds_bucket[5m])) by (le)) > 1.0 or fintext_api_p99_latency_ms > 1000
+            for: 2m
+            labels:
+              severity: warning
+              service: fintext-api
+              tier: gateway
+            annotations:
+              summary: "FinText API P99 tail latency exceeded 1000ms SLA"
+              description: "API P99 latency is {{ $value | humanizeDuration }} (threshold > 1000ms) on pod {{ $labels.pod }}."
+              runbook_url: "https://docs.fintext.internal/ops/runbooks/api-high-latency"
+
+          - alert: APIThroughputLow
+            expr: rate(fintext_api_requests_total[5m]) < 10 and (time() % 86400 >= 34200 and time() % 86400 <= 57600)
+            for: 5m
+            labels:
+              severity: warning
+              service: fintext-api
+              tier: gateway
+            annotations:
+              summary: "FinText API throughput dropped below 10 req/s during market hours"
+              description: "API Gateway throughput is {{ $value | printf \"%.1f\" }} req/s (threshold < 10 req/s) during active trading hours."
+              runbook_url: "https://docs.fintext.internal/ops/runbooks/api-throughput-low"
+
       # ── 2. Data Ingestion & Message Broker Lag Alerts ─────────────────────
       - name: fintext_ingestion_pipeline_alerts
         rules:
@@ -118,6 +142,17 @@ data:
               summary: "Container memory usage exceeded 90% of cgroup limit (OOM risk)"
               description: "Container {{ $labels.container }} in pod {{ $labels.pod }} memory is at {{ $value | humanizePercentage }} of limit."
               runbook_url: "https://docs.fintext.internal/ops/runbooks/container-memory-pressure"
+
+          - alert: CPUSaturationHigh
+            expr: rate(container_cpu_usage_seconds_total{container="fintext-api"}[5m]) > 0.80
+            for: 3m
+            labels:
+              severity: warning
+              tier: infrastructure
+            annotations:
+              summary: "API Gateway container CPU saturation exceeded 80%"
+              description: "Container {{ $labels.container }} CPU usage is at {{ $value | humanizePercentage }} (threshold > 80%)."
+              runbook_url: "https://docs.fintext.internal/ops/runbooks/container-cpu-pressure"
 
       # ── 4. Database Backup & Governance Alerts ────────────────────────────
       - name: fintext_backup_governance_alerts

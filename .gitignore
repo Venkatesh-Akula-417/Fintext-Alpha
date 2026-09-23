@@ -38,6 +38,7 @@ data/
 !rust/ingestion_engine/src/data/**
 **/logs/
 logs/
+!logs/load_test_report.json
 **/scratch/
 scratch/
 **/tools/
