@@ -1,6 +1,6 @@
 {
-  "generated_utc": "2026-09-24T04:53:52.532714+00:00",
-  "commit": "4d001bf070a2e7b86c7147fed2b17e5d3570e058",
+  "generated_utc": "2026-09-24T11:14:02.801726+00:00",
+  "commit": "18872190d26a3413808456ea15639997c38989e5",
   "rls_enabled_tables": [
     "audit_logs",
     "organizations",
@@ -340,6 +340,6 @@
   ],
   "cross_tenant_leak_rows": 0,
   "missing_context_rows": 0,
-  "p95_ms_after_rls": 252.41,
+  "p95_ms_after_rls": 229.64,
   "verdict": "CERTIFIED"
 }

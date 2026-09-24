@@ -1,0 +1,15 @@
+{
+  "generated_utc": "2026-09-24T11:01:55.221545+00:00",
+  "commit": "18872190d26a3413808456ea15639997c38989e5",
+  "mode": "live",
+  "slug": "org_demo_beta1",
+  "org_id": "78246b6a-fafc-4a34-841c-0c737ef04783",
+  "keys_revoked_count": 1,
+  "users_suspended_count": 1,
+  "subscriptions_canceled_count": 1,
+  "universes_purged_count": 0,
+  "purge_executed": false,
+  "audit_history_preserved": true,
+  "sec_rule_17a4_compliant": true,
+  "verdict": "DEPROVISIONED"
+}

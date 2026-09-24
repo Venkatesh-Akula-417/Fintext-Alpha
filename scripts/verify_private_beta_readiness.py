@@ -2,7 +2,7 @@
 """
 FinText Alpha Vectorizer — Private Beta Launch Readiness Verification Suite
 ═══════════════════════════════════════════════════════════════════════════════
-Runs 20 automated checks across Code, Data, PIT Correctness, Security, Billing,
+Runs 22 automated checks across Code, Data, PIT Correctness, Security, Billing,
 Documentation, and Quality to certify launch readiness for Private Beta.
 
 Usage:
@@ -49,7 +49,7 @@ def record_check(number: int, name: str, passed: bool, evidence: str):
 
 banner_line = "=" * 79
 print(f"\n{Colors.CYAN}{Colors.BOLD}{banner_line}{Colors.RESET}")
-print(f"{Colors.CYAN}{Colors.BOLD} FinText Alpha Vectorizer - Private Beta 20-Check Readiness Audit{Colors.RESET}")
+print(f"{Colors.CYAN}{Colors.BOLD} FinText Alpha Vectorizer - Private Beta 22-Check Readiness Audit{Colors.RESET}")
 print(f"{Colors.CYAN}{Colors.BOLD}{banner_line}{Colors.RESET}\n")
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -390,6 +390,76 @@ except Exception as e:
     record_check(21, "PostgreSQL RLS Multi-Tenant Isolation", False, str(e))
 
 # ─────────────────────────────────────────────────────────────────────────────
+# Check 22: Tenant Provisioning, Onboarding Automation & Security DDQ Certified
+# ─────────────────────────────────────────────────────────────────────────────
+try:
+    provision_py = REPO_ROOT / "scripts" / "provision_tenant.py"
+    deprovision_py = REPO_ROOT / "scripts" / "deprovision_tenant.py"
+    onboarding_runbook = REPO_ROOT / "docs" / "PRIVATE_BETA_ONBOARDING_RUNBOOK.md"
+    security_ddq = REPO_ROOT / "docs" / "SECURITY_QUESTIONNAIRE_RESPONSES.md"
+    provision_report = REPO_ROOT / "logs" / "tenant_provisioning_report.json"
+    deprovision_report = REPO_ROOT / "logs" / "tenant_deprovisioning_report.json"
+
+    # 1. Scripts & documentation presence
+    has_scripts = provision_py.exists() and deprovision_py.exists()
+    
+    onboarding_lines = len(onboarding_runbook.read_text(encoding="utf-8").splitlines()) if onboarding_runbook.exists() else 0
+    has_onboarding = onboarding_lines >= 250
+
+    ddq_text = security_ddq.read_text(encoding="utf-8") if security_ddq.exists() else ""
+    ddq_questions = len(re.findall(r"^###\s+Q", ddq_text, re.MULTILINE))
+    has_ddq = ddq_questions >= 20
+
+    # 2. Provisioning report validation
+    has_provision_report = False
+    ttfv = 999.0
+    if provision_report.exists():
+        try:
+            p_data = json.loads(provision_report.read_text(encoding="utf-8"))
+            ttfv = p_data.get("ttfv_seconds", 999.0)
+            rls_pass = p_data.get("rls_self_test", {}).get("pass", False)
+            api_ok = p_data.get("api_first_call", {}).get("status", 0) == 200
+            verdict_ok = p_data.get("verdict") == "CERTIFIED"
+            has_provision_report = (verdict_ok and rls_pass and api_ok and ttfv < 300.0)
+        except Exception:
+            has_provision_report = False
+
+    # 3. Deprovisioning report validation
+    has_deprovision_report = False
+    if deprovision_report.exists():
+        try:
+            d_data = json.loads(deprovision_report.read_text(encoding="utf-8"))
+            d_verdict = d_data.get("verdict") == "DEPROVISIONED"
+            audit_preserved = d_data.get("audit_history_preserved", False)
+            has_deprovision_report = (d_verdict and audit_preserved)
+        except Exception:
+            has_deprovision_report = False
+
+    # 4. Zero-secret leak audit across logs/*.json
+    secret_leaks = 0
+    raw_key_pattern = re.compile(r"\bft_[a-f0-9]{32}\b")
+    for log_file in (REPO_ROOT / "logs").glob("*.json"):
+        content = log_file.read_text(encoding="utf-8", errors="replace")
+        if raw_key_pattern.search(content):
+            secret_leaks += 1
+
+    passed = (
+        has_scripts
+        and has_onboarding
+        and has_ddq
+        and has_provision_report
+        and has_deprovision_report
+        and secret_leaks == 0
+    )
+    evidence = (
+        f"Provisioning TTFV={ttfv:.2f}s, RLS pass, {ddq_questions} DDQ questions, "
+        f"runbook ({onboarding_lines} lines), secret_leaks={secret_leaks}"
+    )
+    record_check(22, "Tenant Onboarding Automation & Security DDQ", passed, evidence)
+except Exception as e:
+    record_check(22, "Tenant Onboarding Automation & Security DDQ", False, str(e))
+
+# ─────────────────────────────────────────────────────────────────────────────
 # Print Results Table
 # ─────────────────────────────────────────────────────────────────────────────
 print(f"{'#':<3} | {'Check Description':<40} | {'Status':<8} | {'Evidence'}")
@@ -404,7 +474,7 @@ print(f"Passed:       {Colors.GREEN}{checks_passed}{Colors.RESET}")
 print(f"Failed:       {Colors.RED}{checks_failed}{Colors.RESET}")
 
 if checks_failed == 0:
-    print(f"\n{Colors.GREEN}{Colors.BOLD}>>> VERDICT: ALL 21 AUTOMATED CHECKS PASSED. SYSTEM IS LAUNCH READY! <<<{Colors.RESET}\n")
+    print(f"\n{Colors.GREEN}{Colors.BOLD}>>> VERDICT: ALL 22 AUTOMATED CHECKS PASSED. SYSTEM IS LAUNCH READY! <<<{Colors.RESET}\n")
     sys.exit(0)
 else:
     print(f"\n{Colors.RED}{Colors.BOLD}>>> VERDICT: {checks_failed} CHECKS FAILED. RESOLVE BEFORE LAUNCH. <<<{Colors.RESET}\n")

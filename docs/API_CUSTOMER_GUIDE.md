@@ -4,7 +4,8 @@
 > **Document Version**: v1.0.0 (Production Core Release)  
 > **Last Verified**: 2026-09-17 (Suite #274) | **Audit Readiness**: Certified Clean  
 > **Interactive Research Suite**: [`notebooks/`](../notebooks/README.md) | **Model Card**: [`docs/SIGNAL_QUALITY_REPORT.md`](./SIGNAL_QUALITY_REPORT.md)  
-> **Authoritative Deprecations**: [`docs/DEPRECATED.md`](./DEPRECATED.md)
+> **Authoritative Deprecations**: [`docs/DEPRECATED.md`](./DEPRECATED.md) | **Onboarding Runbook**: [`docs/PRIVATE_BETA_ONBOARDING_RUNBOOK.md`](./PRIVATE_BETA_ONBOARDING_RUNBOOK.md)  
+> **Security DDQ Pack**: [`docs/SECURITY_QUESTIONNAIRE_RESPONSES.md`](./SECURITY_QUESTIONNAIRE_RESPONSES.md) | **Tenant Isolation**: [`docs/TENANT_ISOLATION_RUNBOOK.md`](./TENANT_ISOLATION_RUNBOOK.md)
 
 ---
 

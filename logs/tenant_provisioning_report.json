@@ -1,0 +1,33 @@
+{
+  "generated_utc": "2026-09-24T11:01:36.296914+00:00",
+  "commit": "18872190d26a3413808456ea15639997c38989e5",
+  "mode": "live",
+  "org_id": "78246b6a-fafc-4a34-841c-0c737ef04783",
+  "slug": "org_demo_beta1",
+  "tier": "growth",
+  "key_prefix": "ft_17c4a",
+  "key_hash_algo": "sha256",
+  "password_hash_algo": "argon2id",
+  "ttfv_seconds": 1.62,
+  "rls_self_test": {
+    "tables": [
+      "organizations",
+      "universes",
+      "api_keys",
+      "subscriptions"
+    ],
+    "leak_rows": 0,
+    "pass": true
+  },
+  "api_first_call": {
+    "endpoint": "/v1/sentiment?ticker=AAPL",
+    "status": 200,
+    "latency_ms": 62.92
+  },
+  "checklist": {
+    "columns_contract_pass": true,
+    "idempotency_guard": true,
+    "stdout_only_secret": true
+  },
+  "verdict": "CERTIFIED"
+}

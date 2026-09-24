@@ -552,7 +552,10 @@ FinText-Alpha-Vectorizer/
 - **Deprecations Log**: [`docs/DEPRECATED.md`](docs/DEPRECATED.md)
 - **SRE & Operations Manual**: [`docs/OPERATIONS.md`](docs/OPERATIONS.md)
 - **Tenant Isolation Runbook**: [`docs/TENANT_ISOLATION_RUNBOOK.md`](docs/TENANT_ISOLATION_RUNBOOK.md)
+- **Tenant Onboarding Runbook**: [`docs/PRIVATE_BETA_ONBOARDING_RUNBOOK.md`](docs/PRIVATE_BETA_ONBOARDING_RUNBOOK.md)
+- **Security Questionnaire & DDQ Pack**: [`docs/SECURITY_QUESTIONNAIRE_RESPONSES.md`](docs/SECURITY_QUESTIONNAIRE_RESPONSES.md)
 - **Institutional Security Architecture**: [`docs/SECURITY.md`](docs/SECURITY.md)
+- **Private Beta Launch Checklist**: [`docs/PRIVATE_BETA_LAUNCH_CHECKLIST.md`](docs/PRIVATE_BETA_LAUNCH_CHECKLIST.md)
 
 ---
 
