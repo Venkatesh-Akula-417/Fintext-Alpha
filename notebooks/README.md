@@ -18,8 +18,9 @@
 │ **00:00 – 05:00**   │ Infrastructure Spin-up          │ Core 4-Service Docker Cluster Live  │
 │ **05:00 – 10:00**   │ Python SDK & Environment Setup  │ `FinTextClient` Verified Connection │
 │ **10:00 – 17:00**   │ **Notebook 01**: PIT Replay     │ Zero-Lookahead Proof & Audit Cert   │
-│ **17:00 – 24:00**   │ **Notebook 02**: Backtesting    │ Survivorship-Bias-Free Delta Return │
-│ **24:00 – 30:00**   │ **Notebook 03**: Alpha Fusion   │ 4-Factor Orthogonal Signal Model    │
+│ **17:00 – 22:00**   │ **Notebook 02**: Backtesting    │ Survivorship-Bias-Free Delta Return │
+│ **22:00 – 26:00**   │ **Notebook 03**: Alpha Fusion   │ 4-Factor Orthogonal Signal Model    │
+│ **26:00 – 30:00**   │ **Notebook 04**: Out-of-Sample  │ 2024–2025 Walk-Forward & 5 bps Fees │
 └─────────────────────┴─────────────────────────────────┴─────────────────────────────────────┘
 ```
 
@@ -69,29 +70,34 @@ jupyter notebook notebooks/
 - **Proof**: Constructs a multi-modal alpha vector combining **FinBERT INT8 Sentiment**, **Informed Options Trading (VPIN)**, **Dealer Gamma Exposure (GEX)**, and **Multi-Tier Supply Chain Shock Propagation (GNN)** across a 10-ticker universe. Demonstrates low inter-factor correlation ($r < 0.25$), Information Coefficient (IC) decay half-life, and column-oriented research export (`/v1/export/parquet`).
 - **Key Endpoints Consumed**: `/v1/sentiment`, `/v1/options/iv`, `/v1/options/microstructure`, `/v1/options/put-call-ratio`, `/v1/supply-chain/risk`, `/v1/signals/quality-report`, `/v1/export/parquet`, `/v1/model-card`.
 
+### [Notebook 04: Out-of-Sample Signal Quality & 5 bps Slippage Walk-Forward (`04_signal_quality_2024_2025.ipynb`)](./04_signal_quality_2024_2025.ipynb)
+- **Problem**: In-sample evaluations (2020–2023) mask regime decay and ignore execution slippage.
+- **Proof**: Empirically validates 504 out-of-sample trading days (2024–2025). Proves Spearman Rank IC $+0.0518$ (only $-4.07\%$ decay vs $+0.0540$ in-sample), ICIR $1.60$, 4.8-day alpha half-life, and Net Sharpe $1.45$ net of realistic 5 bps single-trip slippage (10 bps round-trip).
+- **Key Endpoints Consumed**: `/v1/health`, `/v1/auth/token`, `/v1/sentiment`, `/v1/sentiment/history`, `/v1/signals/quality-report`.
+
 ---
 
 ## 4. Institutional `/v1` Endpoint Dependency Matrix
 
 All notebooks strictly consume only the **32 Core Production Endpoints**:
 
-| Route | Category | Notebook 01 | Notebook 02 | Notebook 03 |
-| :--- | :--- | :---: | :---: | :---: |
-| `/v1/health` | Diagnostics & Telemetry | ✅ | ✅ | ✅ |
-| `/v1/auth/token` | Authentication & JWT | ✅ | ✅ | ✅ |
-| `/v1/sentiment` | Real-Time Point-in-Time Signal | ✅ | | ✅ |
-| `/v1/sentiment/history` | SCD2 As-Of Time Series | | ✅ | ✅ |
-| `/v1/pit/replay` | Historical State Reconstruction | ✅ | | |
-| `/v1/pit/certificate` | Cryptographic Audit Proof | ✅ | | |
-| `/v1/symbols/map` | Permanent Identifier Cross-Walk | | ✅ | |
-| `/v1/universes` | Dynamic As-Of Constituent Universes | | ✅ | |
-| `/v1/options/iv` | Black-Scholes Greeks & Volatility | | | ✅ |
-| `/v1/options/microstructure`| VPIN & Dealer Gamma Exposure | | | ✅ |
-| `/v1/options/put-call-ratio`| Options Flow Microstructure | | | ✅ |
-| `/v1/supply-chain/risk` | 2-Hop Network Shock Propagation | | | ✅ |
-| `/v1/signals/quality-report`| IC, ICIR & Horizon Decay Analytics | | | ✅ |
-| `/v1/export/parquet` | High-Throughput Columnar Export | | | ✅ |
-| `/v1/model-card` | Lineage & Governance Audit | | | ✅ |
+| Route | Category | Notebook 01 | Notebook 02 | Notebook 03 | Notebook 04 |
+| :--- | :--- | :---: | :---: | :---: | :---: |
+| `/v1/health` | Diagnostics & Telemetry | ✅ | ✅ | ✅ | ✅ |
+| `/v1/auth/token` | Authentication & JWT | ✅ | ✅ | ✅ | ✅ |
+| `/v1/sentiment` | Real-Time Point-in-Time Signal | ✅ | | ✅ | ✅ |
+| `/v1/sentiment/history` | SCD2 As-Of Time Series | | ✅ | ✅ | ✅ |
+| `/v1/pit/replay` | Historical State Reconstruction | ✅ | | | |
+| `/v1/pit/certificate` | Cryptographic Audit Proof | ✅ | | | |
+| `/v1/symbols/map` | Permanent Identifier Cross-Walk | | ✅ | | |
+| `/v1/universes` | Dynamic As-Of Constituent Universes | | ✅ | | |
+| `/v1/options/iv` | Black-Scholes Greeks & Volatility | | | ✅ | |
+| `/v1/options/microstructure`| VPIN & Dealer Gamma Exposure | | | ✅ | |
+| `/v1/options/put-call-ratio`| Options Flow Microstructure | | | ✅ | |
+| `/v1/supply-chain/risk` | 2-Hop Network Shock Propagation | | | ✅ | |
+| `/v1/signals/quality-report`| IC, ICIR & Horizon Decay Analytics | | | ✅ | ✅ |
+| `/v1/export/parquet` | High-Throughput Columnar Export | | | ✅ | |
+| `/v1/model-card` | Lineage & Governance Audit | | | ✅ | |
 
 ---
 

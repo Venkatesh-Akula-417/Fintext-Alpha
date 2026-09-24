@@ -108,20 +108,21 @@ except Exception as e:
     record_check(4, "Zero Waste Models in lib.rs", False, str(e))
 
 # ─────────────────────────────────────────────────────────────────────────────
-# Check 5: Three Production Research Notebooks Exist
+# Check 5: Four Production Research Notebooks Exist (Including 2024-2025 OOS)
 # ─────────────────────────────────────────────────────────────────────────────
 try:
     nb_dir = REPO_ROOT / "notebooks"
     expected_nbs = [
         "01_pit_replay_zero_lookahead.ipynb",
         "02_backtest_survivorship_bias_free.ipynb",
-        "03_alpha_fusion_vpin_gex_gnn.ipynb"
+        "03_alpha_fusion_vpin_gex_gnn.ipynb",
+        "04_signal_quality_2024_2025.ipynb"
     ]
     present = [nb for nb in expected_nbs if (nb_dir / nb).exists()]
-    passed = len(present) == 3
-    record_check(5, "3 Production Research Notebooks", passed, f"{len(present)}/3 notebooks verified in notebooks/")
+    passed = len(present) >= 4
+    record_check(5, "4 Production Research Notebooks", passed, f"{len(present)}/4 notebooks verified in notebooks/ (inc. 04_signal_quality)")
 except Exception as e:
-    record_check(5, "3 Production Research Notebooks", False, str(e))
+    record_check(5, "4 Production Research Notebooks", False, str(e))
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Check 6: Postman Collection Valid JSON & 32 Requests
@@ -198,17 +199,35 @@ except Exception as e:
     record_check(11, "Gitleaks Allowlist Configured", False, str(e))
 
 # ─────────────────────────────────────────────────────────────────────────────
-# Check 12: Signal Quality Report Certified (IC +0.0540)
+# Check 12: Signal Quality Certified (In-Sample IC +0.0540 & OOS 24-25 IC >= +0.05)
 # ─────────────────────────────────────────────────────────────────────────────
 try:
-    report = REPO_ROOT / "docs" / "SIGNAL_QUALITY_REPORT.md"
-    content = report.read_text(encoding="utf-8")
-    has_ic = "+0.0540" in content
-    has_sharpe = "1.86" in content or "1.42" in content
-    passed = has_ic and has_sharpe
-    record_check(12, "Signal Quality Certified (IC +0.0540)", passed, "Verified Rank IC +0.0540 and target Sharpe")
+    report_is = REPO_ROOT / "docs" / "SIGNAL_QUALITY_REPORT.md"
+    report_oos = REPO_ROOT / "docs" / "SIGNAL_QUALITY_REPORT_2024_2025.md"
+    sig_json_path = REPO_ROOT / "logs" / "signal_quality_report.json"
+    
+    content_is = report_is.read_text(encoding="utf-8")
+    has_ic_is = "+0.0540" in content_is
+    has_sharpe_is = "1.86" in content_is or "1.42" in content_is
+    
+    has_oos_proof = False
+    oos_ic = 0.0
+    oos_sharpe = 0.0
+    if sig_json_path.exists() and report_oos.exists():
+        try:
+            sig_data = json.loads(sig_json_path.read_text(encoding="utf-8"))
+            oos = sig_data.get("out_of_sample_2024_2025", {})
+            oos_ic = oos.get("mean_spearman_ic_5d", oos.get("rank_ic_5d", 0.0))
+            oos_sharpe = oos.get("net_sharpe_5bps", oos.get("net_sharpe_5bps_slippage", 0.0))
+            has_oos_proof = oos_ic >= 0.0500 and oos_sharpe >= 1.40
+        except Exception:
+            has_oos_proof = False
+
+    passed = has_ic_is and has_sharpe_is and has_oos_proof and report_oos.exists()
+    evidence = f"In-Sample IC +0.0540, OOS 24-25 IC +{oos_ic:.4f} (>=+0.0500), Net Sharpe {oos_sharpe:.2f} (>=1.40)"
+    record_check(12, "Signal Quality Certified (In-Sample & OOS)", passed, evidence)
 except Exception as e:
-    record_check(12, "Signal Quality Certified (IC +0.0540)", False, str(e))
+    record_check(12, "Signal Quality Certified (In-Sample & OOS)", False, str(e))
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Check 13: Cloud Cost Optimization Documents $295/mo

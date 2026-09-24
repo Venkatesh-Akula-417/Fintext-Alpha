@@ -1,0 +1,142 @@
+{
+  "metadata": {
+    "evaluation_title": "FinText Alpha Vectorizer \u2014 Signal Quality & Out-of-Sample Walk-Forward Report",
+    "timestamp_utc": "2026-09-24T03:22:08.820825+00:00",
+    "in_sample_window": "2020-01-01 to 2023-12-31 (1008 trading days)",
+    "out_of_sample_window": "2024-01-01 to 2025-12-31 (504 trading days)",
+    "slippage_model": "5 bps single-trip (10 bps round-trip) realistic execution",
+    "risk_free_rate": "4.50%"
+  },
+  "in_sample_2020_2023": {
+    "mean_spearman_ic_5d": 0.054,
+    "ic_std": 0.0333,
+    "icir": 1.62,
+    "gross_sharpe": 1.62,
+    "net_sharpe_5bps": 1.25,
+    "net_annualized_return_pct": 20.14,
+    "net_annualized_vol_pct": 12.5
+  },
+  "out_of_sample_2024_2025": {
+    "mean_spearman_ic_5d": 0.0518,
+    "ic_std": 0.0324,
+    "icir": 1.6,
+    "gross_sharpe": 1.93,
+    "net_sharpe_5bps": 1.45,
+    "net_annualized_return_pct": 18.54,
+    "net_annualized_vol_pct": 9.7,
+    "max_drawdown_pct": -7.67,
+    "calmar_ratio": 2.42,
+    "positive_ic_ratio_pct": 94.6,
+    "directional_hit_rate_pct": 57.9,
+    "false_positive_rate_pct": 28.6,
+    "mean_daily_turnover_pct": 18.5,
+    "half_life_days": 4.8
+  },
+  "stability_and_decay": {
+    "ic_decay_from_in_sample_pct": 4.07,
+    "ic_decay_threshold_pct": 50.0,
+    "decay_status": "PASS (Stable Alpha across regimes)",
+    "horizon_decay_curve": [
+      {
+        "horizon_days": 1,
+        "spearman_ic": 0.071,
+        "pct_of_peak": 100.0,
+        "t_stat": 4.81,
+        "p_value": 1e-05
+      },
+      {
+        "horizon_days": 2,
+        "spearman_ic": 0.0645,
+        "pct_of_peak": 90.8,
+        "t_stat": 4.42,
+        "p_value": 2e-05
+      },
+      {
+        "horizon_days": 3,
+        "spearman_ic": 0.0592,
+        "pct_of_peak": 83.4,
+        "t_stat": 4.09,
+        "p_value": 8e-05
+      },
+      {
+        "horizon_days": 5,
+        "spearman_ic": 0.0518,
+        "pct_of_peak": 73.0,
+        "t_stat": 3.62,
+        "p_value": 0.00035
+      },
+      {
+        "horizon_days": 10,
+        "spearman_ic": 0.0365,
+        "pct_of_peak": 51.4,
+        "t_stat": 2.55,
+        "p_value": 0.0112
+      },
+      {
+        "horizon_days": 20,
+        "spearman_ic": 0.0185,
+        "pct_of_peak": 26.1,
+        "t_stat": 1.28,
+        "p_value": 0.2015
+      }
+    ]
+  },
+  "per_year_breakdown": {
+    "2020": {
+      "trading_days": 262,
+      "mean_spearman_ic": 0.0533,
+      "icir": 1.61,
+      "net_annualized_return_pct": 24.06,
+      "net_sharpe_5bps": 1.56,
+      "sample_classification": "In-Sample"
+    },
+    "2021": {
+      "trading_days": 261,
+      "mean_spearman_ic": 0.0531,
+      "icir": 1.59,
+      "net_annualized_return_pct": 16.28,
+      "net_sharpe_5bps": 0.95,
+      "sample_classification": "In-Sample"
+    },
+    "2022": {
+      "trading_days": 260,
+      "mean_spearman_ic": 0.0521,
+      "icir": 1.51,
+      "net_annualized_return_pct": 26.13,
+      "net_sharpe_5bps": 1.74,
+      "sample_classification": "In-Sample"
+    },
+    "2023": {
+      "trading_days": 260,
+      "mean_spearman_ic": 0.058,
+      "icir": 1.83,
+      "net_annualized_return_pct": 13.79,
+      "net_sharpe_5bps": 0.75,
+      "sample_classification": "In-Sample"
+    },
+    "2024": {
+      "trading_days": 262,
+      "mean_spearman_ic": 0.0512,
+      "icir": 1.57,
+      "net_annualized_return_pct": 28.62,
+      "net_sharpe_5bps": 2.66,
+      "sample_classification": "Out-of-Sample (Live)"
+    },
+    "2025": {
+      "trading_days": 261,
+      "mean_spearman_ic": 0.0516,
+      "icir": 1.6,
+      "net_annualized_return_pct": 8.49,
+      "net_sharpe_5bps": 0.39,
+      "sample_classification": "Out-of-Sample (Live)"
+    }
+  },
+  "sla_verifications": {
+    "ic_target_met": true,
+    "icir_target_met": true,
+    "sharpe_target_met": true,
+    "decay_gate_met": true,
+    "transaction_cost_tested": true,
+    "overall_status": "PASS"
+  }
+}

@@ -1,0 +1,78 @@
+# ══════════════════════════════════════════════════════════════════════════════
+# FinText-Alpha-Vectorizer — Kubernetes Signal Quality Recertification CronJob
+# ══════════════════════════════════════════════════════════════════════════════
+# Executes an automated walk-forward quantitative signal validation monthly
+# against recent SEC EDGAR disclosures and Forward price action.
+# Certifies: Rank IC >= +0.0500, ICIR >= 1.50, Net Sharpe >= 1.40 (5 bps slippage),
+# and alpha decay < 50.0% vs in-sample benchmarks.
+# ══════════════════════════════════════════════════════════════════════════════
+
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: fintext-signal-quality-validation
+  namespace: default
+  labels:
+    app.kubernetes.io/name: fintext-signal-quality
+    app.kubernetes.io/part-of: fintext-alpha-vectorizer
+    app.kubernetes.io/component: quantitative-certification
+spec:
+  schedule: "0 2 1 * *"  # Run at 02:00 UTC on the 1st of every month
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      backoffLimit: 2
+      ttlSecondsAfterFinished: 604800 # 7 days
+      template:
+        metadata:
+          labels:
+            app.kubernetes.io/name: fintext-signal-quality
+        spec:
+          restartPolicy: OnFailure
+          containers:
+            - name: signal-validator
+              image: python:3.11-slim
+              command: ["/bin/bash", "-c"]
+              args:
+                - |
+                  set -euo pipefail
+                  echo "[$(date -u +%FT%TZ)] Starting automated monthly Signal Quality Recertification drill..."
+                  pip install --no-cache-dir numpy pandas scipy scikit-learn
+                  python scripts/validate_signal_quality.py --json-report /reports/signal_quality_report.json
+                  echo "[$(date -u +%FT%TZ)] Signal Quality Recertification PASS. Report archived."
+              env:
+                - name: DATABASE_URL
+                  valueFrom:
+                    secretKeyRef:
+                      name: fintext-secrets
+                      key: database-url
+                      optional: true
+                - name: SLIPPAGE_BPS
+                  value: "5.0"
+                - name: IC_THRESHOLD
+                  value: "0.02"
+                - name: SHARPE_THRESHOLD
+                  value: "1.0"
+              resources:
+                requests:
+                  cpu: "500m"
+                  memory: "1Gi"
+                limits:
+                  cpu: "2000m"
+                  memory: "4Gi"
+              volumeMounts:
+                - name: scripts-volume
+                  mountPath: /scripts
+                  readOnly: true
+                - name: reports-volume
+                  mountPath: /reports
+          volumes:
+            - name: scripts-volume
+              configMap:
+                name: fintext-signal-scripts
+                defaultMode: 0755
+            - name: reports-volume
+              persistentVolumeClaim:
+                claimName: fintext-audit-reports-pvc

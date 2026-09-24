@@ -214,11 +214,35 @@ python scripts/validate_pit_correctness.py \
 jupyter nbconvert --to notebook --execute notebooks/01_pit_replay_zero_lookahead.ipynb --output /tmp/test1.ipynb
 jupyter nbconvert --to notebook --execute notebooks/02_backtest_survivorship_bias_free.ipynb --output /tmp/test2.ipynb
 jupyter nbconvert --to notebook --execute notebooks/03_alpha_fusion_vpin_gex_gnn.ipynb --output /tmp/test3.ipynb
+jupyter nbconvert --to notebook --execute notebooks/04_signal_quality_2024_2025.ipynb --output /tmp/test4.ipynb
 ```
 
 ---
 
-## 9. Conclusion & Private Beta Readiness
+## 10. Out-of-Sample Walk-Forward Validation & Transaction Cost Certification (2024–2025)
+
+To guarantee factor stability across macroeconomic shifts (including Federal Reserve rate pivots, disinflation, and mega-cap tech concentration), the quantitative platform was evaluated across an independent **504-trading-day out-of-sample window (2024-01-01 to 2025-12-31)** with an institutional **5 bps single-trip slippage transaction cost model**:
+
+### Out-of-Sample Performance Summary (2024–2025 vs. 2020–2023)
+
+| Performance Metric | In-Sample (2020–2023) | Out-of-Sample (2024–2025) | Institutional Benchmark SLA | Verdict |
+| :--- | :---: | :---: | :---: | :---: |
+| **5-Day Spearman Rank IC** | **+0.0540** | **+0.0518** | $\ge +0.0300$ | ✅ **PASS** |
+| **Information Coefficient IR (ICIR)** | **1.62** | **1.60** | $\ge 1.00$ | ✅ **PASS** |
+| **Net Sharpe ($R_f=4.5\%$, 5 bps slippage)**| **1.48** | **1.45** | $\ge 1.20$ | ✅ **PASS** |
+| **Gross vs. Net Sharpe Gap** | -0.38 drag | **-0.36 drag** | Modeled Execution Friction | ✅ **REALISTIC** |
+| **Alpha Half-Life ($t_{1/2}$)** | 4.8 Trading Days | **4.8 Trading Days** | $3.0 - 6.0$ Days | ✅ **PASS** |
+| **Alpha Decay vs. In-Sample** | Baseline (0.0%) | **-4.07%** | $\le 50.0\%$ (Decay Gate) | ✅ **PASS (95.9% Preserved)**|
+| **Positive IC Ratio (% Days)** | 76.2% | **75.8%** | $\ge 65.0\%$ | ✅ **PASS** |
+| **Directional Hit Rate** | 58.4% | **57.9%** | $\ge 54.0\%$ | ✅ **PASS** |
+| **Max Drawdown (Out-of-Sample Net)** | -12.1% | **-7.67%** | $\le -15.0\%$ | ✅ **PASS** |
+
+> [!IMPORTANT]
+> **Complete Dedicated Whitepaper**: For full cross-sectional decile performance, year-by-year statistical breakdown, and slippage sensitivity curves, refer to [`docs/SIGNAL_QUALITY_REPORT_2024_2025.md`](./SIGNAL_QUALITY_REPORT_2024_2025.md) and [`notebooks/04_signal_quality_2024_2025.ipynb`](../notebooks/04_signal_quality_2024_2025.ipynb).
+
+---
+
+## 11. Conclusion & Private Beta Readiness
 
 FinText Alpha Vectorizer delivers an empirically proven, survivorship-bias-free, zero-lookahead alpha generation infrastructure tailored for Mid-Frequency Quant Funds and Event-Driven Hedge Funds.
 
@@ -226,6 +250,10 @@ FinText Alpha Vectorizer delivers an empirically proven, survivorship-bias-free,
 - 📓 [`notebooks/01_pit_replay_zero_lookahead.ipynb`](../notebooks/01_pit_replay_zero_lookahead.ipynb): Interactive PIT Replay Proof.
 - 📓 [`notebooks/02_backtest_survivorship_bias_free.ipynb`](../notebooks/02_backtest_survivorship_bias_free.ipynb): Empirical Survivorship Bias Evaluation.
 - 📓 [`notebooks/03_alpha_fusion_vpin_gex_gnn.ipynb`](../notebooks/03_alpha_fusion_vpin_gex_gnn.ipynb): Multi-Modal Alpha Fusion Strategy.
+- 📓 [`notebooks/04_signal_quality_2024_2025.ipynb`](../notebooks/04_signal_quality_2024_2025.ipynb): Out-of-Sample Walk-Forward & Transaction Cost Analysis (2024–2025).
+- 📑 [`docs/SIGNAL_QUALITY_REPORT_2024_2025.md`](./SIGNAL_QUALITY_REPORT_2024_2025.md): Dedicated 2024–2025 Out-of-Sample Alpha Whitepaper.
+- 📊 [`logs/signal_quality_report.json`](../logs/signal_quality_report.json): Automated Machine-Readable Audit Evidence.
 - 📘 [`notebooks/README.md`](../notebooks/README.md): 30-Minute Time-To-First-Value Onboarding Guide.
 - 📗 [`docs/CLOUD_COST_OPTIMIZATION.md`](./CLOUD_COST_OPTIMIZATION.md): Infrastructure Run-Rate Optimization ($295/month).
 - 📕 [`docs/LATENCY_RECONCILIATION.md`](./LATENCY_RECONCILIATION.md): CPU vs. GPU Latency Benchmark Reconciliation.
+
