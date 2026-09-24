@@ -382,7 +382,26 @@ Quantitative auditors and risk committees can verify historical replay performan
 
 ---
 
-## 11. Troubleshooting & Diagnostics
+## 11. Multi-Tenant Row-Level Security (RLS) & Institutional Isolation Guarantee
+
+FinText Alpha Vectorizer operates a shared multi-tenant cluster serving competing quantitative equity funds, statistical arbitrage desks, and institutional asset managers. Cross-tenant data confinement is enforced at the PostgreSQL database kernel level rather than relying solely on application conventions:
+
+### 11.1 Confinement SLA Guarantees
+- **PostgreSQL Row-Level Security (RLS) FORCED**: All tenant-owned tables (`audit_logs`, `universes`, `api_keys`, `usage_events`, `webhooks`, `organizations`) have PostgreSQL RLS enabled and forced (`relforcerowsecurity = true`).
+- **Cryptographic & Deny-by-Default Semantics**: Any query executing without an authenticated tenant JWT session GUC (`app.current_org_id`) returns **0 rows**.
+- **Cross-Tenant Leakage SLA**: Strictly **0 rows** (0.00% leakage rate). Verified via continuous automated audit suite.
+- **Role Least-Privilege**: The public API gateway connects via `fintext_app` (`NOBYPASSRLS`), ensuring that no query can bypass tenant boundaries.
+- **QuestDB Architecture Note**: QuestDB hot-cache stores strictly public market reference data (sentiment records, market quotes); proprietary tenant data is exclusively persisted in PostgreSQL/TimescaleDB under RLS.
+
+### 11.2 Verification & Compliance Evidence
+Institutional risk and compliance teams (SOC2 Type II, SEC Rule 206(4)-1, SEBI algo-trading guidelines) can review our certified isolation audit reports and runbooks:
+- **Tenant Isolation Runbook**: [`docs/TENANT_ISOLATION_RUNBOOK.md`](./TENANT_ISOLATION_RUNBOOK.md)
+- **Automated Verification Suite**: `python scripts/test_rls_isolation.py`
+- **Certified Evidence Artifact**: [`logs/rls_isolation_report.json`](../logs/rls_isolation_report.json) (`verdict: "CERTIFIED"`, `cross_tenant_leak_rows: 0`)
+
+---
+
+## 12. Troubleshooting & Diagnostics
 
 Like diagnosing a squeaking bottom bracket, use these diagnostic checks to resolve environment friction:
 
@@ -398,10 +417,11 @@ Like diagnosing a squeaking bottom bracket, use these diagnostic checks to resol
 
 ---
 
-## 12. Regulatory Compliance & Support
+## 13. Regulatory Compliance & Support
 
 For algorithmic trading compliance questions, SEC Rule 206(4)-1 audit certificates, or custom institutional rate limit allocations:
 - **Audit Verification**: Fetch cryptographic SHA-256 certificate directly via `/v1/pit/certificate`.
 - **Developer Support**: Submit issues via the institutional partner portal or email `support@fintext.internal`.
 - **System Architecture**: Consult [`docs/CLOUD_COST_OPTIMIZATION.md`](./CLOUD_COST_OPTIMIZATION.md) and [`docs/LATENCY_RECONCILIATION.md`](./LATENCY_RECONCILIATION.md).
+
 

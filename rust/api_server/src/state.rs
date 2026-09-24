@@ -409,6 +409,7 @@ pub struct AppState {
     pub api_p99_latency_ms: Arc<AtomicU64>,
     pub api_request_count: Arc<AtomicU64>,
     pub api_error_count: Arc<AtomicU64>,
+    pub rls_context_missing_total: Arc<AtomicU64>,
 }
 
 fn read_enable_fix_bridge() -> bool {
@@ -573,6 +574,7 @@ impl AppState {
             api_p99_latency_ms: Arc::new(AtomicU64::new(140)),
             api_request_count: Arc::new(AtomicU64::new(10000)),
             api_error_count: Arc::new(AtomicU64::new(0)),
+            rls_context_missing_total: Arc::new(AtomicU64::new(0)),
         }
     }
 }
@@ -581,6 +583,33 @@ impl AppState {
     /// Returns true if TimescaleDB is designated as the primary sentiment query store.
     pub fn timescaledb_primary(&self) -> bool {
         self.timescaledb_primary || self.timescaledb_client.is_primary()
+    }
+
+    /// Increments the count of database queries attempted on tenant-owned tables without tenant context.
+    pub fn record_rls_context_missing(&self) {
+        self.rls_context_missing_total
+            .fetch_add(1, Ordering::Relaxed);
+    }
+
+    /// Returns the total count of database queries attempted without tenant context.
+    pub fn get_rls_context_missing_total(&self) -> u64 {
+        self.rls_context_missing_total.load(Ordering::Relaxed)
+    }
+
+    /// Executes a closure within a tenant-isolated database transaction using PostgreSQL RLS.
+    pub async fn with_tenant<F, Fut, T>(&self, org_id: &str, f: F) -> Result<T, sqlx::Error>
+    where
+        F: FnOnce(&mut sqlx::Transaction<'_, sqlx::Postgres>) -> Fut,
+        Fut: std::future::Future<Output = Result<T, sqlx::Error>>,
+    {
+        if let Some(pool) = &self.db_pool {
+            crate::tenant::with_tenant(pool, org_id, f).await
+        } else {
+            self.record_rls_context_missing();
+            Err(sqlx::Error::Configuration(
+                "Database pool not available".into(),
+            ))
+        }
     }
 
     /// Returns true if QuestDB is enabled via environment variable or config.yaml.

@@ -247,7 +247,10 @@ pub async fn prometheus_metrics_handler(
          fintext_api_latency_seconds_bucket{{le=\"2.5\"}} {}\n\
          fintext_api_latency_seconds_bucket{{le=\"5.0\"}} {}\n\
          fintext_api_latency_seconds_bucket{{le=\"+Inf\"}} {}\n\
-         fintext_api_latency_seconds_count {}\n",
+         fintext_api_latency_seconds_count {}\n\
+         # HELP fintext_rls_context_missing_total Total count of database operations attempted without tenant context\n\
+         # TYPE fintext_rls_context_missing_total counter\n\
+         fintext_rls_context_missing_total {}\n",
         status.backup_last_success_timestamp,
         status.backup_age_hours,
         status.backup_size_bytes,
@@ -275,7 +278,8 @@ pub async fn prometheus_metrics_handler(
         perf.total_requests,
         perf.total_requests,
         perf.total_requests,
-        perf.total_requests
+        perf.total_requests,
+        state.get_rls_context_missing_total()
     );
 
     (

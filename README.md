@@ -551,6 +551,8 @@ FinText-Alpha-Vectorizer/
 - **Python SDK**: [`python_sdk/README.md`](python_sdk/README.md)
 - **Deprecations Log**: [`docs/DEPRECATED.md`](docs/DEPRECATED.md)
 - **SRE & Operations Manual**: [`docs/OPERATIONS.md`](docs/OPERATIONS.md)
+- **Tenant Isolation Runbook**: [`docs/TENANT_ISOLATION_RUNBOOK.md`](docs/TENANT_ISOLATION_RUNBOOK.md)
+- **Institutional Security Architecture**: [`docs/SECURITY.md`](docs/SECURITY.md)
 
 ---
 

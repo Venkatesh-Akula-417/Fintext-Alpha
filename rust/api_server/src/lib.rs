@@ -19,9 +19,11 @@ pub mod storage;
 pub mod streaming;
 pub mod supply_chain;
 pub mod symbol_map;
+pub mod tenant;
 pub mod universes;
 pub mod users;
 pub mod webhooks;
+pub use tenant::{with_tenant, AdminPool, TenantContext};
 
 pub mod audio;
 pub mod audit_logs;

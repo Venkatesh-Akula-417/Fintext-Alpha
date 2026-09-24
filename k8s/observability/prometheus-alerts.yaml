@@ -1,8 +1,8 @@
 # ══════════════════════════════════════════════════════════════════════════════
 # FinText-Alpha-Vectorizer — Production Prometheus Alerting Rules ConfigMap
 # ══════════════════════════════════════════════════════════════════════════════
-# Contains 9 institutional alerting rules for 95%+ zero-touch site reliability.
-# Grouped into: API Latency & Errors, Ingestion Lag, Infrastructure Saturation, Backups.
+# Contains 10 institutional alerting rules for 95%+ zero-touch site reliability.
+# Grouped into: API Latency & Errors, Ingestion Lag, Infrastructure Saturation, Backups, Tenant Isolation.
 # ══════════════════════════════════════════════════════════════════════════════
 
 apiVersion: v1
@@ -200,4 +200,19 @@ data:
               summary: "Disaster recovery restoration test drill failed"
               description: "Automated monthly restore test encountered validation error or breached 4h RTO threshold."
               runbook_url: "https://docs.fintext.internal/ops/runbooks/restore-test-failure"
+
+      # ── 5. Database Security & Tenant Isolation Alerts ────────────────────
+      - name: fintext_database_security_alerts
+        rules:
+          - alert: RLSContextMissing
+            expr: fintext_rls_context_missing_total > 0
+            for: 5m
+            labels:
+              severity: critical
+              service: fintext-api
+              tier: database-security
+            annotations:
+              summary: "Tenant-scoped database query attempted without RLS TenantContext"
+              description: "Database operation on a tenant-owned table was initiated without setting app.current_org_id (value: {{ $value }}). Immediate investigation required to prevent cross-tenant leaks."
+              runbook_url: "docs/TENANT_ISOLATION_RUNBOOK.md#incident"
 

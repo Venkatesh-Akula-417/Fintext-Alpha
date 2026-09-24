@@ -183,6 +183,7 @@ services:
       - postgres_data:/var/lib/postgresql/data
       - ./config/timescale/init.sql:/docker-entrypoint-initdb.d/01-init.sql:ro
       - ./config/pit_reference_schema.sql:/docker-entrypoint-initdb.d/02-pit_reference.sql:ro
+      - ./config/timescale/03-rls-multi-tenant-isolation.sql:/docker-entrypoint-initdb.d/03-rls.sql:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U fintext -d fintext_metadata"]
       interval: 10s

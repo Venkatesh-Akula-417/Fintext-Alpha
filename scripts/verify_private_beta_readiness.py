@@ -355,6 +355,41 @@ except Exception as e:
     record_check(20, "Launch Checklist & Load Test SLA Certified", False, str(e))
 
 # ─────────────────────────────────────────────────────────────────────────────
+# Check 21: PostgreSQL Row-Level Security (RLS) Multi-Tenant Isolation Certified
+# ─────────────────────────────────────────────────────────────────────────────
+try:
+    rls_report_path = REPO_ROOT / "logs" / "rls_isolation_report.json"
+    migration_file = REPO_ROOT / "config" / "timescale" / "03-rls-multi-tenant-isolation.sql"
+    tenant_runbook = REPO_ROOT / "docs" / "TENANT_ISOLATION_RUNBOOK.md"
+    tenant_rs = REPO_ROOT / "rust" / "api_server" / "src" / "tenant.rs"
+
+    has_rls_report = False
+    leak_rows = 999
+    rls_tables_count = 0
+    verdict = "FAILED"
+
+    if rls_report_path.exists():
+        try:
+            report_data = json.loads(rls_report_path.read_text(encoding="utf-8"))
+            leak_rows = report_data.get("cross_tenant_leak_rows", 999)
+            rls_tables_count = len(report_data.get("rls_enabled_tables", []))
+            verdict = report_data.get("verdict", "FAILED")
+            has_rls_report = (verdict == "CERTIFIED" and leak_rows == 0 and rls_tables_count >= 17)
+        except Exception:
+            has_rls_report = False
+
+    passed = (
+        has_rls_report
+        and migration_file.exists()
+        and tenant_runbook.exists()
+        and tenant_rs.exists()
+    )
+    evidence = f"Verdict: {verdict}, leak_rows={leak_rows}, {rls_tables_count} tables with RLS FORCED, runbook & tenant helper verified"
+    record_check(21, "PostgreSQL RLS Multi-Tenant Isolation", passed, evidence)
+except Exception as e:
+    record_check(21, "PostgreSQL RLS Multi-Tenant Isolation", False, str(e))
+
+# ─────────────────────────────────────────────────────────────────────────────
 # Print Results Table
 # ─────────────────────────────────────────────────────────────────────────────
 print(f"{'#':<3} | {'Check Description':<40} | {'Status':<8} | {'Evidence'}")
@@ -369,8 +404,9 @@ print(f"Passed:       {Colors.GREEN}{checks_passed}{Colors.RESET}")
 print(f"Failed:       {Colors.RED}{checks_failed}{Colors.RESET}")
 
 if checks_failed == 0:
-    print(f"\n{Colors.GREEN}{Colors.BOLD}>>> VERDICT: ALL 20 AUTOMATED CHECKS PASSED. SYSTEM IS LAUNCH READY! <<<{Colors.RESET}\n")
+    print(f"\n{Colors.GREEN}{Colors.BOLD}>>> VERDICT: ALL 21 AUTOMATED CHECKS PASSED. SYSTEM IS LAUNCH READY! <<<{Colors.RESET}\n")
     sys.exit(0)
 else:
     print(f"\n{Colors.RED}{Colors.BOLD}>>> VERDICT: {checks_failed} CHECKS FAILED. RESOLVE BEFORE LAUNCH. <<<{Colors.RESET}\n")
     sys.exit(1)
+

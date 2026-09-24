@@ -1,0 +1,345 @@
+{
+  "generated_utc": "2026-09-24T04:53:52.532714+00:00",
+  "commit": "4d001bf070a2e7b86c7147fed2b17e5d3570e058",
+  "rls_enabled_tables": [
+    "audit_logs",
+    "organizations",
+    "organization_members",
+    "api_keys",
+    "usage_events",
+    "universes",
+    "webhooks",
+    "data_retention_policies",
+    "model_retraining_jobs",
+    "kafka_credentials",
+    "ip_whitelist",
+    "chat_alert_subscriptions",
+    "polling_webhooks",
+    "subscriptions",
+    "email_digest_subscriptions",
+    "digest_send_history",
+    "fix_orders",
+    "instrument_master",
+    "filings_raw",
+    "filings_normalized"
+  ],
+  "roles": {
+    "app": "fintext_app (NOBYPASSRLS)",
+    "ingest": "fintext_ingest (BYPASSRLS)",
+    "admin": "fintext (BYPASSRLS)"
+  },
+  "tests": [
+    {
+      "name": "rls_enabled_and_forced",
+      "table": "audit_logs",
+      "expected": true,
+      "observed": true,
+      "pass": true
+    },
+    {
+      "name": "rls_enabled_and_forced",
+      "table": "organizations",
+      "expected": true,
+      "observed": true,
+      "pass": true
+    },
+    {
+      "name": "rls_enabled_and_forced",
+      "table": "organization_members",
+      "expected": true,
+      "observed": true,
+      "pass": true
+    },
+    {
+      "name": "rls_enabled_and_forced",
+      "table": "api_keys",
+      "expected": true,
+      "observed": true,
+      "pass": true
+    },
+    {
+      "name": "rls_enabled_and_forced",
+      "table": "usage_events",
+      "expected": true,
+      "observed": true,
+      "pass": true
+    },
+    {
+      "name": "rls_enabled_and_forced",
+      "table": "universes",
+      "expected": true,
+      "observed": true,
+      "pass": true
+    },
+    {
+      "name": "rls_enabled_and_forced",
+      "table": "webhooks",
+      "expected": true,
+      "observed": true,
+      "pass": true
+    },
+    {
+      "name": "rls_enabled_and_forced",
+      "table": "data_retention_policies",
+      "expected": true,
+      "observed": true,
+      "pass": true
+    },
+    {
+      "name": "rls_enabled_and_forced",
+      "table": "model_retraining_jobs",
+      "expected": true,
+      "observed": true,
+      "pass": true
+    },
+    {
+      "name": "rls_enabled_and_forced",
+      "table": "kafka_credentials",
+      "expected": true,
+      "observed": true,
+      "pass": true
+    },
+    {
+      "name": "rls_enabled_and_forced",
+      "table": "ip_whitelist",
+      "expected": true,
+      "observed": true,
+      "pass": true
+    },
+    {
+      "name": "rls_enabled_and_forced",
+      "table": "chat_alert_subscriptions",
+      "expected": true,
+      "observed": true,
+      "pass": true
+    },
+    {
+      "name": "rls_enabled_and_forced",
+      "table": "polling_webhooks",
+      "expected": true,
+      "observed": true,
+      "pass": true
+    },
+    {
+      "name": "rls_enabled_and_forced",
+      "table": "subscriptions",
+      "expected": true,
+      "observed": true,
+      "pass": true
+    },
+    {
+      "name": "rls_enabled_and_forced",
+      "table": "email_digest_subscriptions",
+      "expected": true,
+      "observed": true,
+      "pass": true
+    },
+    {
+      "name": "rls_enabled_and_forced",
+      "table": "digest_send_history",
+      "expected": true,
+      "observed": true,
+      "pass": true
+    },
+    {
+      "name": "rls_enabled_and_forced",
+      "table": "fix_orders",
+      "expected": true,
+      "observed": true,
+      "pass": true
+    },
+    {
+      "name": "rls_enabled_and_forced",
+      "table": "instrument_master",
+      "expected": true,
+      "observed": true,
+      "pass": true
+    },
+    {
+      "name": "rls_enabled_and_forced",
+      "table": "filings_raw",
+      "expected": true,
+      "observed": true,
+      "pass": true
+    },
+    {
+      "name": "rls_enabled_and_forced",
+      "table": "filings_normalized",
+      "expected": true,
+      "observed": true,
+      "pass": true
+    },
+    {
+      "name": "role_fintext_app_nobypassrls",
+      "table": "N/A",
+      "expected": false,
+      "observed": false,
+      "pass": true
+    },
+    {
+      "name": "role_admin_bypassrls",
+      "table": "N/A",
+      "expected": true,
+      "observed": true,
+      "pass": true
+    },
+    {
+      "name": "deny_by_default_zero_rows",
+      "table": "audit_logs",
+      "expected": 0,
+      "observed": 0,
+      "pass": true
+    },
+    {
+      "name": "deny_by_default_zero_rows",
+      "table": "universes",
+      "expected": 0,
+      "observed": 0,
+      "pass": true
+    },
+    {
+      "name": "deny_by_default_zero_rows",
+      "table": "api_keys",
+      "expected": 0,
+      "observed": 0,
+      "pass": true
+    },
+    {
+      "name": "deny_by_default_zero_rows",
+      "table": "usage_events",
+      "expected": 0,
+      "observed": 0,
+      "pass": true
+    },
+    {
+      "name": "deny_by_default_zero_rows",
+      "table": "webhooks",
+      "expected": 0,
+      "observed": 0,
+      "pass": true
+    },
+    {
+      "name": "deny_by_default_zero_rows",
+      "table": "organizations",
+      "expected": 0,
+      "observed": 0,
+      "pass": true
+    },
+    {
+      "name": "cross_tenant_read_zero_leak",
+      "table": "audit_logs",
+      "expected": 0,
+      "observed": 0,
+      "pass": true
+    },
+    {
+      "name": "tenant_own_rows_accessible",
+      "table": "audit_logs",
+      "expected": 1,
+      "observed": 1,
+      "pass": true
+    },
+    {
+      "name": "cross_tenant_read_zero_leak",
+      "table": "universes",
+      "expected": 0,
+      "observed": 0,
+      "pass": true
+    },
+    {
+      "name": "tenant_own_rows_accessible",
+      "table": "universes",
+      "expected": 1,
+      "observed": 1,
+      "pass": true
+    },
+    {
+      "name": "cross_tenant_read_zero_leak",
+      "table": "api_keys",
+      "expected": 0,
+      "observed": 0,
+      "pass": true
+    },
+    {
+      "name": "tenant_own_rows_accessible",
+      "table": "api_keys",
+      "expected": 1,
+      "observed": 1,
+      "pass": true
+    },
+    {
+      "name": "cross_tenant_read_zero_leak",
+      "table": "usage_events",
+      "expected": 0,
+      "observed": 0,
+      "pass": true
+    },
+    {
+      "name": "tenant_own_rows_accessible",
+      "table": "usage_events",
+      "expected": 1,
+      "observed": 1,
+      "pass": true
+    },
+    {
+      "name": "cross_tenant_read_zero_leak",
+      "table": "webhooks",
+      "expected": 0,
+      "observed": 0,
+      "pass": true
+    },
+    {
+      "name": "tenant_own_rows_accessible",
+      "table": "webhooks",
+      "expected": 1,
+      "observed": 1,
+      "pass": true
+    },
+    {
+      "name": "cross_tenant_read_zero_leak",
+      "table": "organizations",
+      "expected": 0,
+      "observed": 0,
+      "pass": true
+    },
+    {
+      "name": "tenant_own_rows_accessible",
+      "table": "organizations",
+      "expected": 1,
+      "observed": 1,
+      "pass": true
+    },
+    {
+      "name": "cross_tenant_update_prevented",
+      "table": "audit_logs",
+      "expected": 0,
+      "observed": 0,
+      "pass": true
+    },
+    {
+      "name": "cross_tenant_delete_prevented",
+      "table": "audit_logs",
+      "expected": 0,
+      "observed": 0,
+      "pass": true
+    },
+    {
+      "name": "cross_tenant_insert_with_check_violation",
+      "table": "audit_logs",
+      "expected": "ERROR",
+      "observed": "ERROR",
+      "pass": true
+    },
+    {
+      "name": "admin_bypass_rls_verified",
+      "table": "audit_logs",
+      "expected": 2,
+      "observed": 2,
+      "pass": true
+    }
+  ],
+  "cross_tenant_leak_rows": 0,
+  "missing_context_rows": 0,
+  "p95_ms_after_rls": 252.41,
+  "verdict": "CERTIFIED"
+}

@@ -333,6 +333,12 @@ The final electronic diagnostics before green flag departure. All 5 automated Gi
   - **Evidence**: `notebooks/04_signal_quality_2024_2025.ipynb`, `scripts/validate_signal_quality.py`, `docs/SIGNAL_QUALITY_REPORT_2024_2025.md`, `logs/signal_quality_report.json`
   - **How to Verify**: `python scripts/validate_signal_quality.py --json-report logs/signal_quality_report.json`
 
+- [x] **Check 7.8: PostgreSQL Row-Level Security (RLS) Multi-Tenant Confinement Certified**
+  - **Status**: PASS
+  - **Description**: Database-enforced multi-tenant isolation verified across all 20 CLASS-T tables via `scripts/test_rls_isolation.py`. Asserts PostgreSQL RLS is enabled and forced (`relforcerowsecurity = true`), confirms role separation (`fintext_app` NOBYPASSRLS vs `fintext` admin BYPASSRLS), validates deny-by-default (0 rows without GUC), verifies cross-tenant read/write confinement (0 leak rows, WITH CHECK insert rejection), and exports certified JSON audit report to `logs/rls_isolation_report.json`.
+  - **Evidence**: `config/timescale/03-rls-multi-tenant-isolation.sql`, `rust/api_server/src/tenant.rs`, `scripts/test_rls_isolation.py`, `docs/TENANT_ISOLATION_RUNBOOK.md`, `logs/rls_isolation_report.json`
+  - **How to Verify**: `python scripts/test_rls_isolation.py --json-report logs/rls_isolation_report.json`
+
 ---
 
 ## Final Certification & Sign-off
@@ -344,9 +350,9 @@ The final electronic diagnostics before green flag departure. All 5 automated Gi
 ║                                                                                        ║
 ║   System:               FinText Alpha Vectorizer v1.0.0-rc1                            ║
 ║   Auditor:              FinTech CTO & Private Beta Launch Review Board                 ║
-║   Date:                 September 17, 2026                                             ║
-║   Checks Evaluated:     41 / 41                                                        ║
-║   Checks Passed:        41 / 41 (100.0%)                                               ║
+║   Date:                 September 24, 2026                                             ║
+║   Checks Evaluated:     42 / 42                                                        ║
+║   Checks Passed:        42 / 42 (100.0%)                                               ║
 ║   Regressions:          0 Detected                                                     ║
 ║   Security Leaks:       0 Detected                                                     ║
 ║   Infrastructure Cost:  $295 / month (Break-even: 1 Customer)                          ║
