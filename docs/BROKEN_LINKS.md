@@ -34,6 +34,9 @@ All internal links in active documentation (`README.md`, `docs/DEPRECATED.md`, `
 | `rust/ingestion_engine/src/sources/README.md` | `docs/DEPRECATED.md` | `docs/DEPRECATED.md` | **VALID** |
 | `models/README.md` | `docs/DEPRECATED.md` | `docs/DEPRECATED.md` | **VALID** |
 | `config/README.md` | `docs/DEPRECATED.md` | `docs/DEPRECATED.md` | **VALID** |
+| `docs/PRODUCTION_DEPLOYMENT_RUNBOOK.md` | `docs/CERTIFIED_METRICS_REGISTER.md` | `docs/CERTIFIED_METRICS_REGISTER.md` | **VALID** |
+| `docs/LATENCY_AND_COLOCATION_DECISION.md` | `docs/CERTIFIED_METRICS_REGISTER.md` | `docs/CERTIFIED_METRICS_REGISTER.md` | **VALID** |
+| `docs/PRODUCTION_DEPLOYMENT_RUNBOOK.md` | `infra/terraform/main.tf` | `infra/terraform/main.tf` | **VALID** |
 
 ---
 

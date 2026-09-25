@@ -565,6 +565,8 @@ FinText-Alpha-Vectorizer/
 - **Public Status Page Guide**: [`docs/STATUS_PAGE_GUIDE.md`](docs/STATUS_PAGE_GUIDE.md)
 - **Billing & Dunning Operations Runbook**: [`docs/BILLING_RUNBOOK.md`](docs/BILLING_RUNBOOK.md)
 - **Private Beta Launch Checklist**: [`docs/PRIVATE_BETA_LAUNCH_CHECKLIST.md`](docs/PRIVATE_BETA_LAUNCH_CHECKLIST.md)
+- **AWS Production Deployment Runbook**: [`docs/PRODUCTION_DEPLOYMENT_RUNBOOK.md`](docs/PRODUCTION_DEPLOYMENT_RUNBOOK.md)
+- **Latency, Colocation & Cloud Architecture ADR**: [`docs/LATENCY_AND_COLOCATION_DECISION.md`](docs/LATENCY_AND_COLOCATION_DECISION.md)
 
 
 ---

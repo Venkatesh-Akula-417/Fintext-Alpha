@@ -127,4 +127,22 @@ FinText enforces strict machine learning supply-chain governance to prevent mode
 - **Automated Verification:** Production deployment pipelines and CI test harnesses verify the SHA256 checksum both pre-download and post-extraction prior to mounting weights into runtime inference memory. Any hash divergence triggers immediate container launch termination.
 - **Permissive Open-Source Licensing:** Base architectures are verified as Apache-2.0 (`ProsusAI/finbert`) and MIT (`dslim/bert-base-NER`), ensuring unencumbered institutional commercial operation.
 
+---
+
+## 9. Network Ingress Confinement & AWS Infrastructure Defense-in-Depth
+
+FinText enforces defense-in-depth network confinement across both cloud infrastructure (AWS) and application layers (Rust Axum middleware):
+
+### 9.1 Application Layer: Per-Tenant IP & CIDR Whitelisting
+- **Middleware Boundary:** Requests passing Bearer JWT or API Key authentication enter `ip_whitelist_middleware` before reaching route handlers.
+- **Dynamic CIDR Evaluation:** Evaluates client source IP against active CIDR subnets registered for the user/organization in sub-microsecond in-memory `DashMap` cache backed by PostgreSQL.
+- **Fail-Secure 403 Response:** If $\ge 1$ entry exists and the source IP does not match, request terminates immediately with `403 Forbidden`: `{"error": "Forbidden", "message": "IP address not allowed"}`.
+- **Operational Exemption:** Public health probes (`/v1/health`, `/v1/status`) and billing webhooks (`/v1/billing/webhook`) are decoupled from tenant whitelists.
+
+### 9.2 Infrastructure Layer: AWS VPC & Security Groups
+- **Isolated VPC Topology:** Compute host resides in public subnet with Elastic IP; managed RDS TimescaleDB resides strictly in private subnets across dual Availability Zones.
+- **Security Group Chaining:** RDS security group allows TCP port 5432 ingress **strictly** from the EC2 security group ID (`aws_security_group.ec2_sg.id`). Direct public Internet access to the database is physically impossible at the hypervisor level.
+- **S3 & KMS Envelope Encryption:** All backup and Parquet archive buckets enforce `block_public_acls = true`, `block_public_policy = true`, versioning, and SSE-KMS customer master key envelope encryption.
+
+
 

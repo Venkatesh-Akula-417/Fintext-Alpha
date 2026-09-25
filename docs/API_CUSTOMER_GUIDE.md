@@ -83,6 +83,32 @@ curl -X POST http://127.0.0.1:8000/v1/users/api-keys \
   -d '{"name": "production_hft_feed", "expires_in_days": 90}'
 ```
 
+### 2.3 Network Ingress Confinement (IP & CIDR Whitelisting)
+
+For hedge funds and institutional prop desks operating under strict cybersecurity mandates (SOC 2, ISO 27001, SEC Safeguards Rule), FinText allows programmatic confinement of API traffic to authorized IP addresses and CIDR subnets:
+
+```bash
+# 1. Register allowed office VPN or cloud execution subnet
+curl -X POST http://127.0.0.1:8000/v1/security/ip-whitelist \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"ip_or_cidr": "198.51.100.0/24", "description": "London Quant Desk VPN"}'
+
+# 2. List all registered active ingress CIDR rules
+curl -s -H "Authorization: Bearer $TOKEN" http://127.0.0.1:8000/v1/security/ip-whitelist
+
+# 3. Delete an entry by ID (reverts to default open when list is empty)
+curl -X DELETE -H "Authorization: Bearer $TOKEN" http://127.0.0.1:8000/v1/security/ip-whitelist/{entry_id}
+```
+
+**Security Behavioral Guarantees**:
+- **Default Open for New Organizations**: By default (0 rules configured), authenticated requests are permitted from any source IP.
+- **Strict Ingress Confinement**: As soon as $\ge 1$ IP/CIDR rule is added, requests originating outside the configured subnets receive an immediate `403 Forbidden` response:
+  ```json
+  {"error": "Forbidden", "message": "IP address not allowed"}
+  ```
+- **Operational Health Exemption**: Public health probes (`/v1/health`, `/v1/status`) and billing webhooks (`/v1/billing/webhook`) are decoupled from tenant IP whitelists to ensure continuous external monitoring and Stripe reconciliation.
+
 ---
 
 ## 3. The 32 Core Endpoints (Component Reference Table)

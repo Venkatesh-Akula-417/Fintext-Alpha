@@ -5224,6 +5224,140 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn test_ip_whitelist_inside_cidr_200() {
+        let app = create_app();
+        let (auth_k, auth_v) = test_auth_header_for_user("user_inside_cidr");
+
+        // 1. Configure CIDR 10.200.0.0/16
+        let add_req = Request::builder()
+            .method("POST")
+            .uri("/security/ip-whitelist")
+            .header(auth_k.clone(), auth_v.clone())
+            .header("content-type", "application/json")
+            .body(Body::from(
+                serde_json::to_string(&serde_json::json!({
+                    "ip_or_cidr": "10.200.0.0/16",
+                    "description": "Primary VPN"
+                }))
+                .unwrap(),
+            ))
+            .unwrap();
+        let add_resp = app.clone().oneshot(add_req).await.unwrap();
+        assert_eq!(add_resp.status(), StatusCode::CREATED);
+
+        // 2. Request from 10.200.5.21 (inside CIDR) -> 200 OK
+        let req = Request::builder()
+            .method("GET")
+            .uri("/sentiment?ticker=AAPL")
+            .header(auth_k, auth_v)
+            .header("x-forwarded-for", "10.200.5.21")
+            .body(Body::empty())
+            .unwrap();
+        let resp = app.oneshot(req).await.unwrap();
+        assert_eq!(resp.status(), StatusCode::OK);
+    }
+
+    #[tokio::test]
+    async fn test_ip_whitelist_outside_cidr_403() {
+        let app = create_app();
+        let (auth_k, auth_v) = test_auth_header_for_user("user_outside_cidr");
+
+        // 1. Configure CIDR 10.200.0.0/16
+        let add_req = Request::builder()
+            .method("POST")
+            .uri("/security/ip-whitelist")
+            .header(auth_k.clone(), auth_v.clone())
+            .header("content-type", "application/json")
+            .body(Body::from(
+                serde_json::to_string(&serde_json::json!({
+                    "ip_or_cidr": "10.200.0.0/16",
+                    "description": "Primary VPN"
+                }))
+                .unwrap(),
+            ))
+            .unwrap();
+        let add_resp = app.clone().oneshot(add_req).await.unwrap();
+        assert_eq!(add_resp.status(), StatusCode::CREATED);
+
+        // 2. Request from 192.168.1.99 (outside CIDR) -> 403 FORBIDDEN
+        let req = Request::builder()
+            .method("GET")
+            .uri("/sentiment?ticker=AAPL")
+            .header(auth_k, auth_v)
+            .header("x-forwarded-for", "192.168.1.99")
+            .body(Body::empty())
+            .unwrap();
+        let resp = app.oneshot(req).await.unwrap();
+        assert_eq!(resp.status(), StatusCode::FORBIDDEN);
+
+        // Verify JSON error contract
+        let body_bytes = resp.into_body().collect().await.unwrap().to_bytes();
+        let err_json: serde_json::Value = serde_json::from_slice(&body_bytes).unwrap();
+        assert_eq!(err_json["error"], "Forbidden");
+        assert_eq!(err_json["message"], "IP address not allowed");
+    }
+
+    #[tokio::test]
+    async fn test_ip_whitelist_empty_allow_all() {
+        let app = create_app();
+        let (auth_k, auth_v) = test_auth_header_for_user("user_empty_whitelist");
+
+        // No rules added. Requests from diverse arbitrary IPs should all be allowed (200 OK)
+        for test_ip in ["1.2.3.4", "8.8.8.8", "198.51.100.1"] {
+            let req = Request::builder()
+                .method("GET")
+                .uri("/sentiment?ticker=AAPL")
+                .header(auth_k.clone(), auth_v.clone())
+                .header("x-forwarded-for", test_ip)
+                .body(Body::empty())
+                .unwrap();
+            let resp = app.clone().oneshot(req).await.unwrap();
+            assert_eq!(resp.status(), StatusCode::OK, "Failed for IP {}", test_ip);
+        }
+    }
+
+    #[tokio::test]
+    async fn test_ip_whitelist_status_exempt() {
+        let app = create_app();
+
+        // /status and /v1/status must be publicly accessible and exempt from IP whitelisting
+        for endpoint in ["/status", "/v1/status"] {
+            let req = Request::builder()
+                .method("GET")
+                .uri(endpoint)
+                .header("x-forwarded-for", "203.0.113.199")
+                .body(Body::empty())
+                .unwrap();
+            let resp = app.clone().oneshot(req).await.unwrap();
+            assert_eq!(resp.status(), StatusCode::OK, "Failed for endpoint {}", endpoint);
+        }
+    }
+
+    #[tokio::test]
+    async fn test_ip_whitelist_webhook_exempt() {
+        let app = create_app();
+
+        // /billing/webhook must be exempt from IP whitelisting (signatures are Stripe HMAC)
+        // Missing Stripe-Signature returns 400 Bad Request (NOT 403 Forbidden IP check)
+        for endpoint in ["/billing/webhook", "/v1/billing/webhook"] {
+            let req = Request::builder()
+                .method("POST")
+                .uri(endpoint)
+                .header("x-forwarded-for", "198.51.100.77")
+                .header("content-type", "application/json")
+                .body(Body::from(r#"{"type": "invoice.paid"}"#))
+                .unwrap();
+            let resp = app.clone().oneshot(req).await.unwrap();
+            assert_ne!(
+                resp.status(),
+                StatusCode::FORBIDDEN,
+                "Webhook endpoint {} should not be blocked by IP whitelist",
+                endpoint
+            );
+        }
+    }
+
+    #[tokio::test]
     async fn test_news_articles_endpoints() {
         let app = create_app();
         let (auth_k, auth_v) = test_auth_header();

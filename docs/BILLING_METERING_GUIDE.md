@@ -4,6 +4,7 @@
 > **Metaphor**: Precision Bike Rental & Fleet Telemetry (Per-Kilometer vs. Monthly Membership)  
 > **Audience**: Chief Technology Officers (CTO), Chief Commercial Officers (CCO), Quant Infrastructure Leads  
 > **Unit Economics Target**: Immediate Break-Even on 1 Customer ($500/mo revenue vs. $295/mo infra cost = 41% Gross Margin)  
+> **Authoritative Metric Register**: [`docs/CERTIFIED_METRICS_REGISTER.md`](./CERTIFIED_METRICS_REGISTER.md)  
 > **Reference Version**: v1.0.0-rc1
 
 ---

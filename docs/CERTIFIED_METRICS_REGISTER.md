@@ -37,15 +37,17 @@ In high-assurance quantitative systems, disparate documents frequently suffer fr
 | **14** | **Signal Alpha Decay vs IS** | `4.07%` | $< 50.0\%$ | `logs/signal_quality_report.json` | `4d001bf` | 2026-09-24 | Monthly |
 | **15** | **Time-To-First-Value (TTFV)** | `1.62 s` | $< 300\text{ s}$ | `logs/tenant_provisioning_report.json`| `a31d508` | 2026-09-24 | Per Onboarding |
 | **16** | **Cloud Run-Rate Budget** | `$295.00–$301.44 / mo` | $\le \$310 / \text{mo}$ | `docs/CLOUD_COST_OPTIMIZATION.md` | `a31d508` | 2026-09-24 | Monthly Audit |
-| **17** | **Readiness Audit Suite Checks** | `24 / 24 Checks Passed` | 100.0% Pass | `scripts/verify_private_beta_readiness.py` | current | 2026-09-25 | Per Commit |
-| **18** | **Rust API Gateway Unit Tests** | `494 / 494 Passed` | 100.0% Pass | `rust/api_server/src/lib.rs` | current | 2026-09-25 | Per Commit |
+| **17** | **Readiness Audit Suite Checks** | `25 / 25 Checks Passed` | 100.0% Pass | `scripts/verify_private_beta_readiness.py` | current | 2026-09-25 | Per Commit |
+| **18** | **Rust API Gateway Unit Tests** | `499 / 499 Passed` | 100.0% Pass | `rust/api_server/src/lib.rs` | current | 2026-09-25 | Per Commit |
 | **19** | **Rust Ingestion Daemon Tests** | `108 / 108 Passed` | 100.0% Pass | `rust/ingestion_engine/` | `a31d508` | 2026-09-24 | Per Commit |
-| **20** | **Private Beta Launch Checks** | `46 / 46 Checks Passed` | 100.0% Pass | `docs/PRIVATE_BETA_LAUNCH_CHECKLIST.md` | current | 2026-09-25 | Per Release |
+| **20** | **Private Beta Launch Checks** | `47 / 47 Checks Passed` | 100.0% Pass | `docs/PRIVATE_BETA_LAUNCH_CHECKLIST.md` | current | 2026-09-25 | Per Release |
 | **21** | **Billing Flow Lifecycle Certification** | `CERTIFIED (7/7 Scenarios)` | 100.0% Pass | `logs/billing_flow_report.json` | current | 2026-09-25 | Per Release |
 | **22** | **Monthly Billing Reconciliation** | `RECONCILED (0 Discrepancies)`| Zero Drift | `logs/billing_reconciliation_report.json` | current | 2026-09-25 | Monthly Close |
 | **23** | **Webhook Signature Scheme & Tolerance**| `HMAC-SHA256, 300s window` | Constant-Time | `rust/api_server/src/billing.rs` | current | 2026-09-25 | Continuous |
 | **24** | **Model Assets Release Distribution** | `model-assets-v1.0.0 (3 assets)`| SSoT Tagged Release | `docs/MODEL_ASSETS.md` | current | 2026-09-25 | Per Model Version |
 | **25** | **Repository Root Waste Count** | `0 Waste Files (Audited)` | Clean SSoT | `docs/REPO_HYGIENE_AUDIT.md` | current | 2026-09-25 | Continuous |
+| **26** | **AWS Production IaC Deployment Certification** | `CERTIFIED (28/28 Resources)` | 0 Errors, 0 Warnings | `logs/infra_validate_report.json` | current | 2026-09-25 | Per Release |
+| **27** | **AWS Production Monthly Cost Invariant** | `$281.49 / mo (c6i) / $195.64 / mo (Graviton)` | $\le \$301.44 / \text{mo}$ | `docs/PRODUCTION_DEPLOYMENT_RUNBOOK.md` | current | 2026-09-25 | Monthly Audit |
 
 
 ---

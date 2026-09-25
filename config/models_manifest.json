@@ -10,7 +10,7 @@
         "tokenizer.json",
         "config.json"
       ],
-      "url": "https://github.com/VENKATESH-A-rgb/FinText-Alpha-Vectorizer/releases/download/models-v1.0.0/finbert-finetuned-v1.0.0.zip",
+      "url": "https://github.com/Venkatesh-Akula-417/Fintext-Alpha/releases/download/model-assets-v1.0.0/finbert-finetuned-v1.0.0.zip",
       "sha256": "182788c0e554ac3891e88b09f98c6b92ab6cd85f5b1c7c039b1d561049b86d33",
       "archive_format": "zip",
       "size_mb": 89,
@@ -28,7 +28,7 @@
         "model_static.onnx",
         "tokenizer.json"
       ],
-      "url": "https://github.com/VENKATESH-A-rgb/FinText-Alpha-Vectorizer/releases/download/models-v1.0.0/ner-v1.0.0.zip",
+      "url": "https://github.com/Venkatesh-Akula-417/Fintext-Alpha/releases/download/model-assets-v1.0.0/ner-v1.0.0.zip",
       "sha256": "d6ff862b8b2ae293bea50b3dd0058d0facf7d9e154f94ad7619a92e940f9bbdc",
       "archive_format": "zip",
       "size_mb": 380,

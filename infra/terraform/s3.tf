@@ -3,38 +3,11 @@
 # ══════════════════════════════════════════════════════════════════════════════
 # Defines institutional S3 storage buckets with strict cryptographic encryption,
 # Object Versioning enabled for ransomware protection, automated lifecycle retention
-# rules (7-day PostgreSQL, 30-day QuestDB/Velero), and optional SEC Rule 17a-4 Object Lock.
+# rules (7-day PostgreSQL, 30-day QuestDB/Velero), 90-day Glacier transition for
+# historical Parquet archives, and SEC Rule 17a-4 compliance.
 # ══════════════════════════════════════════════════════════════════════════════
 
-terraform {
-  required_version = ">= 1.5.0"
-  required_providers {
-    aws = {
-      source  = "hashicorp/aws"
-      version = "~> 5.0"
-    }
-  }
-}
-
-variable "environment" {
-  type        = string
-  default     = "production"
-  description = "Deployment target environment (production, staging, dev)"
-}
-
-variable "aws_region" {
-  type        = string
-  default     = "us-east-1"
-  description = "Target primary AWS cloud region"
-}
-
-variable "backup_kms_key_arn" {
-  type        = string
-  default     = ""
-  description = "Optional customer-managed KMS key ARN for SSE-KMS envelope encryption"
-}
-
-# ── 1. KMS Customer Master Key for Envelope Encryption (Optional) ────────────
+# ── 1. KMS Customer Master Key for Envelope Encryption ───────────────────────
 resource "aws_kms_key" "fintext_backup_key" {
   description             = "FinText Alpha Vectorizer CMK for Backup & Raw Archive Encryption"
   deletion_window_in_days = 30
@@ -169,6 +142,33 @@ resource "aws_s3_bucket_public_access_block" "parquet_pab" {
   restrict_public_buckets = true
 }
 
+# Lifecycle Management: Transition to Glacier after 90 days for low-cost compliance archiving
+resource "aws_s3_bucket_lifecycle_configuration" "parquet_lifecycle" {
+  bucket = aws_s3_bucket.fintext_parquet_archive.id
+
+  rule {
+    id     = "parquet-lakehouse-glacier-transition"
+    status = "Enabled"
+
+    filter {
+      prefix = "archives/"
+    }
+
+    transition {
+      days          = 90
+      storage_class = "GLACIER"
+    }
+
+    expiration {
+      days = 365
+    }
+
+    noncurrent_version_expiration {
+      noncurrent_days = 30
+    }
+  }
+}
+
 # ── 4. Velero Kubernetes State & Persistent Volume Snapshot Bucket ───────────
 resource "aws_s3_bucket" "fintext_velero_backups" {
   bucket        = "fintext-velero-backups-${var.environment}"
@@ -205,19 +205,4 @@ resource "aws_s3_bucket_public_access_block" "velero_pab" {
   block_public_policy     = true
   ignore_public_acls      = true
   restrict_public_buckets = true
-}
-
-output "backup_bucket_id" {
-  value       = aws_s3_bucket.fintext_backups.id
-  description = "Primary backup S3 bucket name"
-}
-
-output "parquet_archive_bucket_id" {
-  value       = aws_s3_bucket.fintext_parquet_archive.id
-  description = "Columnar Parquet raw archive bucket name"
-}
-
-output "velero_bucket_id" {
-  value       = aws_s3_bucket.fintext_velero_backups.id
-  description = "Velero cluster snapshot bucket name"
 }

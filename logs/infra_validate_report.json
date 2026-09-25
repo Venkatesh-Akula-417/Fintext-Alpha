@@ -1,0 +1,71 @@
+{
+  "timestamp": "2026-09-25T11:51:30Z",
+  "auditor": "Principal Cloud Infrastructure Architect & Launch CTO",
+  "certification": "AWS-PROD-IAC-VALIDATION-2026",
+  "terraform_version": "1.16.2",
+  "aws_provider_version": "5.100.0",
+  "region": "us-east-1",
+  "validation_result": {
+    "valid": true,
+    "error_count": 0,
+    "warning_count": 0,
+    "diagnostics": []
+  },
+  "resource_inventory": {
+    "total_resources": 28,
+    "networking": [
+      "aws_vpc.fintext_vpc",
+      "aws_internet_gateway.fintext_igw",
+      "aws_subnet.public[0]",
+      "aws_subnet.public[1]",
+      "aws_subnet.private[0]",
+      "aws_subnet.private[1]",
+      "aws_route_table.public",
+      "aws_route_table.private",
+      "aws_route_table_association.public[0]",
+      "aws_route_table_association.public[1]",
+      "aws_route_table_association.private[0]",
+      "aws_route_table_association.private[1]",
+      "aws_eip.fintext_api_eip"
+    ],
+    "security": [
+      "aws_security_group.ec2_sg",
+      "aws_security_group.rds_sg",
+      "aws_kms_key.fintext_backup_key",
+      "aws_iam_role.ec2_role",
+      "aws_iam_policy.ec2_policy",
+      "aws_iam_role_policy_attachment.ec2_attach",
+      "aws_iam_instance_profile.ec2_profile"
+    ],
+    "compute": [
+      "aws_instance.fintext_api"
+    ],
+    "database": [
+      "aws_db_subnet_group.fintext_db_subnets",
+      "aws_db_parameter_group.fintext_pg16",
+      "aws_db_instance.fintext_metadata"
+    ],
+    "storage": [
+      "aws_s3_bucket.fintext_backups",
+      "aws_s3_bucket.fintext_parquet_archive",
+      "aws_s3_bucket.fintext_velero_backups"
+    ],
+    "observability": [
+      "aws_cloudwatch_log_group.api_server",
+      "aws_cloudwatch_log_group.ingestion_engine",
+      "aws_cloudwatch_metric_alarm.ec2_high_cpu",
+      "aws_cloudwatch_metric_alarm.ec2_status_check",
+      "aws_cloudwatch_metric_alarm.rds_high_cpu",
+      "aws_cloudwatch_metric_alarm.rds_low_storage"
+    ]
+  },
+  "cost_governance": {
+    "budget_cap_monthly_usd": 301.44,
+    "baseline_c6i_monthly_usd": 281.49,
+    "graviton_fallback_monthly_usd": 195.64,
+    "budget_headroom_usd": 19.95,
+    "budget_headroom_pct": 6.62,
+    "status": "COMPLIANT_WITHIN_BUDGET"
+  },
+  "status": "CERTIFIED_READY_FOR_FOUNDER_DEPLOY"
+}

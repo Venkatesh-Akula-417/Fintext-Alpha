@@ -26,6 +26,12 @@ models_release_v1/*
 target/
 build/
 dist/
+**/.terraform/
+.terraform/
+*.tfstate
+*.tfstate.*
+*.tfvars
+*.tfvars.json
 
 # ── 3. Heavy Data Formats & Compressed Archives ──────────────────────────────
 **/*.parquet
@@ -61,6 +67,7 @@ logs/*
 !logs/soak_ledger.md
 !logs/billing_flow_report.json
 !logs/billing_reconciliation_report.json
+!logs/infra_validate_report.json
 !logs/.gitkeep
 logs/soak_history.jsonl
 
