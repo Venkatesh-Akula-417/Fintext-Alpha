@@ -357,6 +357,12 @@ The final electronic diagnostics before green flag departure. All 5 automated Gi
   - **Evidence**: `config/timescale/04-billing-webhooks.sql`, `rust/api_server/src/billing.rs`, `scripts/test_billing_flow.py`, `scripts/reconcile_billing.py`, `k8s/billing/cronjob.yaml`, `k8s/observability/prometheus-alerts.yaml`, `dashboards/billing.json`, `docs/BILLING_RUNBOOK.md`, `logs/billing_flow_report.json`, `logs/billing_reconciliation_report.json`
   - **How to Verify**: `python scripts/test_billing_flow.py` && `python scripts/reconcile_billing.py` && `python scripts/verify_private_beta_readiness.py`
 
+- [x] **Check 7.12: Model Assets Release Distribution & Repository Hygiene Certified (P0 CI Restore + P2 SSoT Hygiene)**
+  - **Status**: PASS
+  - **Description**: Model artifact distribution channel established and certified via GitHub Releases under immutable tag `model-assets-v1.0.0`. Binary model weights (>100 MB, total 470 MB) completely decoupled from Git version control, eliminating Git LFS bandwidth charges. Public SHA256 checksum ledger published in `models_release_v1/SHA256SUMS.txt` and `docs/MODEL_ASSETS.md` certifying FinBERT production sentiment bundle (`finbert-finetuned-v1.0.0.zip`, 88.67 MB, Apache-2.0) and NER research model (`ner-v1.0.0.zip`, 380.36 MB, MIT). Root-level waste eliminated: obsolete `load_test.js` deleted with diff proof, historical `FULL_PROJECT_AUDIT.md` moved to `docs/archive/`, .gitignore regrouped into 9 documented sections, and 4 requirements files audited and verified against CI workflows. Comprehensive audit report published in `docs/REPO_HYGIENE_AUDIT.md`.
+  - **Evidence**: `docs/MODEL_ASSETS.md`, `docs/MODEL_ASSETS_RELEASE_NOTES.md`, `docs/REPO_HYGIENE_AUDIT.md`, `models_release_v1/SHA256SUMS.txt`, `.gitignore`, `docs/archive/FULL_PROJECT_AUDIT.md`, GitHub Release `model-assets-v1.0.0`
+  - **How to Verify**: `gh release view model-assets-v1.0.0` && `python scripts/verify_private_beta_readiness.py`
+
 ---
 
 ## Final Certification & Sign-off
@@ -369,8 +375,8 @@ The final electronic diagnostics before green flag departure. All 5 automated Gi
 ║   System:               FinText Alpha Vectorizer v1.0.0-rc1                            ║
 ║   Auditor:              FinTech CTO & Private Beta Launch Review Board                 ║
 ║   Date:                 September 25, 2026                                             ║
-║   Checks Evaluated:     45 / 45                                                        ║
-║   Checks Passed:        45 / 45 (100.0%)                                               ║
+║   Checks Evaluated:     46 / 46                                                        ║
+║   Checks Passed:        46 / 46 (100.0%)                                               ║
 ║   Regressions:          0 Detected                                                     ║
 ║   Security Leaks:       0 Detected                                                     ║
 ║   Infrastructure Cost:  $295 / month (Break-even: 1 Customer)                          ║

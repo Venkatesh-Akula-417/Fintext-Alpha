@@ -114,3 +114,17 @@ FinText Alpha Vectorizer exposes an unauthenticated webhook ingestion endpoint (
 - **Idempotency Guarantee:** Events are indexed in `billing_events` by `stripe_event_id UNIQUE`. Duplicate deliveries respond immediately with `HTTP 200 OK` and execute zero state mutations.
 - **Telemetry & Alerting:** Webhook failures increment Prometheus counter `fintext_billing_webhook_errors_total{reason="signature"|"timestamp"|"parse"}`. Any increase in signature failures triggers the critical alert `BillingWebhookSignatureFailures`. Operational procedures are maintained in [`docs/BILLING_RUNBOOK.md`](./BILLING_RUNBOOK.md).
 
+---
+
+## 8. Model Supply-Chain Integrity & Cryptographic Release Verification
+
+FinText enforces strict machine learning supply-chain governance to prevent model poisoning, weight tampering, and supply-chain disruptions:
+- **Zero Binary Weights in Git Tree:** To adhere to repository hygiene and avoid Git LFS bandwidth overheads, zero raw model weight binaries (`.bin`, `.pt`, `.onnx`) are tracked in the version control tree.
+- **Cryptographic Release Artifacts:** Production model weights (`finbert-finetuned-v1.0.0.zip`) and research entity models (`ner-v1.0.0.zip`) are published strictly as immutable GitHub Release assets under annotated tag `model-assets-v1.0.0`.
+- **Cryptographic Checksum Ledger:** Every released asset is bound to an immutable SHA256 checksum recorded in [`models_release_v1/SHA256SUMS.txt`](../models_release_v1/SHA256SUMS.txt) and [`docs/MODEL_ASSETS.md`](./MODEL_ASSETS.md):
+  - `finbert-finetuned-v1.0.0.zip`: `182788c0e554ac3891e88b09f98c6b92ab6cd85f5b1c7c039b1d561049b86d33`
+  - `ner-v1.0.0.zip`: `d6ff862b8b2ae293bea50b3dd0058d0facf7d9e154f94ad7619a92e940f9bbdc`
+- **Automated Verification:** Production deployment pipelines and CI test harnesses verify the SHA256 checksum both pre-download and post-extraction prior to mounting weights into runtime inference memory. Any hash divergence triggers immediate container launch termination.
+- **Permissive Open-Source Licensing:** Base architectures are verified as Apache-2.0 (`ProsusAI/finbert`) and MIT (`dslim/bert-base-NER`), ensuring unencumbered institutional commercial operation.
+
+

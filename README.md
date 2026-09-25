@@ -303,8 +303,10 @@ Every drift evaluation emits a compact JSONL entry to `data/model-drift/alerts.j
 ### Model Asset Distribution
 
 **Script**: [`scripts/fetch_models.py`](scripts/fetch_models.py)  
-**Manifest**: [`config/models_manifest.json`](config/models_manifest.json)  
-**Docs**: [`docs/MODEL_ASSET_DISTRIBUTION.md`](docs/MODEL_ASSET_DISTRIBUTION.md)  
+**Manifest**: [`docs/MODEL_ASSETS.md`](docs/MODEL_ASSETS.md) / [`config/models_manifest.json`](config/models_manifest.json)  
+**Release Tag**: [`model-assets-v1.0.0`](https://github.com/Venkatesh-Akula-417/Fintext-Alpha/releases/tag/model-assets-v1.0.0)  
+**Release Notes**: [`docs/MODEL_ASSETS_RELEASE_NOTES.md`](docs/MODEL_ASSETS_RELEASE_NOTES.md)  
+**Repo Hygiene Audit**: [`docs/REPO_HYGIENE_AUDIT.md`](docs/REPO_HYGIENE_AUDIT.md)  
 
 Large ONNX models (~470 MB) are **not** stored in git. They are distributed via GitHub Release assets and fetched on demand:
 - Manifest declares `url`, `sha256` (archive-level), and `file_sha256` (per-extracted-file) for each asset
@@ -556,6 +558,9 @@ FinText-Alpha-Vectorizer/
 - **Security Questionnaire & DDQ Pack**: [`docs/SECURITY_QUESTIONNAIRE_RESPONSES.md`](docs/SECURITY_QUESTIONNAIRE_RESPONSES.md)
 - **Institutional Security Architecture**: [`docs/SECURITY.md`](docs/SECURITY.md)
 - **Certified Metrics Register**: [`docs/CERTIFIED_METRICS_REGISTER.md`](docs/CERTIFIED_METRICS_REGISTER.md)
+- **Model Assets Manifest**: [`docs/MODEL_ASSETS.md`](docs/MODEL_ASSETS.md)
+- **Model Assets Release Notes**: [`docs/MODEL_ASSETS_RELEASE_NOTES.md`](docs/MODEL_ASSETS_RELEASE_NOTES.md)
+- **Repository Hygiene & SSoT Audit**: [`docs/REPO_HYGIENE_AUDIT.md`](docs/REPO_HYGIENE_AUDIT.md)
 - **Soak Stability Runbook**: [`docs/SOAK_STABILITY_RUNBOOK.md`](docs/SOAK_STABILITY_RUNBOOK.md)
 - **Public Status Page Guide**: [`docs/STATUS_PAGE_GUIDE.md`](docs/STATUS_PAGE_GUIDE.md)
 - **Billing & Dunning Operations Runbook**: [`docs/BILLING_RUNBOOK.md`](docs/BILLING_RUNBOOK.md)

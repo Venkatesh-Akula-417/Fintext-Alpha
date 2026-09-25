@@ -1,17 +1,14 @@
-# Ignore all executables and system libraries anywhere
+# ============================================================================
+# FinText Alpha Vectorizer — Git Exclusion Matrix & Allowlist
+# ============================================================================
+
+# ── 1. Executables, Compiled Libraries & Model Assets ────────────────────────
+# Binary model weights & platform binaries are hosted on GitHub Releases (see docs/MODEL_ASSETS.md)
 **/*.exe
 **/*.dll
 **/*.so
 **/*.dylib
 **/*.pdb
-
-# Ignore all target and build directories
-**/target/
-target/
-build/
-dist/
-
-# Ignore all model weights and checkpoints
 **/*.bin
 **/*.pt
 **/*.pth
@@ -20,7 +17,17 @@ dist/
 **/*.h5
 **/*.ckpt
 
-# Ignore heavy data formats & archives
+# Release archive directory: exclude large ZIP bundles, track checksum ledger
+models_release_v1/*
+!models_release_v1/SHA256SUMS.txt
+
+# ── 2. Build Targets & Toolchain Artifacts ───────────────────────────────────
+**/target/
+target/
+build/
+dist/
+
+# ── 3. Heavy Data Formats & Compressed Archives ──────────────────────────────
 **/*.parquet
 **/*.csv
 **/*.tsv
@@ -30,12 +37,18 @@ dist/
 **/*.db
 **/*.sqlite3
 
-# Ignore specific large data directories
+# Explicitly whitelist committed static seed configuration CSVs
+!config/sector_mapping.csv
+
+# ── 4. Generated Runtime Data & Storage Directories ──────────────────────────
 **/data/
 data/
-# Do not ignore Rust source directories that are named "data"
+# Preserve native Rust ingestion static test data
 !rust/ingestion_engine/src/data/
 !rust/ingestion_engine/src/data/**
+
+# ── 5. Certified Audit Reports Allowlist ──────────────────────────────────────
+# Retain cryptographically certified compliance ledgers & reports in logs/
 **/logs/*
 logs/*
 !logs/load_test_report.json
@@ -50,22 +63,30 @@ logs/*
 !logs/billing_reconciliation_report.json
 !logs/.gitkeep
 logs/soak_history.jsonl
+
+# ── 6. Local Scratch, Tools & Historical Archive ─────────────────────────────
 **/scratch/
 scratch/
 **/tools/
 tools/
 **/_archive/
 _archive/
+
+# ── 7. Secrets, Environment Variables & Virtual Environments ─────────────────
 **/.env
 .env
 **/.venv/
 **/venv/
+
+# ── 8. Python & IDE Caches ───────────────────────────────────────────────────
+**/.pytest_cache/
+.pytest_cache/
+**/.ipynb_checkpoints/
+.ipynb_checkpoints/
+**/*.pyc
 **/__pycache__/
 
-# Whitelist committed config CSVs
-!config/sector_mapping.csv
-
-# Ignore local server logs and dev task files
+# ── 9. Ephemeral Local Server Logs & Development Task Artifacts ──────────────
 server_stdout_*.log
 server_stderr_*.log
 task.md

@@ -1,12 +1,12 @@
 {
   "latest_period": "2026-09",
   "latest_verdict": "RECONCILED",
-  "last_reconciled_utc": "2026-09-25T08:17:46.908192+00:00",
-  "commit": "ce8b5be19e5046d349e68045a0212d8af1ff580f",
+  "last_reconciled_utc": "2026-09-25T10:02:01.987322+00:00",
+  "commit": "b2efcae36c1f8c9445e25888f244198c3eba32ea",
   "current_period_details": {
     "period": "2026-09",
-    "reconciled_utc": "2026-09-25T08:17:46.908192+00:00",
-    "commit": "ce8b5be19e5046d349e68045a0212d8af1ff580f",
+    "reconciled_utc": "2026-09-25T10:02:01.987322+00:00",
+    "commit": "b2efcae36c1f8c9445e25888f244198c3eba32ea",
     "mode": "offline",
     "verdict": "RECONCILED",
     "discrepancies_count": 0,
@@ -37,7 +37,7 @@
   "history": [
     {
       "period": "2026-09",
-      "reconciled_utc": "2026-09-25T08:17:46.908192+00:00",
+      "reconciled_utc": "2026-09-25T10:02:01.987322+00:00",
       "verdict": "RECONCILED",
       "discrepancies": 0
     }
