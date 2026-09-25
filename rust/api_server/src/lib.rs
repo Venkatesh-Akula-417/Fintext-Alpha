@@ -5329,7 +5329,12 @@ mod tests {
                 .body(Body::empty())
                 .unwrap();
             let resp = app.clone().oneshot(req).await.unwrap();
-            assert_eq!(resp.status(), StatusCode::OK, "Failed for endpoint {}", endpoint);
+            assert_eq!(
+                resp.status(),
+                StatusCode::OK,
+                "Failed for endpoint {}",
+                endpoint
+            );
         }
     }
 
