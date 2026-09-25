@@ -64,7 +64,7 @@ pub use export::{export_csv_handler, ExportCsvParams};
 pub use export_parquet::export_parquet_handler;
 pub use health::{
     backup_status_handler, health_check_handler, load_test_status_handler,
-    prometheus_metrics_handler,
+    prometheus_metrics_handler, status_handler,
 };
 pub use insider_trading::get_insider_trading_handler;
 pub use kafka_stream::{

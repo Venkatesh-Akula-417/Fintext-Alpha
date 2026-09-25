@@ -1,6 +1,6 @@
 {
-  "generated_utc": "2026-09-24T11:14:02.801726+00:00",
-  "commit": "18872190d26a3413808456ea15639997c38989e5",
+  "generated_utc": "2026-09-25T06:05:03.667679+00:00",
+  "commit": "a31d508ab9be7548a3bbe593dbc022ed338455db",
   "rls_enabled_tables": [
     "audit_logs",
     "organizations",

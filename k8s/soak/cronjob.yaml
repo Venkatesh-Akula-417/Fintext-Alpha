@@ -1,0 +1,77 @@
+# ══════════════════════════════════════════════════════════════════════════════
+# FinText-Alpha-Vectorizer — Kubernetes Nightly Stability & Soak CronJob
+# ══════════════════════════════════════════════════════════════════════════════
+# Executes an automated 6-hour nightly stability soak drill across FinText services.
+# Verifies zero memory leakage (RSS slope < 2.0 MiB/h), monitors P95 latency (< 500ms),
+# and appends audited run results to the GA 30-day stability evidence ledger.
+# ══════════════════════════════════════════════════════════════════════════════
+
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: fintext-nightly-soak-drill
+  namespace: default
+  labels:
+    app.kubernetes.io/name: fintext-soak-drill
+    app.kubernetes.io/part-of: fintext-alpha-vectorizer
+    app.kubernetes.io/component: site-reliability-engineering
+spec:
+  schedule: "0 2 * * *"  # Run nightly at 02:00 UTC
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 7
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      backoffLimit: 1
+      ttlSecondsAfterFinished: 604800 # Retain finished pods for 7 days
+      template:
+        metadata:
+          labels:
+            app.kubernetes.io/name: fintext-soak-drill
+        spec:
+          restartPolicy: OnFailure
+          containers:
+            - name: soak-sampler
+              image: python:3.11-slim
+              command: ["/bin/bash", "-c"]
+              args:
+                - |
+                  set -euo pipefail
+                  echo "[$(date -u +%FT%TZ)] Starting automated nightly 6-hour soak stability certification..."
+                  python /scripts/soak_test.py \
+                    --mode window \
+                    --hours 6.0 \
+                    --interval 15.0 \
+                    --base-url "http://fintext-api-service.default.svc.cluster.local:8000" \
+                    --ledger /reports/soak_ledger.md \
+                    --json-report /reports/soak_report.json \
+                    --history /reports/soak_history.jsonl
+                  echo "[$(date -u +%FT%TZ)] Nightly soak certification completed successfully."
+              env:
+                - name: SOAK_ADMIN_TOKEN
+                  valueFrom:
+                    secretKeyRef:
+                      name: fintext-secrets
+                      key: admin-token
+                      optional: true
+              resources:
+                requests:
+                  cpu: "250m"
+                  memory: "512Mi"
+                limits:
+                  cpu: "1000m"
+                  memory: "1Gi"
+              volumeMounts:
+                - name: scripts-volume
+                  mountPath: /scripts
+                  readOnly: true
+                - name: reports-volume
+                  mountPath: /reports
+          volumes:
+            - name: scripts-volume
+              configMap:
+                name: fintext-soak-scripts
+                defaultMode: 0755
+            - name: reports-volume
+              persistentVolumeClaim:
+                claimName: fintext-audit-reports-pvc

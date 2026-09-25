@@ -36,9 +36,18 @@ data/
 # Do not ignore Rust source directories that are named "data"
 !rust/ingestion_engine/src/data/
 !rust/ingestion_engine/src/data/**
-**/logs/
-logs/
+**/logs/*
+logs/*
 !logs/load_test_report.json
+!logs/rls_isolation_report.json
+!logs/signal_quality_report.json
+!logs/tenant_provisioning_report.json
+!logs/tenant_deprovisioning_report.json
+!logs/backup_restore_test_report.json
+!logs/soak_report.json
+!logs/soak_ledger.md
+!logs/.gitkeep
+logs/soak_history.jsonl
 **/scratch/
 scratch/
 **/tools/

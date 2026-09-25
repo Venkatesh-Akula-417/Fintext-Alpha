@@ -112,7 +112,7 @@ pub use handlers::{
     load_test_status_handler, post_sentiment_revision_handler, post_signal_quality_report_handler,
     prometheus_metrics_handler, purge_dlq_event_handler, reload_pit_data_handler,
     reprocess_dlq_event_handler, revoke_kafka_credentials_handler, sla_latency_handler,
-    transcribe_audio_handler, trigger_digest_send_handler, websocket_handler,
+    status_handler, transcribe_audio_handler, trigger_digest_send_handler, websocket_handler,
 };
 pub use ip_whitelist::{
     add_ip_whitelist_handler, delete_ip_whitelist_handler, get_ip_whitelist_handler,
@@ -556,6 +556,7 @@ pub fn create_app_with_state(state: AppState) -> Router {
             get(|| async { axum::response::Redirect::temporary("/swagger-ui/") }),
         )
         .route("/health", get(health_check_handler))
+        .route("/status", get(status_handler))
         .route("/readyz", get(readyz_handler))
         .route("/metrics", get(prometheus_metrics_handler))
         .route("/admin/backup/status", get(backup_status_handler))
@@ -671,6 +672,7 @@ pub fn public_v1_router(state: AppState) -> Router<AppState> {
 
     let v1_public = Router::new()
         .route("/health", get(health_check_handler))
+        .route("/status", get(status_handler))
         .route("/readyz", get(readyz_handler))
         .route("/metrics", get(prometheus_metrics_handler))
         .route("/admin/backup/status", get(backup_status_handler))
@@ -913,6 +915,48 @@ mod tests {
 
         let response = app.oneshot(req).await.unwrap();
         assert_eq!(response.status(), StatusCode::OK);
+    }
+
+    #[tokio::test]
+    async fn test_public_v1_status_endpoint() {
+        let app = create_app();
+
+        let req = Request::builder()
+            .uri("/v1/status")
+            .body(Body::empty())
+            .unwrap();
+
+        let response = app.oneshot(req).await.unwrap();
+        assert_eq!(response.status(), StatusCode::OK);
+
+        let cache_control = response
+            .headers()
+            .get(header::CACHE_CONTROL)
+            .and_then(|h| h.to_str().ok())
+            .unwrap_or("");
+        assert!(cache_control.contains("max-age=10"));
+
+        let bytes = response.into_body().collect().await.unwrap().to_bytes();
+        let body_str = String::from_utf8(bytes.to_vec()).unwrap();
+        let json: serde_json::Value = serde_json::from_str(&body_str).unwrap();
+
+        assert_eq!(json["version"], "2.0.0-institutional");
+        assert!(json["status"].as_str().is_some());
+        assert!(json["utc"].as_str().is_some());
+        assert!(json["uptime_seconds"].as_u64().is_some());
+        assert!(json["components"]["api_gateway"].as_str().is_some());
+        assert!(json["components"]["postgres_timescale"].as_str().is_some());
+        assert!(json["certifications"]["p95_ms"].as_f64().is_some());
+        assert_eq!(json["certifications"]["rls_verdict"], "CERTIFIED");
+        assert_eq!(json["certifications"]["signal_oos_rank_ic"], 0.0518);
+        assert_eq!(json["certifications"]["ttfv_seconds"], 1.62);
+
+        // Security assertion: no secrets/credentials leaked
+        let lower = body_str.to_lowercase();
+        assert!(!lower.contains("password"), "Status leaked password string");
+        assert!(!lower.contains("secret"), "Status leaked secret string");
+        assert!(!lower.contains("token"), "Status leaked token string");
+        assert!(!lower.contains("key_hash"), "Status leaked key_hash string");
     }
 
     #[tokio::test]

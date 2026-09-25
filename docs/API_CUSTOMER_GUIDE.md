@@ -5,7 +5,8 @@
 > **Last Verified**: 2026-09-17 (Suite #274) | **Audit Readiness**: Certified Clean  
 > **Interactive Research Suite**: [`notebooks/`](../notebooks/README.md) | **Model Card**: [`docs/SIGNAL_QUALITY_REPORT.md`](./SIGNAL_QUALITY_REPORT.md)  
 > **Authoritative Deprecations**: [`docs/DEPRECATED.md`](./DEPRECATED.md) | **Onboarding Runbook**: [`docs/PRIVATE_BETA_ONBOARDING_RUNBOOK.md`](./PRIVATE_BETA_ONBOARDING_RUNBOOK.md)  
-> **Security DDQ Pack**: [`docs/SECURITY_QUESTIONNAIRE_RESPONSES.md`](./SECURITY_QUESTIONNAIRE_RESPONSES.md) | **Tenant Isolation**: [`docs/TENANT_ISOLATION_RUNBOOK.md`](./TENANT_ISOLATION_RUNBOOK.md)
+> **Security DDQ Pack**: [`docs/SECURITY_QUESTIONNAIRE_RESPONSES.md`](./SECURITY_QUESTIONNAIRE_RESPONSES.md) | **Tenant Isolation**: [`docs/TENANT_ISOLATION_RUNBOOK.md`](./TENANT_ISOLATION_RUNBOOK.md)  
+> **Certified Metrics**: [`docs/CERTIFIED_METRICS_REGISTER.md`](./CERTIFIED_METRICS_REGISTER.md) | **Soak Runbook**: [`docs/SOAK_STABILITY_RUNBOOK.md`](./SOAK_STABILITY_RUNBOOK.md) | **Status Guide**: [`docs/STATUS_PAGE_GUIDE.md`](./STATUS_PAGE_GUIDE.md)
 
 ---
 
@@ -402,7 +403,50 @@ Institutional risk and compliance teams (SOC2 Type II, SEC Rule 206(4)-1, SEBI a
 
 ---
 
-## 12. Troubleshooting & Diagnostics
+## 12. Public Operational Status & SLA Verification (`GET /v1/status`)
+
+FinText exposes a dedicated, unauthenticated, rate-limited public health and SLA verification endpoint designed for external uptime monitors, risk systems, and institutional subscriber dashboards.
+
+### 12.1 Endpoint Specification
+- **Route:** `GET /v1/status` (or `GET /status`)
+- **Authentication:** Unauthenticated (Public access)
+- **Rate Limit:** 60 requests/minute per source IP
+- **Edge Cache:** `Cache-Control: public, max-age=10`
+- **Sensitive Data Exposure:** Zero internal hostnames, credentials, or tenant metrics leaked.
+
+### 12.2 Live Query Example
+```bash
+curl -s -i "http://127.0.0.1:8000/v1/status"
+```
+
+### 12.3 Response Structure
+```json
+{
+  "status": "operational",
+  "version": "1.0.0",
+  "uptime_seconds": 128450,
+  "timestamp": "2026-09-24T20:30:00Z",
+  "components": {
+    "api_gateway": "operational",
+    "vector_engine": "operational",
+    "timescaledb": "operational",
+    "kafka_bus": "operational"
+  },
+  "certifications": {
+    "soc2_type2_ready": true,
+    "rls_tenant_isolation": "enforced_active",
+    "target_p95_latency_ms": 500,
+    "target_uptime_pct": 99.5,
+    "memory_leak_slope_limit_mib_per_hour": 2.0
+  }
+}
+```
+
+Institutional integration patterns, including zero-cost GitHub Pages and Instatus status dashboards, are detailed in [`docs/STATUS_PAGE_GUIDE.md`](./STATUS_PAGE_GUIDE.md). Continuous 30-day soak stability and memory-leak certification procedures are detailed in [`docs/SOAK_STABILITY_RUNBOOK.md`](./SOAK_STABILITY_RUNBOOK.md).
+
+---
+
+## 13. Troubleshooting & Diagnostics
 
 Like diagnosing a squeaking bottom bracket, use these diagnostic checks to resolve environment friction:
 
@@ -418,11 +462,12 @@ Like diagnosing a squeaking bottom bracket, use these diagnostic checks to resol
 
 ---
 
-## 13. Regulatory Compliance & Support
+## 14. Regulatory Compliance & Support
 
 For algorithmic trading compliance questions, SEC Rule 206(4)-1 audit certificates, or custom institutional rate limit allocations:
 - **Audit Verification**: Fetch cryptographic SHA-256 certificate directly via `/v1/pit/certificate`.
 - **Developer Support**: Submit issues via the institutional partner portal or email `support@fintext.internal`.
 - **System Architecture**: Consult [`docs/CLOUD_COST_OPTIMIZATION.md`](./CLOUD_COST_OPTIMIZATION.md) and [`docs/LATENCY_RECONCILIATION.md`](./LATENCY_RECONCILIATION.md).
+
 
 

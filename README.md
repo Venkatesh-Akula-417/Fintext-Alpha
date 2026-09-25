@@ -555,6 +555,9 @@ FinText-Alpha-Vectorizer/
 - **Tenant Onboarding Runbook**: [`docs/PRIVATE_BETA_ONBOARDING_RUNBOOK.md`](docs/PRIVATE_BETA_ONBOARDING_RUNBOOK.md)
 - **Security Questionnaire & DDQ Pack**: [`docs/SECURITY_QUESTIONNAIRE_RESPONSES.md`](docs/SECURITY_QUESTIONNAIRE_RESPONSES.md)
 - **Institutional Security Architecture**: [`docs/SECURITY.md`](docs/SECURITY.md)
+- **Certified Metrics Register**: [`docs/CERTIFIED_METRICS_REGISTER.md`](docs/CERTIFIED_METRICS_REGISTER.md)
+- **Soak Stability Runbook**: [`docs/SOAK_STABILITY_RUNBOOK.md`](docs/SOAK_STABILITY_RUNBOOK.md)
+- **Public Status Page Guide**: [`docs/STATUS_PAGE_GUIDE.md`](docs/STATUS_PAGE_GUIDE.md)
 - **Private Beta Launch Checklist**: [`docs/PRIVATE_BETA_LAUNCH_CHECKLIST.md`](docs/PRIVATE_BETA_LAUNCH_CHECKLIST.md)
 
 ---

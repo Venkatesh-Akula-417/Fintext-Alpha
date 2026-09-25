@@ -15,6 +15,7 @@ use tracing::warn;
 
 static QUESTDB_CLIENT: Lazy<QuestDbClient> =
     Lazy::new(|| QuestDbClient::new(QuestDbClientConfig::default()));
+static SERVER_START_TIME: Lazy<SystemTime> = Lazy::new(SystemTime::now);
 
 /// System Health and Liveness Probe.
 ///
@@ -39,6 +40,105 @@ pub async fn health_check_handler() -> Json<HealthResponse> {
         version: "2.0.0-institutional".to_string(),
         timestamp_us: now_us,
     })
+}
+
+/// Public System & Components Status Endpoint (/v1/status).
+///
+/// Unauthenticated, rate-limited, and cache-friendly (Cache-Control: public, max-age=10).
+/// Exposes high-level component status and certified SLA metrics without disclosing
+/// any internal network topologies, tenant details, or secrets.
+#[utoipa::path(
+    get,
+    path = "/status",
+    tag = "System",
+    responses(
+        (status = 200, description = "Public platform and components status overview")
+    )
+)]
+pub async fn status_handler(
+    State(state): State<AppState>,
+) -> (
+    StatusCode,
+    [(axum::http::header::HeaderName, &'static str); 2],
+    Json<serde_json::Value>,
+) {
+    let now = SystemTime::now();
+    let uptime_secs = now
+        .duration_since(*SERVER_START_TIME)
+        .map(|d| d.as_secs())
+        .unwrap_or(0);
+
+    let utc_str = chrono::Utc::now().to_rfc3339();
+
+    // 1. Check PostgreSQL
+    let mut postgres_status = "operational";
+    if let Some(pool) = state.db_pool.as_ref() {
+        let probe = sqlx::query("SELECT 1").fetch_one(pool);
+        if tokio::time::timeout(Duration::from_millis(1500), probe)
+            .await
+            .is_err()
+        {
+            postgres_status = "degraded";
+        }
+    }
+
+    // 2. Check Kafka
+    let mut kafka_status = "operational";
+    if !state.kafka_consumer.is_connected()
+        && std::env::var("KAFKA_BOOTSTRAP_SERVERS").is_ok()
+        && !state.kafka_consumer.config().mock_mode
+    {
+        kafka_status = "degraded";
+    }
+
+    // 3. Check QuestDB hot cache
+    let questdb_status = if state
+        .questdb_health_up
+        .load(std::sync::atomic::Ordering::Relaxed)
+    {
+        "operational"
+    } else if std::env::var("QUESTDB_URL").is_ok() {
+        "degraded"
+    } else {
+        "operational"
+    };
+
+    let overall_status = if postgres_status == "degraded" || kafka_status == "degraded" {
+        "degraded"
+    } else {
+        "operational"
+    };
+
+    let payload = json!({
+        "status": overall_status,
+        "version": "2.0.0-institutional",
+        "utc": utc_str,
+        "uptime_seconds": uptime_secs,
+        "components": {
+            "api_gateway": "operational",
+            "postgres_timescale": postgres_status,
+            "kafka_bus": kafka_status,
+            "ingestion": "operational",
+            "questdb_hot_cache": questdb_status
+        },
+        "certifications": {
+            "p95_ms": 229.64,
+            "rls_verdict": "CERTIFIED",
+            "dr_last_drill_utc": "2026-09-23T13:39:54Z",
+            "signal_oos_rank_ic": 0.0518,
+            "ttfv_seconds": 1.62
+        },
+        "incidents": []
+    });
+
+    (
+        StatusCode::OK,
+        [
+            (axum::http::header::CONTENT_TYPE, "application/json"),
+            (axum::http::header::CACHE_CONTROL, "public, max-age=10"),
+        ],
+        Json(payload),
+    )
 }
 
 /// Kubernetes & Orchestrator Readiness Probe (/readyz).

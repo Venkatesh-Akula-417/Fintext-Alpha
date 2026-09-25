@@ -143,6 +143,17 @@ data:
               description: "Container {{ $labels.container }} in pod {{ $labels.pod }} memory is at {{ $value | humanizePercentage }} of limit."
               runbook_url: "https://docs.fintext.internal/ops/runbooks/container-memory-pressure"
 
+          - alert: ContainerMemoryLeakSuspect
+            expr: deriv(container_memory_working_set_bytes[6h]) > (2 * 1024 * 1024 / 3600)
+            for: 30m
+            labels:
+              severity: warning
+              tier: infrastructure
+            annotations:
+              summary: "Container RSS memory monotonic climb indicates suspected memory leak (slope > 2.0 MiB/h)"
+              description: "Container {{ $labels.container }} in pod {{ $labels.pod }} exhibits monotonic memory growth rate of {{ $value | humanize1024 }}B/s over a 6h window."
+              runbook_url: "https://docs.fintext.internal/ops/runbooks/soak-stability"
+
           - alert: CPUSaturationHigh
             expr: rate(container_cpu_usage_seconds_total{container="fintext-api"}[5m]) > 0.80
             for: 3m

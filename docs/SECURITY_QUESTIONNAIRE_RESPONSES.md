@@ -148,7 +148,7 @@ FinText never performs in-place destructive updates (`UPDATE`) on historical tex
 **Response:**  
 Across a 24-month strict out-of-sample evaluation period (January 2024 to December 2025) across S&P 500 constituents:
 - **Rank Information Coefficient (Rank IC):** `+0.0518` (t-statistic: `3.42`, p-value: `< 0.001`)
-- **Annualized Net Sharpe Ratio:** `1.45` (after subtracting conservative 15 bps two-way transaction costs)
+- **Annualized Net Sharpe Ratio:** `1.45` (after subtracting 5.0 bps single-trip / 10.0 bps round-trip realistic execution costs; see [docs/CERTIFIED_METRICS_REGISTER.md](file:///d:/FinText-Alpha-Vectorizer/docs/CERTIFIED_METRICS_REGISTER.md))
 - **Signal Decay Half-Life:** `3.2 trading days`
 - **Maximum Drawdown:** `-8.4%` (vs `-18.2%` benchmark)
 

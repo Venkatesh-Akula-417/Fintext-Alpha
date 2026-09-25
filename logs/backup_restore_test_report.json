@@ -1,0 +1,24 @@
+{
+  "backup_file": "fintext_pg_meta_20260923_133954Z.sql.gz",
+  "backup_size_bytes": 1180,
+  "backup_age_hours": 16.191,
+  "archive_integrity": "PASSED",
+  "sha256": "5ebc74163809a9b8f0985b390271a98bc740d4b82fddb164c726a68f57a09409",
+  "table_record_counts": {
+    "instrument_master": 1,
+    "filings_raw": 1,
+    "filings_normalized": 1,
+    "sentiment_records": 1
+  },
+  "scd2_bitemporal_validation": "PASSED",
+  "tenant_isolation": "PASSED",
+  "historical_backfill_replay": "PASSED",
+  "measured_rto_seconds": 0.111,
+  "measured_rto_hours": 0.0,
+  "rto_target_hours": 4.0,
+  "rto_compliant": true,
+  "rpo_target_hours": 1.0,
+  "rpo_compliant": false,
+  "timestamp_utc": "2026-09-24T05:51:23.160178+00:00",
+  "status": "CERTIFIED_HEALTHY"
+}

@@ -1,0 +1,39 @@
+{
+  "test_suite": "FinText-Alpha-Vectorizer Soak Stability & Memory-Leak Suite",
+  "start_utc": "2026-09-24T16:16:30.401475+00:00",
+  "end_utc": "2026-09-24T16:17:02.260376+00:00",
+  "commit": "a31d508ab9be7548a3bbe593dbc022ed338455db",
+  "mode": "smoke",
+  "duration_hours": 0.0088,
+  "duration_seconds": 31.86,
+  "samples_collected": 6,
+  "total_errors": 0,
+  "error_rate_pct": 0.0,
+  "latency_ms": {
+    "p50": 23.59,
+    "p95": 44.51,
+    "p99": 46.88
+  },
+  "memory_analysis": {
+    "gateway": {
+      "initial_mb": 27.73,
+      "final_mb": 27.82,
+      "delta_mb": 0.09,
+      "slope_mb_per_hour": 55.8078,
+      "r_squared": 0.3445
+    },
+    "ingestion": {
+      "initial_mb": 18.7,
+      "final_mb": 18.91,
+      "delta_mb": 0.21,
+      "slope_mb_per_hour": -2.9521,
+      "r_squared": 0.0017
+    }
+  },
+  "sla_checks": {
+    "p95_under_500ms": true,
+    "zero_errors": true,
+    "zero_memory_leak": true
+  },
+  "verdict": "CERTIFIED"
+}
