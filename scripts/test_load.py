@@ -267,7 +267,7 @@ def run_load_test(base_url: str, admin_token: str, num_requests: int = 300, vus:
 
 def main():
     parser = argparse.ArgumentParser(description="FinText Load Testing & SLA Certification Suite")
-    parser.add_argument("--base-url", default=os.environ.get("LOAD_TEST_BASE_URL", "http://localhost:8000"))
+    parser.add_argument("--base-url", default=os.environ.get("LOAD_TEST_BASE_URL", "http://127.0.0.1:8000"))
     parser.add_argument("--admin-token", default=os.environ.get("ADMIN_TOKEN", "fintext-admin-dev-secret-token"))
     parser.add_argument("--requests", type=int, default=300)
     parser.add_argument("--vus", type=int, default=100)

@@ -91,10 +91,26 @@ Database roles are decoupled to enforce least privilege:
 
 ---
 
-## 6. Audit & Evidence Artifacts
+## 7. Webhook Cryptographic Verification & Secret Lifecycle
 
-Institutional auditors (SOC2 Type II, SEC Rule 206(4)-1, SEBI algo guidelines) can verify compliance via:
-- **Comprehensive Runbook**: [`docs/TENANT_ISOLATION_RUNBOOK.md`](./TENANT_ISOLATION_RUNBOOK.md)
-- **Automated Audit Suite**: `python scripts/test_rls_isolation.py`
-- **Certified Evidence Artifact**: [`logs/rls_isolation_report.json`](../logs/rls_isolation_report.json) (`verdict: "CERTIFIED"`, `cross_tenant_leak_rows: 0`)
-- **Readiness Audit**: `python scripts/verify_private_beta_readiness.py` (Check 21 / 21 PASS)
+FinText Alpha Vectorizer exposes an unauthenticated webhook ingestion endpoint (`POST /v1/billing/webhook`) designed specifically for receiving asynchronous lifecycle events from the Stripe payment network. Because the endpoint cannot use Bearer JWT or API key authentication, security is established strictly via cryptographic authenticity checks.
+
+### 7.1 Cryptographic Verification Boundary
+1. **Raw Body Byte Extraction:** The HTTP request body is extracted as immutable raw bytes before any JSON deserialization occurs. Canonical whitespace and byte ordering are preserved exactly as signed by Stripe.
+2. **Signature Header Parsing:** The incoming `Stripe-Signature` header is parsed into its component timestamp `t` and signature vector `v1`.
+3. **Replay Window Enforcement:** To defend against replay attacks, the server rejects any event where `|t_now - t_event| > 300` seconds with `HTTP 400 Bad Request` and increments `fintext_billing_webhook_errors_total{reason="timestamp"}`.
+4. **HMAC-SHA256 Signature Computation:** The expected signature is computed as:
+   $$\text{ExpectedSig} = \text{HMAC-SHA256}\Big(\text{Secret},\; t \;\|\; \text{"."} \;\|\; \text{RawBodyBytes}\Big)$$
+5. **Constant-Time Comparison:** The computed hex digest and incoming vector are compared byte-by-byte using `constant_time_hex_compare`, which evaluates in strict constant time $O(N)$ with zero short-circuiting. This eliminates timing oracle side-channel vulnerabilities.
+
+### 7.2 Secret Storage & Zero-Downtime Multi-Secret Rotation
+- **Secret Storage:** Signing secrets (`whsec_...`) are provisioned via Kubernetes sealed secrets (`stripe-secret`) mounted as container environment variables. In development, placeholders are maintained in `.env.example`. Live secrets are NEVER committed to version control or printed to logs.
+- **Overlapping Rotation Window:** `STRIPE_WEBHOOK_SECRET` accepts comma- or semicolon-delimited secrets. During quarterly key rotation:
+  1. The new secret is appended alongside the active secret (`whsec_NEW,whsec_OLD`).
+  2. The gateway verifies each candidate secret sequentially using constant-time comparisons.
+  3. Once the 24-hour Stripe transition window concludes, `whsec_OLD` is removed with zero webhook drops or downtime.
+
+### 7.3 Idempotency & Threat Observability
+- **Idempotency Guarantee:** Events are indexed in `billing_events` by `stripe_event_id UNIQUE`. Duplicate deliveries respond immediately with `HTTP 200 OK` and execute zero state mutations.
+- **Telemetry & Alerting:** Webhook failures increment Prometheus counter `fintext_billing_webhook_errors_total{reason="signature"|"timestamp"|"parse"}`. Any increase in signature failures triggers the critical alert `BillingWebhookSignatureFailures`. Operational procedures are maintained in [`docs/BILLING_RUNBOOK.md`](./BILLING_RUNBOOK.md).
+

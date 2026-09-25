@@ -382,12 +382,42 @@ pub async fn prometheus_metrics_handler(
         state.get_rls_context_missing_total()
     );
 
+    let sig_errors = state
+        .billing_webhook_sig_errors
+        .load(std::sync::atomic::Ordering::Relaxed);
+    let ts_errors = state
+        .billing_webhook_timestamp_errors
+        .load(std::sync::atomic::Ordering::Relaxed);
+    let parse_errors = state
+        .billing_webhook_parse_errors
+        .load(std::sync::atomic::Ordering::Relaxed);
+    let past_due_orgs = state
+        .billing_dunning_past_due_orgs
+        .load(std::sync::atomic::Ordering::Relaxed);
+
+    let billing_metrics = format!(
+        "# HELP fintext_billing_webhook_errors_total Total count of Stripe billing webhook errors by reason\n\
+         # TYPE fintext_billing_webhook_errors_total counter\n\
+         fintext_billing_webhook_errors_total{{reason=\"signature\"}} {}\n\
+         fintext_billing_webhook_errors_total{{reason=\"timestamp\"}} {}\n\
+         fintext_billing_webhook_errors_total{{reason=\"parse\"}} {}\n\
+         # HELP fintext_billing_dunning_past_due_orgs Current number of organizations in past_due dunning state\n\
+         # TYPE fintext_billing_dunning_past_due_orgs gauge\n\
+         fintext_billing_dunning_past_due_orgs {}\n",
+        sig_errors,
+        ts_errors,
+        parse_errors,
+        past_due_orgs
+    );
+
+    let full_output = format!("{}{}", output, billing_metrics);
+
     (
         StatusCode::OK,
         [(
             axum::http::header::CONTENT_TYPE,
             "text/plain; version=0.0.4; charset=utf-8",
         )],
-        output,
+        full_output,
     )
 }

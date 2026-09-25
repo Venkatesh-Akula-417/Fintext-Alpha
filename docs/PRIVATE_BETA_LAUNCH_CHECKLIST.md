@@ -351,6 +351,12 @@ The final electronic diagnostics before green flag departure. All 5 automated Gi
   - **Evidence**: `scripts/soak_test.py`, `k8s/soak/cronjob.yaml`, `dashboards/soak_stability.json`, `docs/SOAK_STABILITY_RUNBOOK.md`, `docs/STATUS_PAGE_GUIDE.md`, `docs/CERTIFIED_METRICS_REGISTER.md`, `logs/soak_report.json`, `logs/soak_ledger.md`
   - **How to Verify**: `python scripts/soak_test.py --mode smoke` && `curl -s http://127.0.0.1:8000/v1/status`
 
+- [x] **Check 7.11: Stripe Webhook Ingestion, Dunning State Machine & Usage-Invoice Reconciliation Certified (P2 GA Revenue Assurance)**
+  - **Status**: PASS
+  - **Description**: Institutional revenue assurance and billing lifecycle certified via `POST /v1/billing/webhook`, constant-time HMAC-SHA256 signature verification with 300s replay window tolerance, multi-secret rotation support, and event idempotency via `billing_events` table (unique `stripe_event_id`). Automated dunning state machine enforces 72-hour institutional grace period on `invoice.payment_failed` (`active` -> `past_due`), executing non-destructive Phase-1 access suspension (API keys revoked, users deactivated, 0 data destroyed per SEC Rule 17a-4 / FINRA Rule 4511) upon grace expiration or 3 consecutive failures. Instant automated recovery to `active` upon `invoice.paid`. Monthly usage-to-invoice reconciliation engine verified via `scripts/reconcile_billing.py` (0 discrepancies). Offline signed-vector drill verified via `scripts/test_billing_flow.py` (`verdict: CERTIFIED`).
+  - **Evidence**: `config/timescale/04-billing-webhooks.sql`, `rust/api_server/src/billing.rs`, `scripts/test_billing_flow.py`, `scripts/reconcile_billing.py`, `k8s/billing/cronjob.yaml`, `k8s/observability/prometheus-alerts.yaml`, `dashboards/billing.json`, `docs/BILLING_RUNBOOK.md`, `logs/billing_flow_report.json`, `logs/billing_reconciliation_report.json`
+  - **How to Verify**: `python scripts/test_billing_flow.py` && `python scripts/reconcile_billing.py` && `python scripts/verify_private_beta_readiness.py`
+
 ---
 
 ## Final Certification & Sign-off
@@ -362,9 +368,9 @@ The final electronic diagnostics before green flag departure. All 5 automated Gi
 ║                                                                                        ║
 ║   System:               FinText Alpha Vectorizer v1.0.0-rc1                            ║
 ║   Auditor:              FinTech CTO & Private Beta Launch Review Board                 ║
-║   Date:                 September 24, 2026                                             ║
-║   Checks Evaluated:     44 / 44                                                        ║
-║   Checks Passed:        44 / 44 (100.0%)                                               ║
+║   Date:                 September 25, 2026                                             ║
+║   Checks Evaluated:     45 / 45                                                        ║
+║   Checks Passed:        45 / 45 (100.0%)                                               ║
 ║   Regressions:          0 Detected                                                     ║
 ║   Security Leaks:       0 Detected                                                     ║
 ║   Infrastructure Cost:  $295 / month (Break-even: 1 Customer)                          ║

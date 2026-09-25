@@ -410,6 +410,10 @@ pub struct AppState {
     pub api_request_count: Arc<AtomicU64>,
     pub api_error_count: Arc<AtomicU64>,
     pub rls_context_missing_total: Arc<AtomicU64>,
+    pub billing_webhook_sig_errors: Arc<AtomicU64>,
+    pub billing_webhook_timestamp_errors: Arc<AtomicU64>,
+    pub billing_webhook_parse_errors: Arc<AtomicU64>,
+    pub billing_dunning_past_due_orgs: Arc<AtomicU64>,
 }
 
 fn read_enable_fix_bridge() -> bool {
@@ -575,6 +579,10 @@ impl AppState {
             api_request_count: Arc::new(AtomicU64::new(10000)),
             api_error_count: Arc::new(AtomicU64::new(0)),
             rls_context_missing_total: Arc::new(AtomicU64::new(0)),
+            billing_webhook_sig_errors: Arc::new(AtomicU64::new(0)),
+            billing_webhook_timestamp_errors: Arc::new(AtomicU64::new(0)),
+            billing_webhook_parse_errors: Arc::new(AtomicU64::new(0)),
+            billing_dunning_past_due_orgs: Arc::new(AtomicU64::new(0)),
         }
     }
 }
@@ -594,6 +602,51 @@ impl AppState {
     /// Returns the total count of database queries attempted without tenant context.
     pub fn get_rls_context_missing_total(&self) -> u64 {
         self.rls_context_missing_total.load(Ordering::Relaxed)
+    }
+
+    /// Increments billing webhook signature errors.
+    pub fn increment_billing_sig_errors(&self) {
+        self.billing_webhook_sig_errors
+            .fetch_add(1, Ordering::Relaxed);
+    }
+
+    /// Increments billing webhook timestamp errors.
+    pub fn increment_billing_timestamp_errors(&self) {
+        self.billing_webhook_timestamp_errors
+            .fetch_add(1, Ordering::Relaxed);
+    }
+
+    /// Increments billing webhook parse errors.
+    pub fn increment_billing_parse_errors(&self) {
+        self.billing_webhook_parse_errors
+            .fetch_add(1, Ordering::Relaxed);
+    }
+
+    /// Returns billing webhook signature errors count.
+    pub fn get_billing_sig_errors(&self) -> u64 {
+        self.billing_webhook_sig_errors.load(Ordering::Relaxed)
+    }
+
+    /// Returns billing webhook timestamp errors count.
+    pub fn get_billing_timestamp_errors(&self) -> u64 {
+        self.billing_webhook_timestamp_errors
+            .load(Ordering::Relaxed)
+    }
+
+    /// Returns billing webhook parse errors count.
+    pub fn get_billing_parse_errors(&self) -> u64 {
+        self.billing_webhook_parse_errors.load(Ordering::Relaxed)
+    }
+
+    /// Sets the current count of organizations in past_due dunning state.
+    pub fn set_billing_past_due_orgs(&self, count: u64) {
+        self.billing_dunning_past_due_orgs
+            .store(count, Ordering::Relaxed);
+    }
+
+    /// Returns the current count of organizations in past_due dunning state.
+    pub fn get_billing_past_due_orgs(&self) -> u64 {
+        self.billing_dunning_past_due_orgs.load(Ordering::Relaxed)
     }
 
     /// Executes a closure within a tenant-isolated database transaction using PostgreSQL RLS.

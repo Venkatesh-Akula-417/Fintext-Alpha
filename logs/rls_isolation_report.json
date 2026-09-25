@@ -1,6 +1,6 @@
 {
-  "generated_utc": "2026-09-25T06:05:03.667679+00:00",
-  "commit": "a31d508ab9be7548a3bbe593dbc022ed338455db",
+  "generated_utc": "2026-09-25T08:19:24.625053+00:00",
+  "commit": "ce8b5be19e5046d349e68045a0212d8af1ff580f",
   "rls_enabled_tables": [
     "audit_logs",
     "organizations",
@@ -236,7 +236,7 @@
       "name": "tenant_own_rows_accessible",
       "table": "audit_logs",
       "expected": 1,
-      "observed": 1,
+      "observed": 9,
       "pass": true
     },
     {
@@ -340,6 +340,6 @@
   ],
   "cross_tenant_leak_rows": 0,
   "missing_context_rows": 0,
-  "p95_ms_after_rls": 229.64,
+  "p95_ms_after_rls": 181.14,
   "verdict": "CERTIFIED"
 }

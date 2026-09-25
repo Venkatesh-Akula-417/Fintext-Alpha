@@ -681,6 +681,7 @@ pub fn public_v1_router(state: AppState) -> Router<AppState> {
         .route("/auth/register", any(gone_handler))
         .route("/news/articles/:id", any(gone_handler))
         .route("/audio/transcribe", any(gone_handler))
+        .route("/billing/webhook", post(stripe_webhook_handler))
         .route("/model-card", get(get_model_card_handler));
 
     let v1_all = Router::new()

@@ -1,0 +1,63 @@
+{
+  "generated_utc": "2026-09-25T08:15:06.448511+00:00",
+  "commit": "ce8b5be19e5046d349e68045a0212d8af1ff580f",
+  "verdict": "CERTIFIED",
+  "secrets_in_payload": false,
+  "tests": [
+    {
+      "name": "Step A: checkout.session.completed -> active",
+      "expected": "HTTP 200, status=active, plan=growth",
+      "observed": "HTTP 200, status=active, plan=growth",
+      "pass": true
+    },
+    {
+      "name": "Step B: invoice.payment_failed -> past_due + grace",
+      "expected": "HTTP 200, status=past_due, fail_count=1, grace_in_future=true",
+      "observed": "HTTP 200, status=past_due, fail_count=1, grace_in_future=t",
+      "pass": true
+    },
+    {
+      "name": "Step C: duplicate event id -> idempotent 200",
+      "expected": "HTTP 200, fail_count unchanged (=1), zero double mutation",
+      "observed": "HTTP 200, fail_count=1",
+      "pass": true
+    },
+    {
+      "name": "Step D: tampered signature -> 400 + counter++",
+      "expected": "HTTP 400, signature error counter incremented",
+      "observed": "HTTP 400, sig_err_before=0.0, sig_err_after=1.0",
+      "pass": true
+    },
+    {
+      "name": "Step E: replayed old timestamp (>300s) -> 400",
+      "expected": "HTTP 400, timestamp tolerance error",
+      "observed": "HTTP 400, ts_err_before=0.0, ts_err_after=1.0",
+      "pass": true
+    },
+    {
+      "name": "Step F: grace elapsed + final failure -> canceled + suspension",
+      "expected": "HTTP 200, status=canceled, active_keys=0, user is_active=false",
+      "observed": "HTTP 200, status=canceled, active_keys=0, is_active=f",
+      "pass": true
+    },
+    {
+      "name": "Step G: invoice.paid recovery -> active + keys reactivated",
+      "expected": "HTTP 200, status=active, fail_count=0, grace=NULL, active_keys>=1, is_active=true",
+      "observed": "HTTP 200, status=active, fail_count=0, grace_is_null=t, active_keys=1, is_active=t",
+      "pass": true
+    }
+  ],
+  "signature_verification": {
+    "algorithm": "HMAC-SHA256",
+    "timestamp_tolerance_seconds": 300,
+    "constant_time_comparison": true,
+    "secret_masked": "whsec_****01"
+  },
+  "dunning_policy": {
+    "version": "v1.0",
+    "grace_period_hours": 72,
+    "max_payment_failures": 3,
+    "phase_1_suspension_reuse": true,
+    "retention_policy_preserved": true
+  }
+}

@@ -558,7 +558,9 @@ FinText-Alpha-Vectorizer/
 - **Certified Metrics Register**: [`docs/CERTIFIED_METRICS_REGISTER.md`](docs/CERTIFIED_METRICS_REGISTER.md)
 - **Soak Stability Runbook**: [`docs/SOAK_STABILITY_RUNBOOK.md`](docs/SOAK_STABILITY_RUNBOOK.md)
 - **Public Status Page Guide**: [`docs/STATUS_PAGE_GUIDE.md`](docs/STATUS_PAGE_GUIDE.md)
+- **Billing & Dunning Operations Runbook**: [`docs/BILLING_RUNBOOK.md`](docs/BILLING_RUNBOOK.md)
 - **Private Beta Launch Checklist**: [`docs/PRIVATE_BETA_LAUNCH_CHECKLIST.md`](docs/PRIVATE_BETA_LAUNCH_CHECKLIST.md)
+
 
 ---
 

@@ -1,33 +1,33 @@
 {
   "test_suite": "FinText-Alpha-Vectorizer Soak Stability & Memory-Leak Suite",
-  "start_utc": "2026-09-24T16:16:30.401475+00:00",
-  "end_utc": "2026-09-24T16:17:02.260376+00:00",
-  "commit": "a31d508ab9be7548a3bbe593dbc022ed338455db",
+  "start_utc": "2026-09-25T08:23:31.909987+00:00",
+  "end_utc": "2026-09-25T08:33:38.203297+00:00",
+  "commit": "ce8b5be19e5046d349e68045a0212d8af1ff580f",
   "mode": "smoke",
-  "duration_hours": 0.0088,
-  "duration_seconds": 31.86,
-  "samples_collected": 6,
+  "duration_hours": 0.1684,
+  "duration_seconds": 606.29,
+  "samples_collected": 53,
   "total_errors": 0,
   "error_rate_pct": 0.0,
   "latency_ms": {
-    "p50": 23.59,
-    "p95": 44.51,
-    "p99": 46.88
+    "p50": 19.86,
+    "p95": 28.96,
+    "p99": 29.91
   },
   "memory_analysis": {
     "gateway": {
-      "initial_mb": 27.73,
-      "final_mb": 27.82,
-      "delta_mb": 0.09,
-      "slope_mb_per_hour": 55.8078,
-      "r_squared": 0.3445
+      "initial_mb": 0.0,
+      "final_mb": 0.0,
+      "delta_mb": 0.0,
+      "slope_mb_per_hour": 0.0,
+      "r_squared": 0.0
     },
     "ingestion": {
-      "initial_mb": 18.7,
-      "final_mb": 18.91,
-      "delta_mb": 0.21,
-      "slope_mb_per_hour": -2.9521,
-      "r_squared": 0.0017
+      "initial_mb": 18.25,
+      "final_mb": 18.54,
+      "delta_mb": 0.29,
+      "slope_mb_per_hour": 0.862,
+      "r_squared": 0.039
     }
   },
   "sla_checks": {

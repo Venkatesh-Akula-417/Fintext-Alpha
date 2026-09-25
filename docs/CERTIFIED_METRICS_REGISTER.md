@@ -37,10 +37,14 @@ In high-assurance quantitative systems, disparate documents frequently suffer fr
 | **14** | **Signal Alpha Decay vs IS** | `4.07%` | $< 50.0\%$ | `logs/signal_quality_report.json` | `4d001bf` | 2026-09-24 | Monthly |
 | **15** | **Time-To-First-Value (TTFV)** | `1.62 s` | $< 300\text{ s}$ | `logs/tenant_provisioning_report.json`| `a31d508` | 2026-09-24 | Per Onboarding |
 | **16** | **Cloud Run-Rate Budget** | `$295.00–$301.44 / mo` | $\le \$310 / \text{mo}$ | `docs/CLOUD_COST_OPTIMIZATION.md` | `a31d508` | 2026-09-24 | Monthly Audit |
-| **17** | **Readiness Audit Suite Checks** | `23 / 23 Checks Passed` | 100.0% Pass | `scripts/verify_private_beta_readiness.py` | current | 2026-09-24 | Per Commit |
-| **18** | **Rust API Gateway Unit Tests** | `489 / 489 Passed` | 100.0% Pass | `rust/api_server/src/lib.rs` | current | 2026-09-24 | Per Commit |
+| **17** | **Readiness Audit Suite Checks** | `24 / 24 Checks Passed` | 100.0% Pass | `scripts/verify_private_beta_readiness.py` | current | 2026-09-25 | Per Commit |
+| **18** | **Rust API Gateway Unit Tests** | `494 / 494 Passed` | 100.0% Pass | `rust/api_server/src/lib.rs` | current | 2026-09-25 | Per Commit |
 | **19** | **Rust Ingestion Daemon Tests** | `108 / 108 Passed` | 100.0% Pass | `rust/ingestion_engine/` | `a31d508` | 2026-09-24 | Per Commit |
-| **20** | **Private Beta Launch Checks** | `44 / 44 Checks Passed` | 100.0% Pass | `docs/PRIVATE_BETA_LAUNCH_CHECKLIST.md` | current | 2026-09-24 | Per Release |
+| **20** | **Private Beta Launch Checks** | `45 / 45 Checks Passed` | 100.0% Pass | `docs/PRIVATE_BETA_LAUNCH_CHECKLIST.md` | current | 2026-09-25 | Per Release |
+| **21** | **Billing Flow Lifecycle Certification** | `CERTIFIED (7/7 Scenarios)` | 100.0% Pass | `logs/billing_flow_report.json` | current | 2026-09-25 | Per Release |
+| **22** | **Monthly Billing Reconciliation** | `RECONCILED (0 Discrepancies)`| Zero Drift | `logs/billing_reconciliation_report.json` | current | 2026-09-25 | Monthly Close |
+| **23** | **Webhook Signature Scheme & Tolerance**| `HMAC-SHA256, 300s window` | Constant-Time | `rust/api_server/src/billing.rs` | current | 2026-09-25 | Continuous |
+
 
 ---
 
@@ -87,6 +91,15 @@ In high-assurance quantitative systems, disparate documents frequently suffer fr
 - **Verification Method:** Execution of `cargo test --all-targets` and `python scripts/verify_private_beta_readiness.py`.
 - **SLA Commitment:** 100.0% clean pass rate with zero test failures or warnings.
 - **Source Artifact:** Cargo test runner output and `docs/PRIVATE_BETA_LAUNCH_CHECKLIST.md`.
+
+### 3.7 Revenue Assurance & Billing Reconciliation (Metrics 21–23)
+- **Mathematical Definition:**
+  - Billing Flow Lifecycle: Complete verification across 7 state machine scenarios (checkout, dunning failure, idempotency, tampered signature, replayed timestamp, grace expiration suspension, and reactivation).
+  - Billing Reconciliation: Discrepancy count $\sum (\text{OverLimitUnbilled} + \text{DriftStripeDB})$ comparing `usage_events` metering against subscription plan quotas and `billing_events` invoice payment records.
+  - Signature Verification: HMAC-SHA256 evaluation with $|t_{\text{now}} - t_{\text{event}}| \le 300\text{ seconds}$ and constant-time hex comparison.
+- **Verification Method:** Automated test execution via `scripts/test_billing_flow.py` and `scripts/reconcile_billing.py`.
+- **SLA Commitment:** Verdict `CERTIFIED` and `RECONCILED` with 0 discrepancies and zero customer data loss under Phase-1 suspension.
+- **Source Artifact:** `logs/billing_flow_report.json`, `logs/billing_reconciliation_report.json`, and `docs/BILLING_RUNBOOK.md`.
 
 ---
 

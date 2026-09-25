@@ -446,7 +446,37 @@ Institutional integration patterns, including zero-cost GitHub Pages and Instatu
 
 ---
 
-## 13. Troubleshooting & Diagnostics
+## 13. Institutional Billing, Subscriptions & Suspension Terms
+
+FinText Alpha Vectorizer operates on institutional, monthly recurring subscription agreements backed by automated Stripe billing and real-time usage reconciliation.
+
+### 13.1 Commercial Subscription Tiers
+
+| Tier Name | Monthly Fee (USD) | Included Monthly Request Quota | Rate Limit Allocation | Support SLA & Dedicated Feed |
+|---|---|---|---|---|
+| **Starter** | $500 / month | 100,000 requests / month | 60 requests / minute | Standard business-day ticket support |
+| **Growth** | $2,000 / month | 1,000,000 requests / month | 300 requests / minute | Priority 4-hour response support |
+| **Enterprise** | $20,000 / month | Unlimited requests (Dedicated) | 1,000+ requests / minute | 24/7 dedicated engineering desk & custom feeds |
+
+### 13.2 72-Hour Institutional Grace Period
+When an automated monthly invoice payment fails (e.g. corporate credit card expiration or banking debit delay):
+1. **Uninterrupted Operations:** The tenant account transitions to `past_due` status. All API keys, data feeds, and analytics endpoints remain **100% operational**.
+2. **72-Hour Window:** Quantitative operations teams have 72 continuous hours from the failure event to settle the pending invoice via the Stripe billing portal or wire debit.
+3. **Automated Reminders:** Automated, counsel-approved notification notices are delivered at Day 0, Day 2 (24-hour warning), and Day 3.
+
+### 13.3 Suspension Terms & Compliance Invariants
+If the 72-hour grace window elapses without invoice settlement:
+- **Phase-1 Administrative Suspension:** Active programmatic API keys are temporarily revoked (`revoked_at` timestamp recorded), and user logins are temporarily suspended.
+- **SEC Rule 17a-4 / FINRA Rule 4511 Data Preservation Guarantee:** In strict adherence to financial regulatory records retention laws, **ZERO CUSTOMER DATA IS EVER DELETED**. All custom universes, historical query telemetry, and workspace records remain preserved at rest under database Row-Level Security confinement.
+- **Transparent Terms:** Service suspension is purely an access block, never a punitive destruction of institutional work product.
+
+### 13.4 Account Reactivation Procedure
+- **Immediate Automated Recovery:** Upon settlement of the outstanding invoice through the institutional billing portal, the system automatically detects the `invoice.paid` event, transitions the subscription status back to `active`, and re-enables all suspended API keys within 60 seconds without requiring key re-issuance.
+- **Wire Settlement & Support Inquiries:** For manual wire/ACH settlements or custom invoicing assistance, contact `billing@fintext.internal`. Operations details are maintained in [`docs/BILLING_RUNBOOK.md`](./BILLING_RUNBOOK.md).
+
+---
+
+## 14. Troubleshooting & Diagnostics
 
 Like diagnosing a squeaking bottom bracket, use these diagnostic checks to resolve environment friction:
 
@@ -462,12 +492,13 @@ Like diagnosing a squeaking bottom bracket, use these diagnostic checks to resol
 
 ---
 
-## 14. Regulatory Compliance & Support
+## 15. Regulatory Compliance & Support
 
 For algorithmic trading compliance questions, SEC Rule 206(4)-1 audit certificates, or custom institutional rate limit allocations:
 - **Audit Verification**: Fetch cryptographic SHA-256 certificate directly via `/v1/pit/certificate`.
 - **Developer Support**: Submit issues via the institutional partner portal or email `support@fintext.internal`.
 - **System Architecture**: Consult [`docs/CLOUD_COST_OPTIMIZATION.md`](./CLOUD_COST_OPTIMIZATION.md) and [`docs/LATENCY_RECONCILIATION.md`](./LATENCY_RECONCILIATION.md).
+
 
 
 

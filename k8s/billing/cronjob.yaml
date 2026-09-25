@@ -1,0 +1,83 @@
+# ══════════════════════════════════════════════════════════════════════════════
+# FinText-Alpha-Vectorizer — Kubernetes Monthly Billing Reconciliation CronJob
+# ══════════════════════════════════════════════════════════════════════════════
+# Executes automated monthly usage-to-invoice reconciliation on the 1st of every
+# month at 03:00 UTC. Reconciles usage_events against plan quotas and billing_events.
+# ══════════════════════════════════════════════════════════════════════════════
+
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: fintext-monthly-billing-reconciliation
+  namespace: default
+  labels:
+    app.kubernetes.io/name: fintext-billing-reconciliation
+    app.kubernetes.io/part-of: fintext-alpha-vectorizer
+    app.kubernetes.io/component: billing-revenue-assurance
+spec:
+  schedule: "0 3 1 * *"  # Run monthly on Day 1 at 03:00 UTC
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 12
+  failedJobsHistoryLimit: 6
+  jobTemplate:
+    spec:
+      backoffLimit: 2
+      ttlSecondsAfterFinished: 2592000 # Retain finished pods for 30 days
+      template:
+        metadata:
+          labels:
+            app.kubernetes.io/name: fintext-billing-reconciliation
+        spec:
+          restartPolicy: OnFailure
+          containers:
+            - name: billing-reconciler
+              image: python:3.11-slim
+              command: ["/bin/bash", "-c"]
+              args:
+                - |
+                  set -euo pipefail
+                  PREV_MONTH=$(date -u -d "yesterday" +%Y-%m)
+                  echo "[$(date -u +%FT%TZ)] Starting automated monthly billing reconciliation for period ${PREV_MONTH}..."
+                  python /scripts/reconcile_billing.py \
+                    --period "${PREV_MONTH}" \
+                    --mode offline \
+                    --json-report /reports/billing_reconciliation_report.json
+                  echo "[$(date -u +%FT%TZ)] Monthly reconciliation completed successfully."
+              env:
+                - name: DATABASE_ADMIN_URL
+                  valueFrom:
+                    secretKeyRef:
+                      name: fintext-secrets
+                      key: database-admin-url
+                - name: STRIPE_SECRET_KEY
+                  valueFrom:
+                    secretKeyRef:
+                      name: stripe-secret
+                      key: api-key
+                      optional: true
+                - name: STRIPE_WEBHOOK_SECRET
+                  valueFrom:
+                    secretKeyRef:
+                      name: stripe-secret
+                      key: webhook-secret
+                      optional: true
+              resources:
+                requests:
+                  cpu: "200m"
+                  memory: "256Mi"
+                limits:
+                  cpu: "1000m"
+                  memory: "512Mi"
+              volumeMounts:
+                - name: scripts-volume
+                  mountPath: /scripts
+                  readOnly: true
+                - name: reports-volume
+                  mountPath: /reports
+          volumes:
+            - name: scripts-volume
+              configMap:
+                name: fintext-billing-scripts
+            - name: reports-volume
+              persistentVolumeClaim:
+                claimName: fintext-billing-reports-pvc

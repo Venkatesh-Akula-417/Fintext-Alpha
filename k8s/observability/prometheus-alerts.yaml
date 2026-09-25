@@ -227,3 +227,31 @@ data:
               description: "Database operation on a tenant-owned table was initiated without setting app.current_org_id (value: {{ $value }}). Immediate investigation required to prevent cross-tenant leaks."
               runbook_url: "docs/TENANT_ISOLATION_RUNBOOK.md#incident"
 
+      # ── 6. Billing, Webhooks & Revenue Assurance Alerts ───────────────────
+      - name: fintext_billing_revenue_alerts
+        rules:
+          - alert: BillingWebhookSignatureFailures
+            expr: increase(fintext_billing_webhook_errors_total{reason="signature"}[10m]) > 0
+            for: 1m
+            labels:
+              severity: critical
+              service: fintext-api
+              tier: billing-security
+            annotations:
+              summary: "Stripe webhook signature verification failure detected (potential attack)"
+              description: "Received {{ $value }} invalid webhook signatures within 10 minutes on API Gateway."
+              runbook_url: "docs/BILLING_RUNBOOK.md#troubleshooting"
+
+          - alert: BillingPastDueOrgs
+            expr: fintext_billing_dunning_past_due_orgs > 0
+            for: 24h
+            labels:
+              severity: warning
+              service: fintext-api
+              tier: revenue-assurance
+            annotations:
+              summary: "Institutional tenants in past_due dunning status for > 24 hours"
+              description: "{{ $value }} organization(s) are past_due with active dunning grace clock ticking."
+              runbook_url: "docs/BILLING_RUNBOOK.md#dunning-timeline"
+
+

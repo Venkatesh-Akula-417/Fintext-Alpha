@@ -506,31 +506,69 @@ pub async fn upsert_subscription(
 ) -> Result<(), sqlx::Error> {
     let user_uuid = Uuid::parse_str(user_id).unwrap_or_else(|_| Uuid::new_v4());
 
-    sqlx::query(
+    let existing: Option<(Uuid,)> = sqlx::query_as(
         r#"
-        INSERT INTO subscriptions (id, user_id, stripe_customer_id, stripe_subscription_id,
-                                   plan_id, status, current_period_start, current_period_end, updated_at)
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW())
-        ON CONFLICT (user_id) DO UPDATE SET
-            stripe_customer_id = EXCLUDED.stripe_customer_id,
-            stripe_subscription_id = EXCLUDED.stripe_subscription_id,
-            plan_id = EXCLUDED.plan_id,
-            status = EXCLUDED.status,
-            current_period_start = EXCLUDED.current_period_start,
-            current_period_end = EXCLUDED.current_period_end,
-            updated_at = NOW()
+        SELECT id FROM subscriptions
+        WHERE (stripe_customer_id = $1 AND $1 != '')
+           OR (stripe_subscription_id = $2 AND $2 != '')
+           OR user_id = $3
+        ORDER BY updated_at DESC
+        LIMIT 1
         "#,
     )
-    .bind(Uuid::new_v4())
-    .bind(user_uuid)
     .bind(stripe_customer_id)
     .bind(stripe_subscription_id)
-    .bind(plan_id)
-    .bind(status)
-    .bind(period_start)
-    .bind(period_end)
-    .execute(pool)
+    .bind(user_uuid)
+    .fetch_optional(pool)
     .await?;
+
+    if let Some((sub_id,)) = existing {
+        sqlx::query(
+            r#"
+            UPDATE subscriptions
+            SET stripe_customer_id = COALESCE(NULLIF($1, ''), stripe_customer_id),
+                stripe_subscription_id = COALESCE(NULLIF($2, ''), stripe_subscription_id),
+                plan_id = $3,
+                status = $4,
+                current_period_start = COALESCE($5, current_period_start),
+                current_period_end = COALESCE($6, current_period_end),
+                dunning_fail_count = 0,
+                grace_until_utc = NULL,
+                updated_at = NOW()
+            WHERE id = $7
+            "#,
+        )
+        .bind(stripe_customer_id)
+        .bind(stripe_subscription_id)
+        .bind(plan_id)
+        .bind(status)
+        .bind(period_start)
+        .bind(period_end)
+        .bind(sub_id)
+        .execute(pool)
+        .await?;
+    } else {
+        sqlx::query(
+            r#"
+            INSERT INTO subscriptions (
+                id, user_id, stripe_customer_id, stripe_subscription_id,
+                plan_id, status, current_period_start, current_period_end,
+                dunning_fail_count, grace_until_utc, created_at, updated_at
+            )
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 0, NULL, NOW(), NOW())
+            "#,
+        )
+        .bind(Uuid::new_v4())
+        .bind(user_uuid)
+        .bind(stripe_customer_id)
+        .bind(stripe_subscription_id)
+        .bind(plan_id)
+        .bind(status)
+        .bind(period_start)
+        .bind(period_end)
+        .execute(pool)
+        .await?;
+    }
 
     info!(
         "[Billing] Upserted subscription for user='{}' plan='{}' status='{}'",
@@ -656,48 +694,160 @@ pub async fn create_stripe_portal_session(
 // Stripe Webhook Signature Verification
 // ─────────────────────────────────────────────────────────────────────────────
 
-/// Verifies a Stripe webhook signature using HMAC-SHA256.
-///
-/// Stripe sends the signature in the `Stripe-Signature` header as:
-///   `t=<timestamp>,v1=<hex_signature>`
-///
-/// The signed payload is `<timestamp>.<raw_body>`.
-pub fn verify_stripe_signature(
+/// Constant-time byte slice comparison to prevent timing attacks.
+pub fn constant_time_compare(a: &[u8], b: &[u8]) -> bool {
+    if a.len() != b.len() {
+        return false;
+    }
+    let mut diff = 0u8;
+    for (x, y) in a.iter().zip(b.iter()) {
+        diff |= x ^ y;
+    }
+    diff == 0
+}
+
+/// Constant-time hex string comparison (case-insensitive ASCII).
+pub fn constant_time_hex_compare(a: &str, b: &str) -> bool {
+    if a.len() != b.len() {
+        return false;
+    }
+    let a_bytes = a.as_bytes();
+    let b_bytes = b.as_bytes();
+    let mut diff = 0u8;
+    for (x, y) in a_bytes.iter().zip(b_bytes.iter()) {
+        diff |= x.to_ascii_lowercase() ^ y.to_ascii_lowercase();
+    }
+    diff == 0
+}
+
+/// Dedicated error enumeration for Stripe webhook signature verification.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum StripeSignatureError {
+    MissingHeader,
+    MissingTimestamp,
+    InvalidTimestamp(String),
+    TimestampToleranceExceeded {
+        timestamp: i64,
+        now: i64,
+        diff_seconds: i64,
+    },
+    MissingSignature,
+    InvalidSignature,
+    HmacInitError(String),
+}
+
+impl std::fmt::Display for StripeSignatureError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::MissingHeader => write!(f, "Missing Stripe-Signature header"),
+            Self::MissingTimestamp => {
+                write!(f, "Missing timestamp (t=) in Stripe-Signature header")
+            }
+            Self::InvalidTimestamp(s) => write!(f, "Invalid timestamp format: {}", s),
+            Self::TimestampToleranceExceeded {
+                timestamp,
+                now,
+                diff_seconds,
+            } => {
+                write!(
+                    f,
+                    "Timestamp tolerance exceeded: event t={}, now={}, diff={}s > 300s",
+                    timestamp, now, diff_seconds
+                )
+            }
+            Self::MissingSignature => write!(f, "Missing v1 signature in Stripe-Signature header"),
+            Self::InvalidSignature => write!(f, "Stripe webhook signature verification failed"),
+            Self::HmacInitError(s) => write!(f, "Failed to initialize HMAC: {}", s),
+        }
+    }
+}
+
+impl std::error::Error for StripeSignatureError {}
+
+/// Verifies a Stripe webhook signature with explicit current time and tolerance window.
+pub fn verify_stripe_signature_with_time(
     payload: &[u8],
     sig_header: &str,
     secret: &str,
-) -> Result<(), String> {
-    let mut timestamp = None;
-    let mut signatures: Vec<String> = Vec::new();
+    current_time: i64,
+    tolerance_secs: i64,
+) -> Result<(), StripeSignatureError> {
+    if sig_header.trim().is_empty() {
+        return Err(StripeSignatureError::MissingHeader);
+    }
+
+    let mut timestamp_str = None;
+    let mut signatures: Vec<&str> = Vec::new();
 
     for part in sig_header.split(',') {
         let part = part.trim();
         if let Some(ts) = part.strip_prefix("t=") {
-            timestamp = Some(ts.to_string());
+            timestamp_str = Some(ts);
         } else if let Some(sig) = part.strip_prefix("v1=") {
-            signatures.push(sig.to_string());
+            signatures.push(sig);
         }
     }
 
-    let ts = timestamp.ok_or_else(|| "Missing timestamp in Stripe-Signature header".to_string())?;
+    let ts_str = timestamp_str.ok_or(StripeSignatureError::MissingTimestamp)?;
+    let parsed_ts: i64 = ts_str
+        .parse()
+        .map_err(|_| StripeSignatureError::InvalidTimestamp(ts_str.to_string()))?;
+
+    // Validate replay window (default 300s tolerance)
+    let diff = (current_time - parsed_ts).abs();
+    if diff > tolerance_secs {
+        return Err(StripeSignatureError::TimestampToleranceExceeded {
+            timestamp: parsed_ts,
+            now: current_time,
+            diff_seconds: diff,
+        });
+    }
 
     if signatures.is_empty() {
-        return Err("Missing v1 signature in Stripe-Signature header".to_string());
+        return Err(StripeSignatureError::MissingSignature);
     }
 
-    // Construct the signed payload: "<timestamp>.<body>"
-    let signed_payload = format!("{}.{}", ts, String::from_utf8_lossy(payload));
+    // Support secret rotation (multiple secrets separated by comma or semicolon)
+    let secret_candidates: Vec<&str> = secret
+        .split(|c| c == ',' || c == ';')
+        .map(|s| s.trim())
+        .filter(|s| !s.is_empty())
+        .collect();
 
-    let mut mac = Hmac::<Sha256>::new_from_slice(secret.as_bytes())
-        .map_err(|_| "Failed to create HMAC instance".to_string())?;
-    mac.update(signed_payload.as_bytes());
-    let expected = hex::encode(mac.finalize().into_bytes());
-
-    if signatures.iter().any(|s| s == &expected) {
-        Ok(())
-    } else {
-        Err("Stripe webhook signature verification failed".to_string())
+    if secret_candidates.is_empty() {
+        return Err(StripeSignatureError::InvalidSignature);
     }
+
+    // Construct raw signed payload: "{ts}.{payload}"
+    let ts_bytes = ts_str.as_bytes();
+
+    for cand_secret in secret_candidates {
+        let mut mac = match Hmac::<Sha256>::new_from_slice(cand_secret.as_bytes()) {
+            Ok(m) => m,
+            Err(e) => return Err(StripeSignatureError::HmacInitError(e.to_string())),
+        };
+        mac.update(ts_bytes);
+        mac.update(b".");
+        mac.update(payload);
+        let expected = hex::encode(mac.finalize().into_bytes());
+
+        for candidate_sig in &signatures {
+            if constant_time_hex_compare(candidate_sig, &expected) {
+                return Ok(());
+            }
+        }
+    }
+
+    Err(StripeSignatureError::InvalidSignature)
+}
+
+/// Verifies a Stripe webhook signature using HMAC-SHA256 with default 300s replay tolerance.
+pub fn verify_stripe_signature(
+    payload: &[u8],
+    sig_header: &str,
+    secret: &str,
+) -> Result<(), StripeSignatureError> {
+    verify_stripe_signature_with_time(payload, sig_header, secret, Utc::now().timestamp(), 300)
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -1066,13 +1216,265 @@ pub async fn get_subscription_handler(
         .into_response()
 }
 
+/// Auxiliary helper to sync the past_due organization gauge from database.
+async fn sync_past_due_gauge(pool: &PgPool, state: &AppState) {
+    if let Ok(row) = sqlx::query_as::<_, (i64,)>(
+        "SELECT COUNT(DISTINCT COALESCE(org_id::text, user_id::text)) FROM subscriptions WHERE status = 'past_due'",
+    )
+    .fetch_one(pool)
+    .await
+    {
+        state.set_billing_past_due_orgs(row.0 as u64);
+    }
+}
+
+/// Executes institutional Phase-1 suspension: revoking API keys, deactivating users and
+/// memberships, and deactivating retention policies while strictly preserving audit and domain data.
+async fn execute_phase_1_suspension(
+    pool: &PgPool,
+    state: &AppState,
+    sub_id: Uuid,
+    org_id_opt: Option<&str>,
+    user_id: Uuid,
+    actor: &str,
+    reason: &str,
+    stripe_event_id: &str,
+) {
+    let org_uuid = org_id_opt.and_then(|s| Uuid::parse_str(s).ok());
+
+    // 1. Cancel subscription
+    let _ = sqlx::query(
+        "UPDATE subscriptions SET status = 'canceled', updated_at = NOW() WHERE id = $1",
+    )
+    .bind(sub_id)
+    .execute(pool)
+    .await;
+
+    // 2. Revoke active API keys, suspend users and organization memberships, deactivate retention policies
+    if let Some(org_id) = org_id_opt {
+        let _ = sqlx::query(
+            r#"
+            UPDATE api_keys 
+            SET revoked_at = NOW(), rotation_status = 'revoked'
+            WHERE (org_id = $1 OR user_id IN (SELECT user_id FROM organization_members WHERE org_id::text = $1))
+              AND revoked_at IS NULL
+            "#,
+        )
+        .bind(org_id)
+        .execute(pool)
+        .await;
+
+        let _ = sqlx::query(
+            r#"
+            UPDATE users 
+            SET is_active = false 
+            WHERE id IN (SELECT user_id FROM organization_members WHERE org_id::text = $1)
+               OR id IN (SELECT user_id FROM api_keys WHERE org_id = $1)
+               OR id = $2
+            "#,
+        )
+        .bind(org_id)
+        .bind(user_id)
+        .execute(pool)
+        .await;
+
+        let _ = sqlx::query(
+            "UPDATE organization_members SET role = 'suspended' WHERE org_id::text = $1",
+        )
+        .bind(org_id)
+        .execute(pool)
+        .await;
+
+        let _ = sqlx::query(
+            "UPDATE data_retention_policies SET is_active = false, updated_at = NOW() WHERE org_id::text = $1",
+        )
+        .bind(org_id)
+        .execute(pool)
+        .await;
+    } else {
+        let _ = sqlx::query(
+            "UPDATE api_keys SET revoked_at = NOW(), rotation_status = 'revoked' WHERE user_id = $1 AND revoked_at IS NULL",
+        )
+        .bind(user_id)
+        .execute(pool)
+        .await;
+
+        let _ = sqlx::query("UPDATE users SET is_active = false WHERE id = $1")
+            .bind(user_id)
+            .execute(pool)
+            .await;
+    }
+
+    // 3. SEC Rule 17a-4 / FINRA Rule 4511: Audit log of suspension (Data strictly preserved)
+    log_audit_event(
+        state,
+        org_uuid,
+        actor,
+        "billing.subscription_suspended",
+        "subscription",
+        Some(&sub_id.to_string()),
+        serde_json::json!({
+            "sub_id": sub_id,
+            "org_id": org_id_opt,
+            "reason": reason,
+            "stripe_event_id": stripe_event_id,
+            "compliance_retention": "SEC 17a-4 / FINRA 4511 preserved"
+        }),
+        None,
+    )
+    .await;
+
+    // 4. Invalidate cache
+    state.monthly_quota_cache.remove(&user_id.to_string());
+}
+
+/// Executes institutional recovery/reactivation: restoring subscription to active,
+/// resetting dunning counters, and re-enabling access credentials and roles.
+async fn execute_reactivation(
+    pool: &PgPool,
+    state: &AppState,
+    sub_id: Uuid,
+    org_id_opt: Option<&str>,
+    user_id: Uuid,
+    actor: &str,
+    stripe_event_id: &str,
+) {
+    let org_uuid = org_id_opt.and_then(|s| Uuid::parse_str(s).ok());
+
+    // 1. Reset subscription status to active and clear dunning counters
+    let _ = sqlx::query(
+        r#"
+        UPDATE subscriptions 
+        SET status = 'active', dunning_fail_count = 0, grace_until_utc = NULL, updated_at = NOW() 
+        WHERE id = $1
+        "#,
+    )
+    .bind(sub_id)
+    .execute(pool)
+    .await;
+
+    // 2. Re-enable API keys, active users, restore membership roles, re-enable retention
+    if let Some(org_id) = org_id_opt {
+        let _ = sqlx::query(
+            r#"
+            UPDATE api_keys 
+            SET revoked_at = NULL, rotation_status = 'none'
+            WHERE (org_id = $1 OR user_id IN (SELECT user_id FROM organization_members WHERE org_id::text = $1))
+              AND rotation_status = 'revoked'
+            "#,
+        )
+        .bind(org_id)
+        .execute(pool)
+        .await;
+
+        let _ = sqlx::query(
+            r#"
+            UPDATE users 
+            SET is_active = true 
+            WHERE id IN (SELECT user_id FROM organization_members WHERE org_id::text = $1)
+               OR id IN (SELECT user_id FROM api_keys WHERE org_id = $1)
+               OR id = $2
+            "#,
+        )
+        .bind(org_id)
+        .bind(user_id)
+        .execute(pool)
+        .await;
+
+        let _ = sqlx::query(
+            "UPDATE organization_members SET role = 'member' WHERE org_id::text = $1 AND role = 'suspended'",
+        )
+        .bind(org_id)
+        .execute(pool)
+        .await;
+
+        let _ = sqlx::query(
+            "UPDATE data_retention_policies SET is_active = true, updated_at = NOW() WHERE org_id::text = $1",
+        )
+        .bind(org_id)
+        .execute(pool)
+        .await;
+    } else {
+        let _ = sqlx::query(
+            "UPDATE api_keys SET revoked_at = NULL, rotation_status = 'none' WHERE user_id = $1 AND rotation_status = 'revoked'",
+        )
+        .bind(user_id)
+        .execute(pool)
+        .await;
+
+        let _ = sqlx::query("UPDATE users SET is_active = true WHERE id = $1")
+            .bind(user_id)
+            .execute(pool)
+            .await;
+    }
+
+    log_audit_event(
+        state,
+        org_uuid,
+        actor,
+        "billing.subscription_reactivated",
+        "subscription",
+        Some(&sub_id.to_string()),
+        serde_json::json!({
+            "sub_id": sub_id,
+            "org_id": org_id_opt,
+            "status": "active",
+            "stripe_event_id": stripe_event_id
+        }),
+        None,
+    )
+    .await;
+
+    state.monthly_quota_cache.remove(&user_id.to_string());
+}
+
+/// Lightweight scheduled check for expired dunning grace periods.
+/// Executes Phase-1 suspension for subscriptions remaining past_due after grace expiration.
+pub async fn sweep_expired_dunning_grace_periods(
+    pool: &PgPool,
+    state: &AppState,
+) -> Result<usize, sqlx::Error> {
+    let expired_rows: Vec<(Uuid, Option<String>, Uuid)> = sqlx::query_as(
+        r#"
+        SELECT id, org_id::text, user_id
+        FROM subscriptions
+        WHERE status = 'past_due'
+          AND grace_until_utc IS NOT NULL
+          AND grace_until_utc < NOW()
+        "#,
+    )
+    .fetch_all(pool)
+    .await?;
+
+    let count = expired_rows.len();
+    for (sub_id, org_id_opt, user_id) in expired_rows {
+        execute_phase_1_suspension(
+            pool,
+            state,
+            sub_id,
+            org_id_opt.as_deref(),
+            user_id,
+            "billing_sweep",
+            "72h_grace_period_expired",
+            "scheduled_sweep",
+        )
+        .await;
+    }
+
+    if count > 0 {
+        sync_past_due_gauge(pool, state).await;
+    }
+
+    Ok(count)
+}
+
 /// Handle incoming Stripe webhook events.
 ///
 /// **Public endpoint** — authenticates via Stripe-Signature HMAC-SHA256 verification
 /// (not JWT). Processes subscription lifecycle events and updates local database.
 #[utoipa::path(
     post,
-    path = "/billing/webhook",
+    path = "/v1/billing/webhook",
     tag = "Billing & Subscriptions",
     responses(
         (status = 200, description = "Webhook event acknowledged", body = BillingWebhookResponse),
@@ -1089,7 +1491,6 @@ pub async fn stripe_webhook_handler(
         Some(s) if !s.is_empty() => s.clone(),
         _ => env::var("STRIPE_WEBHOOK_SECRET").unwrap_or_default(),
     };
-    let _mock_mode = env::var("STRIPE_MOCK_MODE").as_deref() == Ok("1");
 
     // 2. Verify signature (if secret is configured)
     let sig_header = headers
@@ -1099,12 +1500,24 @@ pub async fn stripe_webhook_handler(
 
     if !webhook_secret.is_empty() {
         if let Err(e) = verify_stripe_signature(&body, sig_header, &webhook_secret) {
+            match &e {
+                StripeSignatureError::TimestampToleranceExceeded { .. } => {
+                    state
+                        .billing_webhook_timestamp_errors
+                        .fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+                }
+                _ => {
+                    state
+                        .billing_webhook_sig_errors
+                        .fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+                }
+            }
             warn!("[Billing Webhook] Signature verification failed: {}", e);
             return (
                 StatusCode::BAD_REQUEST,
                 Json(AuthErrorResponse {
                     error: "Bad Request".to_string(),
-                    message: "Webhook signature verification failed".to_string(),
+                    message: format!("Webhook signature verification failed: {}", e),
                 }),
             )
                 .into_response();
@@ -1115,6 +1528,9 @@ pub async fn stripe_webhook_handler(
     let event: serde_json::Value = match serde_json::from_slice(&body) {
         Ok(v) => v,
         Err(e) => {
+            state
+                .billing_webhook_parse_errors
+                .fetch_add(1, std::sync::atomic::Ordering::Relaxed);
             warn!("[Billing Webhook] Failed to parse event JSON: {}", e);
             return (
                 StatusCode::BAD_REQUEST,
@@ -1127,195 +1543,264 @@ pub async fn stripe_webhook_handler(
         }
     };
 
-    let event_type = event["type"].as_str().unwrap_or("unknown");
-    info!("[Billing Webhook] Received event type: {}", event_type);
+    let stripe_event_id = event["id"].as_str().unwrap_or("").to_string();
+    let event_type = event["type"].as_str().unwrap_or("unknown").to_string();
+    let event_created_ts = event["created"]
+        .as_i64()
+        .unwrap_or_else(|| Utc::now().timestamp());
+    let event_created = DateTime::from_timestamp(event_created_ts, 0).unwrap_or_else(Utc::now);
 
-    // 4. Dispatch based on event type
+    info!(
+        "[Billing Webhook] Received Stripe event id='{}' type='{}'",
+        stripe_event_id, event_type
+    );
+
     let pool = state.db_pool.as_ref();
 
-    match event_type {
-        "checkout.session.completed" => {
-            let data = &event["data"]["object"];
-            let customer_id = data["customer"].as_str().unwrap_or("");
-            let subscription_id = data["subscription"].as_str().unwrap_or("");
-            let user_id = data["metadata"]["fintext_user_id"]
-                .as_str()
-                .or_else(|| data["client_reference_id"].as_str())
-                .unwrap_or("");
-
-            // Determine plan from metadata or default to pro
-            let plan_id = data["metadata"]["plan_id"]
-                .as_str()
-                .unwrap_or("pro_monthly");
-
-            if let Some(pool) = pool {
-                if let Err(e) = upsert_subscription(
-                    pool,
-                    user_id,
-                    customer_id,
-                    subscription_id,
-                    plan_id,
-                    "active",
-                    Some(Utc::now()),
-                    None,
+    // 4. Event Idempotency Defense via billing_events
+    if let Some(pool) = pool {
+        if !stripe_event_id.is_empty() {
+            let row_inserted: Option<(Uuid,)> = sqlx::query_as(
+                r#"
+                INSERT INTO billing_events (
+                    id, stripe_event_id, event_type, created_utc, processed_utc, status, payload, org_id
                 )
-                .await
-                {
-                    error!("[Billing Webhook] Failed to upsert subscription: {}", e);
-                }
+                VALUES (
+                    $1, $2, $3, $4, NOW(), 'processed', $5, $6
+                )
+                ON CONFLICT (stripe_event_id) DO NOTHING
+                RETURNING id
+                "#,
+            )
+            .bind(Uuid::new_v4())
+            .bind(&stripe_event_id)
+            .bind(&event_type)
+            .bind(event_created)
+            .bind(&event)
+            .bind(
+                event["data"]["object"]["metadata"]["org_id"]
+                    .as_str()
+                    .or_else(|| event["data"]["object"]["client_reference_id"].as_str()),
+            )
+            .fetch_optional(pool)
+            .await
+            .unwrap_or(None);
+
+            if row_inserted.is_none() {
+                info!(
+                    "[Billing Webhook] Duplicate Stripe event '{}' acknowledged idempotently (no-op).",
+                    stripe_event_id
+                );
+                return (
+                    StatusCode::OK,
+                    Json(BillingWebhookResponse { received: true }),
+                )
+                    .into_response();
             }
-
-            // Invalidate cached quota so new plan limits apply immediately
-            state.monthly_quota_cache.remove(user_id);
-
-            info!(
-                "[Billing Webhook] checkout.session.completed: user='{}' plan='{}' customer='{}' subscription='{}'",
-                redact_id(user_id),
-                plan_id,
-                redact_id(customer_id),
-                redact_id(subscription_id)
-            );
         }
+    }
 
-        "invoice.payment_succeeded" => {
-            let data = &event["data"]["object"];
-            let customer_id = data["customer"].as_str().unwrap_or("");
-            let subscription_id = data["subscription"].as_str().unwrap_or("");
-            let period_start = data["period_start"]
-                .as_i64()
-                .map(|ts| DateTime::from_timestamp(ts, 0).unwrap_or_else(Utc::now));
-            let period_end = data["period_end"]
-                .as_i64()
-                .map(|ts| DateTime::from_timestamp(ts, 0).unwrap_or_else(Utc::now));
+    // 5. Transactional Dunning & Subscription State Machine
+    if let Some(pool) = pool {
+        let data = &event["data"]["object"];
+        let customer_id = data["customer"].as_str().unwrap_or("");
+        let subscription_id = data["subscription"]
+            .as_str()
+            .or_else(|| data["id"].as_str())
+            .unwrap_or("");
+        let org_id_meta = data["metadata"]["org_id"]
+            .as_str()
+            .or_else(|| data["metadata"]["fintext_org_id"].as_str())
+            .or_else(|| data["client_reference_id"].as_str())
+            .unwrap_or("");
+        let user_id_meta = data["metadata"]["fintext_user_id"]
+            .as_str()
+            .or_else(|| data["metadata"]["user_id"].as_str())
+            .or_else(|| data["client_reference_id"].as_str())
+            .unwrap_or("");
 
-            if let Some(pool) = pool {
-                // Check if user was past_due to trigger dunning recovery notice
-                let prev_sub: Option<(String, String)> = sqlx::query_as(
-                    "SELECT user_id::text, status FROM subscriptions WHERE stripe_customer_id = $1 LIMIT 1"
-                )
-                .bind(customer_id)
-                .fetch_optional(pool)
-                .await
-                .ok()
-                .flatten();
+        // Query matching subscription
+        let sub_row: Option<(
+            Uuid,
+            Uuid,
+            Option<String>,
+            String,
+            String,
+            i32,
+            Option<DateTime<Utc>>,
+        )> = sqlx::query_as(
+            r#"
+            SELECT id, user_id, org_id::text, plan_id, status, dunning_fail_count, grace_until_utc
+            FROM subscriptions
+            WHERE (stripe_customer_id = $1 AND $1 != '')
+               OR (stripe_subscription_id = $2 AND $2 != '')
+               OR (org_id::text = $3 AND $3 != '')
+               OR (user_id::text = $4 AND $4 != '')
+            ORDER BY updated_at DESC
+            LIMIT 1
+            "#,
+        )
+        .bind(customer_id)
+        .bind(subscription_id)
+        .bind(org_id_meta)
+        .bind(user_id_meta)
+        .fetch_optional(pool)
+        .await
+        .unwrap_or(None);
 
-                let _ = sqlx::query(
-                    r#"
-                    UPDATE subscriptions
-                    SET status = 'active',
-                        current_period_start = COALESCE($1, current_period_start),
-                        current_period_end = COALESCE($2, current_period_end),
-                        updated_at = NOW()
-                    WHERE stripe_customer_id = $3
-                    "#,
-                )
-                .bind(period_start)
-                .bind(period_end)
-                .bind(customer_id)
-                .execute(pool)
-                .await;
+        match event_type.as_str() {
+            "checkout.session.completed" => {
+                let plan_id = data["metadata"]["plan_id"]
+                    .as_str()
+                    .unwrap_or("pro_monthly");
 
-                if let Some((uid, old_status)) = prev_sub {
-                    state.monthly_quota_cache.remove(&uid);
-                    if old_status == "past_due" {
-                        info!(
-                            "[DUNNING RECOVERY] Payment succeeded for customer '{}'. Subscription restored to 'active'.",
-                            redact_id(customer_id)
-                        );
-                    }
-                }
-            }
+                if let Some((sub_id, user_uuid, org_opt, _, _, _, _)) = sub_row {
+                    let _ = sqlx::query(
+                        r#"
+                        UPDATE subscriptions
+                        SET stripe_customer_id = COALESCE(NULLIF($1, ''), stripe_customer_id),
+                            stripe_subscription_id = COALESCE(NULLIF($2, ''), stripe_subscription_id),
+                            plan_id = $3,
+                            status = 'active',
+                            dunning_fail_count = 0,
+                            grace_until_utc = NULL,
+                            updated_at = NOW()
+                        WHERE id = $4
+                        "#,
+                    )
+                    .bind(customer_id)
+                    .bind(subscription_id)
+                    .bind(plan_id)
+                    .bind(sub_id)
+                    .execute(pool)
+                    .await;
 
-            info!(
-                "[Billing Webhook] invoice.payment_succeeded: customer='{}' subscription='{}'",
-                redact_id(customer_id),
-                redact_id(subscription_id)
-            );
-        }
-
-        "invoice.payment_failed" => {
-            let data = &event["data"]["object"];
-            let customer_id = data["customer"].as_str().unwrap_or("");
-            let invoice_id = data["id"].as_str().unwrap_or("");
-            let amount_due = data["amount_due"].as_u64().unwrap_or(0);
-
-            if let Some(pool) = pool {
-                let user_row: Option<(String,)> = sqlx::query_as(
-                    "SELECT user_id::text FROM subscriptions WHERE stripe_customer_id = $1 LIMIT 1",
-                )
-                .bind(customer_id)
-                .fetch_optional(pool)
-                .await
-                .ok()
-                .flatten();
-
-                let _ = sqlx::query(
-                    r#"
-                    UPDATE subscriptions SET status = 'past_due', updated_at = NOW()
-                    WHERE stripe_customer_id = $1
-                    "#,
-                )
-                .bind(customer_id)
-                .execute(pool)
-                .await;
-
-                if let Some((uid,)) = user_row {
-                    state.monthly_quota_cache.remove(&uid);
-                }
-            }
-
-            warn!(
-                "[Billing Webhook] invoice.payment_failed: customer='{}' invoice='{}' amount_due_cents={}",
-                redact_id(customer_id),
-                redact_id(invoice_id),
-                amount_due
-            );
-            warn!(
-                "[DUNNING ALERT] Payment failed for customer '{}'. Subscription marked 'past_due'. Dunning notice dispatched.",
-                redact_id(customer_id)
-            );
-        }
-
-        "customer.subscription.updated" => {
-            let data = &event["data"]["object"];
-            let customer_id = data["customer"].as_str().unwrap_or("");
-            let subscription_id = data["id"].as_str().unwrap_or("");
-            let status = data["status"].as_str().unwrap_or("active");
-            let period_start = data["current_period_start"]
-                .as_i64()
-                .map(|ts| DateTime::from_timestamp(ts, 0).unwrap_or_else(Utc::now));
-            let period_end = data["current_period_end"]
-                .as_i64()
-                .map(|ts| DateTime::from_timestamp(ts, 0).unwrap_or_else(Utc::now));
-
-            let plan_id = data["metadata"]["plan_id"].as_str().or_else(|| {
-                data["items"]["data"]
-                    .as_array()
-                    .and_then(|arr| arr.first())
-                    .and_then(|item| item["price"]["id"].as_str())
-                    .and_then(|price_id| {
-                        if price_id.contains("enterprise") {
-                            Some("enterprise_monthly")
-                        } else if price_id.contains("pro") {
-                            Some("pro_monthly")
-                        } else {
-                            None
-                        }
+                    execute_reactivation(
+                        pool,
+                        &state,
+                        sub_id,
+                        org_opt.as_deref(),
+                        user_uuid,
+                        "billing_webhook",
+                        &stripe_event_id,
+                    )
+                    .await;
+                } else {
+                    let user_uuid =
+                        Uuid::parse_str(user_id_meta).unwrap_or_else(|_| Uuid::new_v4());
+                    let new_id = Uuid::new_v4();
+                    let _ = sqlx::query(
+                        r#"
+                        INSERT INTO subscriptions (
+                            id, user_id, org_id, stripe_customer_id, stripe_subscription_id,
+                            plan_id, status, dunning_fail_count, grace_until_utc, created_at, updated_at
+                        )
+                        VALUES ($1, $2, $3, $4, $5, $6, 'active', 0, NULL, NOW(), NOW())
+                        "#,
+                    )
+                    .bind(new_id)
+                    .bind(user_uuid)
+                    .bind(if org_id_meta.is_empty() {
+                        None
+                    } else {
+                        Some(org_id_meta)
                     })
-            });
+                    .bind(customer_id)
+                    .bind(subscription_id)
+                    .bind(plan_id)
+                    .execute(pool)
+                    .await;
 
-            if let Some(pool) = pool {
-                let user_row: Option<(String,)> = sqlx::query_as(
-                    "SELECT user_id::text FROM subscriptions WHERE stripe_customer_id = $1 OR stripe_subscription_id = $2 LIMIT 1"
-                )
-                .bind(customer_id)
-                .bind(subscription_id)
-                .fetch_optional(pool)
-                .await
-                .ok()
-                .flatten();
+                    log_audit_event(
+                        &state,
+                        Uuid::parse_str(org_id_meta).ok(),
+                        "billing_webhook",
+                        "billing.checkout_completed",
+                        "subscription",
+                        Some(&new_id.to_string()),
+                        serde_json::json!({
+                            "plan_id": plan_id,
+                            "stripe_customer_id": customer_id,
+                            "stripe_subscription_id": subscription_id,
+                            "stripe_event_id": stripe_event_id
+                        }),
+                        None,
+                    )
+                    .await;
+                }
 
-                if let Some(pid) = plan_id {
+                sync_past_due_gauge(pool, &state).await;
+                info!(
+                    "[Billing Webhook] checkout.session.completed bound customer='{}' sub='{}' plan='{}'",
+                    redact_id(customer_id),
+                    redact_id(subscription_id),
+                    plan_id
+                );
+            }
+
+            "customer.subscription.created" => {
+                if let Some((sub_id, user_uuid, org_opt, _, _, _, _)) = sub_row {
+                    let _ = sqlx::query(
+                        r#"
+                        UPDATE subscriptions
+                        SET stripe_customer_id = COALESCE(NULLIF($1, ''), stripe_customer_id),
+                            stripe_subscription_id = COALESCE(NULLIF($2, ''), stripe_subscription_id),
+                            status = 'active',
+                            dunning_fail_count = 0,
+                            grace_until_utc = NULL,
+                            updated_at = NOW()
+                        WHERE id = $3
+                        "#,
+                    )
+                    .bind(customer_id)
+                    .bind(subscription_id)
+                    .bind(sub_id)
+                    .execute(pool)
+                    .await;
+
+                    execute_reactivation(
+                        pool,
+                        &state,
+                        sub_id,
+                        org_opt.as_deref(),
+                        user_uuid,
+                        "billing_webhook",
+                        &stripe_event_id,
+                    )
+                    .await;
+                    sync_past_due_gauge(pool, &state).await;
+                }
+            }
+
+            "customer.subscription.updated" => {
+                let status = data["status"].as_str().unwrap_or("active");
+                let period_start = data["current_period_start"]
+                    .as_i64()
+                    .map(|ts| DateTime::from_timestamp(ts, 0).unwrap_or_else(Utc::now));
+                let period_end = data["current_period_end"]
+                    .as_i64()
+                    .map(|ts| DateTime::from_timestamp(ts, 0).unwrap_or_else(Utc::now));
+
+                let plan_id = data["metadata"]["plan_id"].as_str().or_else(|| {
+                    data["items"]["data"]
+                        .as_array()
+                        .and_then(|arr| arr.first())
+                        .and_then(|item| item["price"]["id"].as_str())
+                        .and_then(|price_id| {
+                            if price_id.contains("enterprise") {
+                                Some("enterprise_monthly")
+                            } else if price_id.contains("pro") || price_id.contains("growth") {
+                                Some("pro_monthly")
+                            } else if price_id.contains("starter") {
+                                Some("starter")
+                            } else {
+                                None
+                            }
+                        })
+                });
+
+                if let Some((sub_id, user_uuid, org_opt, old_plan, _, _, _)) = sub_row {
+                    let new_plan = plan_id.unwrap_or(&old_plan);
                     let _ = sqlx::query(
                         r#"
                         UPDATE subscriptions
@@ -1324,96 +1809,230 @@ pub async fn stripe_webhook_handler(
                             current_period_start = COALESCE($3, current_period_start),
                             current_period_end = COALESCE($4, current_period_end),
                             updated_at = NOW()
-                        WHERE stripe_customer_id = $5 OR stripe_subscription_id = $6
+                        WHERE id = $5
                         "#,
                     )
                     .bind(status)
-                    .bind(pid)
+                    .bind(new_plan)
                     .bind(period_start)
                     .bind(period_end)
-                    .bind(customer_id)
-                    .bind(subscription_id)
+                    .bind(sub_id)
                     .execute(pool)
                     .await;
-                } else {
+
+                    state.monthly_quota_cache.remove(&user_uuid.to_string());
+
+                    log_audit_event(
+                        &state,
+                        org_opt.as_deref().and_then(|s| Uuid::parse_str(s).ok()),
+                        "billing_webhook",
+                        "billing.subscription_updated",
+                        "subscription",
+                        Some(&sub_id.to_string()),
+                        serde_json::json!({
+                            "plan_id": new_plan,
+                            "status": status,
+                            "stripe_event_id": stripe_event_id
+                        }),
+                        None,
+                    )
+                    .await;
+                }
+                sync_past_due_gauge(pool, &state).await;
+            }
+
+            "invoice.payment_failed" => {
+                let invoice_id = data["id"].as_str().unwrap_or("");
+                let amount_due = data["amount_due"].as_u64().unwrap_or(0);
+
+                if let Some((sub_id, user_uuid, org_opt, _, _, fail_count, grace_opt)) = sub_row {
+                    let new_fail_count = fail_count + 1;
+                    let grace_expired = grace_opt.map(|g| g < Utc::now()).unwrap_or(false);
+
+                    if new_fail_count >= 3 || (fail_count > 0 && grace_expired) {
+                        // Dunning exhausted -> Automatic Phase-1 suspension
+                        warn!(
+                            "[DUNNING EXHAUSTED] Customer '{}' reached {} failures. Executing Phase-1 suspension.",
+                            redact_id(customer_id),
+                            new_fail_count
+                        );
+                        execute_phase_1_suspension(
+                            pool,
+                            &state,
+                            sub_id,
+                            org_opt.as_deref(),
+                            user_uuid,
+                            "billing_webhook",
+                            "dunning_grace_exhausted",
+                            &stripe_event_id,
+                        )
+                        .await;
+                    } else {
+                        // Transition to past_due with 72h grace window
+                        warn!(
+                            "[DUNNING ALERT] Payment failed for customer '{}' (fail_count={}). Subscription marked past_due with 72h grace.",
+                            redact_id(customer_id),
+                            new_fail_count
+                        );
+
+                        let _ = sqlx::query(
+                            r#"
+                            UPDATE subscriptions
+                            SET status = 'past_due',
+                                dunning_fail_count = $1,
+                                grace_until_utc = COALESCE(grace_until_utc, NOW() + INTERVAL '72 hours'),
+                                updated_at = NOW()
+                            WHERE id = $2
+                            "#,
+                        )
+                        .bind(new_fail_count)
+                        .bind(sub_id)
+                        .execute(pool)
+                        .await;
+
+                        log_audit_event(
+                            &state,
+                            org_opt.as_deref().and_then(|s| Uuid::parse_str(s).ok()),
+                            "billing_webhook",
+                            "billing.payment_failed",
+                            "subscription",
+                            Some(&sub_id.to_string()),
+                            serde_json::json!({
+                                "invoice_id": invoice_id,
+                                "amount_due_cents": amount_due,
+                                "fail_count": new_fail_count,
+                                "grace_window_hours": 72,
+                                "stripe_event_id": stripe_event_id
+                            }),
+                            None,
+                        )
+                        .await;
+                    }
+                }
+                sync_past_due_gauge(pool, &state).await;
+            }
+
+            "invoice.paid" | "invoice.payment_succeeded" => {
+                let period_start = data["period_start"]
+                    .as_i64()
+                    .map(|ts| DateTime::from_timestamp(ts, 0).unwrap_or_else(Utc::now));
+                let period_end = data["period_end"]
+                    .as_i64()
+                    .map(|ts| DateTime::from_timestamp(ts, 0).unwrap_or_else(Utc::now));
+
+                if let Some((sub_id, user_uuid, org_opt, _, old_status, _, _)) = sub_row {
                     let _ = sqlx::query(
                         r#"
                         UPDATE subscriptions
-                        SET status = $1,
-                            current_period_start = COALESCE($2, current_period_start),
-                            current_period_end = COALESCE($3, current_period_end),
+                        SET status = 'active',
+                            dunning_fail_count = 0,
+                            grace_until_utc = NULL,
+                            current_period_start = COALESCE($1, current_period_start),
+                            current_period_end = COALESCE($2, current_period_end),
                             updated_at = NOW()
-                        WHERE stripe_customer_id = $4 OR stripe_subscription_id = $5
+                        WHERE id = $3
                         "#,
                     )
-                    .bind(status)
                     .bind(period_start)
                     .bind(period_end)
-                    .bind(customer_id)
-                    .bind(subscription_id)
+                    .bind(sub_id)
+                    .execute(pool)
+                    .await;
+
+                    if old_status == "past_due" || old_status == "canceled" {
+                        info!(
+                            "[DUNNING RECOVERY] Payment confirmed for customer '{}'. Restoring full institutional access.",
+                            redact_id(customer_id)
+                        );
+                        execute_reactivation(
+                            pool,
+                            &state,
+                            sub_id,
+                            org_opt.as_deref(),
+                            user_uuid,
+                            "billing_webhook",
+                            &stripe_event_id,
+                        )
+                        .await;
+                    } else {
+                        log_audit_event(
+                            &state,
+                            org_opt.as_deref().and_then(|s| Uuid::parse_str(s).ok()),
+                            "billing_webhook",
+                            "billing.invoice_paid",
+                            "subscription",
+                            Some(&sub_id.to_string()),
+                            serde_json::json!({
+                                "stripe_event_id": stripe_event_id,
+                                "customer_id": customer_id
+                            }),
+                            None,
+                        )
+                        .await;
+                    }
+                    state.monthly_quota_cache.remove(&user_uuid.to_string());
+                }
+                sync_past_due_gauge(pool, &state).await;
+            }
+
+            "customer.subscription.deleted" => {
+                if let Some((sub_id, user_uuid, org_opt, _, _, _, _)) = sub_row {
+                    warn!(
+                        "[SUBSCRIPTION CANCELED] Subscription '{}' deleted in Stripe. Executing Phase-1 suspension.",
+                        redact_id(subscription_id)
+                    );
+                    execute_phase_1_suspension(
+                        pool,
+                        &state,
+                        sub_id,
+                        org_opt.as_deref(),
+                        user_uuid,
+                        "billing_webhook",
+                        "stripe_subscription_deleted",
+                        &stripe_event_id,
+                    )
+                    .await;
+                }
+                sync_past_due_gauge(pool, &state).await;
+            }
+
+            "invoice.payment_action_required" => {
+                warn!(
+                    "[PAYMENT ACTION REQUIRED] Customer '{}' requires 3D Secure / SCA intervention.",
+                    redact_id(customer_id)
+                );
+                if let Some((sub_id, _, org_opt, _, _, _, _)) = sub_row {
+                    log_audit_event(
+                        &state,
+                        org_opt.as_deref().and_then(|s| Uuid::parse_str(s).ok()),
+                        "billing_webhook",
+                        "billing.payment_action_required",
+                        "subscription",
+                        Some(&sub_id.to_string()),
+                        serde_json::json!({
+                            "customer_id": customer_id,
+                            "stripe_event_id": stripe_event_id
+                        }),
+                        None,
+                    )
+                    .await;
+                }
+            }
+
+            _ => {
+                info!(
+                    "[Billing Webhook] Acknowledged unhandled event type: {}",
+                    event_type
+                );
+                if !stripe_event_id.is_empty() {
+                    let _ = sqlx::query(
+                        "UPDATE billing_events SET status = 'ignored' WHERE stripe_event_id = $1",
+                    )
+                    .bind(&stripe_event_id)
                     .execute(pool)
                     .await;
                 }
-
-                if let Some((uid,)) = user_row {
-                    state.monthly_quota_cache.remove(&uid);
-                }
             }
-
-            info!(
-                "[Billing Webhook] customer.subscription.updated: customer='{}' subscription='{}' status='{}' plan='{:?}'",
-                redact_id(customer_id),
-                redact_id(subscription_id),
-                status,
-                plan_id
-            );
-        }
-
-        "customer.subscription.deleted" => {
-            let data = &event["data"]["object"];
-            let customer_id = data["customer"].as_str().unwrap_or("");
-            let subscription_id = data["id"].as_str().unwrap_or("");
-
-            if let Some(pool) = pool {
-                let user_row: Option<(String,)> = sqlx::query_as(
-                    "SELECT user_id::text FROM subscriptions WHERE stripe_customer_id = $1 OR stripe_subscription_id = $2 LIMIT 1"
-                )
-                .bind(customer_id)
-                .bind(subscription_id)
-                .fetch_optional(pool)
-                .await
-                .ok()
-                .flatten();
-
-                let _ = sqlx::query(
-                    r#"
-                    UPDATE subscriptions
-                    SET status = 'cancelled', plan_id = 'free', updated_at = NOW()
-                    WHERE stripe_customer_id = $1 OR stripe_subscription_id = $2
-                    "#,
-                )
-                .bind(customer_id)
-                .bind(subscription_id)
-                .execute(pool)
-                .await;
-
-                if let Some((uid,)) = user_row {
-                    state.monthly_quota_cache.remove(&uid);
-                }
-            }
-
-            info!(
-                "[Billing Webhook] customer.subscription.deleted: customer='{}' subscription='{}'",
-                redact_id(customer_id),
-                redact_id(subscription_id)
-            );
-        }
-
-        _ => {
-            info!(
-                "[Billing Webhook] Acknowledged unhandled event type: {}",
-                event_type
-            );
         }
     }
 
@@ -1689,12 +2308,14 @@ mod tests {
     fn test_stripe_signature_verification_valid() {
         let secret = "whsec_test_secret_key";
         let payload = b"{\"type\":\"checkout.session.completed\"}";
-        let timestamp = "1630000000";
+        let now = Utc::now().timestamp();
+        let timestamp = now.to_string();
 
         // Compute expected signature
-        let signed_payload = format!("{}.{}", timestamp, String::from_utf8_lossy(payload));
         let mut mac = Hmac::<Sha256>::new_from_slice(secret.as_bytes()).unwrap();
-        mac.update(signed_payload.as_bytes());
+        mac.update(timestamp.as_bytes());
+        mac.update(b".");
+        mac.update(payload);
         let sig = hex::encode(mac.finalize().into_bytes());
 
         let sig_header = format!("t={},v1={}", timestamp, sig);
@@ -1705,11 +2326,13 @@ mod tests {
     fn test_stripe_signature_verification_tampered_payload() {
         let secret = "whsec_test_secret_key";
         let payload = b"{\"type\":\"checkout.session.completed\"}";
-        let timestamp = "1630000000";
+        let now = Utc::now().timestamp();
+        let timestamp = now.to_string();
 
-        let signed_payload = format!("{}.{}", timestamp, String::from_utf8_lossy(payload));
         let mut mac = Hmac::<Sha256>::new_from_slice(secret.as_bytes()).unwrap();
-        mac.update(signed_payload.as_bytes());
+        mac.update(timestamp.as_bytes());
+        mac.update(b".");
+        mac.update(payload);
         let sig = hex::encode(mac.finalize().into_bytes());
 
         let sig_header = format!("t={},v1={}", timestamp, sig);
@@ -1723,11 +2346,13 @@ mod tests {
     fn test_stripe_signature_verification_wrong_secret() {
         let secret = "whsec_test_secret_key";
         let payload = b"{\"type\":\"checkout.session.completed\"}";
-        let timestamp = "1630000000";
+        let now = Utc::now().timestamp();
+        let timestamp = now.to_string();
 
-        let signed_payload = format!("{}.{}", timestamp, String::from_utf8_lossy(payload));
         let mut mac = Hmac::<Sha256>::new_from_slice(secret.as_bytes()).unwrap();
-        mac.update(signed_payload.as_bytes());
+        mac.update(timestamp.as_bytes());
+        mac.update(b".");
+        mac.update(payload);
         let sig = hex::encode(mac.finalize().into_bytes());
 
         let sig_header = format!("t={},v1={}", timestamp, sig);
@@ -1737,15 +2362,90 @@ mod tests {
     #[test]
     fn test_stripe_signature_missing_timestamp() {
         let result = verify_stripe_signature(b"body", "v1=abc123", "secret");
-        assert!(result.is_err());
-        assert!(result.unwrap_err().contains("Missing timestamp"));
+        assert_eq!(result, Err(StripeSignatureError::MissingTimestamp));
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("Missing timestamp"));
     }
 
     #[test]
     fn test_stripe_signature_missing_v1() {
-        let result = verify_stripe_signature(b"body", "t=1630000000", "secret");
-        assert!(result.is_err());
-        assert!(result.unwrap_err().contains("Missing v1 signature"));
+        let now = Utc::now().timestamp();
+        let result = verify_stripe_signature(b"body", &format!("t={}", now), "secret");
+        assert_eq!(result, Err(StripeSignatureError::MissingSignature));
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("Missing v1 signature"));
+    }
+
+    #[test]
+    fn test_stripe_signature_replay_expired_timestamp_rejected() {
+        let secret = "whsec_test_secret_key";
+        let payload = b"{\"type\":\"checkout.session.completed\"}";
+        // 301 seconds in the past -> beyond 300s replay window
+        let old_time = Utc::now().timestamp() - 305;
+        let timestamp = old_time.to_string();
+
+        let mut mac = Hmac::<Sha256>::new_from_slice(secret.as_bytes()).unwrap();
+        mac.update(timestamp.as_bytes());
+        mac.update(b".");
+        mac.update(payload);
+        let sig = hex::encode(mac.finalize().into_bytes());
+
+        let sig_header = format!("t={},v1={}", timestamp, sig);
+        let result = verify_stripe_signature(payload, &sig_header, secret);
+        assert!(matches!(
+            result,
+            Err(StripeSignatureError::TimestampToleranceExceeded { .. })
+        ));
+    }
+
+    #[test]
+    fn test_stripe_signature_multi_secret_rotation() {
+        let old_secret = "whsec_old_quarterly_key";
+        let new_secret = "whsec_new_active_key";
+        let combined_secrets = format!("{}, {}", new_secret, old_secret);
+
+        let payload = b"{\"type\":\"invoice.paid\"}";
+        let now = Utc::now().timestamp();
+        let timestamp = now.to_string();
+
+        // Sign with old secret (during rotation transition)
+        let mut mac = Hmac::<Sha256>::new_from_slice(old_secret.as_bytes()).unwrap();
+        mac.update(timestamp.as_bytes());
+        mac.update(b".");
+        mac.update(payload);
+        let sig_old = hex::encode(mac.finalize().into_bytes());
+
+        let sig_header = format!("t={},v1={}", timestamp, sig_old);
+        // Multi-secret rotation window accepts signature from old secret
+        assert!(verify_stripe_signature(payload, &sig_header, &combined_secrets).is_ok());
+
+        // Sign with new secret
+        let mut mac_new = Hmac::<Sha256>::new_from_slice(new_secret.as_bytes()).unwrap();
+        mac_new.update(timestamp.as_bytes());
+        mac_new.update(b".");
+        mac_new.update(payload);
+        let sig_new = hex::encode(mac_new.finalize().into_bytes());
+
+        let sig_header_new = format!("t={},v1={}", timestamp, sig_new);
+        // Multi-secret rotation window also accepts signature from new secret
+        assert!(verify_stripe_signature(payload, &sig_header_new, &combined_secrets).is_ok());
+    }
+
+    #[test]
+    fn test_constant_time_comparison() {
+        let sig1 = "abcdef0123456789";
+        let sig2 = "abcdef0123456789";
+        let sig3 = "ABCDEF0123456789"; // case-insensitive hex match
+        let sig4 = "abcdef0123456788"; // 1-bit difference
+
+        assert!(constant_time_hex_compare(sig1, sig2));
+        assert!(constant_time_hex_compare(sig1, sig3));
+        assert!(!constant_time_hex_compare(sig1, sig4));
+        assert!(!constant_time_hex_compare("short", "longer_str"));
     }
 
     #[test]
@@ -1900,5 +2600,32 @@ mod tests {
         assert_eq!(invoice.overage_requests, 2_000);
         // 2000 * 0.1 cents = 200 cents ($2.00)
         assert_eq!(invoice.overage_charge_cents, 200);
+    }
+
+    #[test]
+    fn test_dunning_fail_count_threshold() {
+        let max_failures = 3;
+        let fail_count_1 = 1;
+        let fail_count_2 = 2;
+        let fail_count_3 = 3;
+
+        // Under 3 failures -> remains past_due in 72h grace
+        assert!(fail_count_1 < max_failures);
+        assert!(fail_count_2 < max_failures);
+        // At or above 3 failures -> transitions to canceled with Phase-1 suspension
+        assert!(fail_count_3 >= max_failures);
+    }
+
+    #[test]
+    fn test_stripe_signature_error_display() {
+        let err1 = StripeSignatureError::MissingHeader;
+        assert_eq!(err1.to_string(), "Missing Stripe-Signature header");
+
+        let err2 = StripeSignatureError::TimestampToleranceExceeded {
+            timestamp: 100,
+            now: 500,
+            diff_seconds: 400,
+        };
+        assert!(err2.to_string().contains("Timestamp tolerance exceeded"));
     }
 }

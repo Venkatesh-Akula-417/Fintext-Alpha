@@ -542,7 +542,30 @@ async fn async_main() -> Result<(), Box<dyn std::error::Error>> {
         api_request_count: Arc::new(std::sync::atomic::AtomicU64::new(10000)),
         api_error_count: Arc::new(std::sync::atomic::AtomicU64::new(0)),
         rls_context_missing_total: Arc::new(std::sync::atomic::AtomicU64::new(0)),
+        billing_webhook_sig_errors: Arc::new(std::sync::atomic::AtomicU64::new(0)),
+        billing_webhook_timestamp_errors: Arc::new(std::sync::atomic::AtomicU64::new(0)),
+        billing_webhook_parse_errors: Arc::new(std::sync::atomic::AtomicU64::new(0)),
+        billing_dunning_past_due_orgs: Arc::new(std::sync::atomic::AtomicU64::new(0)),
     };
+
+    // ── Hourly Dunning Grace Period Sweep Task (Problem #8) ───────────────────
+    if let Some(pool) = state.db_pool.clone() {
+        let sweep_state = state.clone();
+        tokio::spawn(async move {
+            let mut sweep_interval = tokio::time::interval(std::time::Duration::from_secs(3600));
+            loop {
+                sweep_interval.tick().await;
+                if let Err(e) = fintext_api_server::billing::sweep_expired_dunning_grace_periods(
+                    &pool,
+                    &sweep_state,
+                )
+                .await
+                {
+                    tracing::error!("[Dunning Sweep] Background grace sweep failed: {}", e);
+                }
+            }
+        });
+    }
 
     // ── Background Cache Governance Cleanup Task (Suite #272) ────────────────
     let bg_quota_cache = state.monthly_quota_cache.clone();

@@ -46,6 +46,8 @@ logs/*
 !logs/backup_restore_test_report.json
 !logs/soak_report.json
 !logs/soak_ledger.md
+!logs/billing_flow_report.json
+!logs/billing_reconciliation_report.json
 !logs/.gitkeep
 logs/soak_history.jsonl
 **/scratch/

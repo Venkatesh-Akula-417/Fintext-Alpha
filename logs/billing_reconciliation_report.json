@@ -1,0 +1,45 @@
+{
+  "latest_period": "2026-09",
+  "latest_verdict": "RECONCILED",
+  "last_reconciled_utc": "2026-09-25T08:17:46.908192+00:00",
+  "commit": "ce8b5be19e5046d349e68045a0212d8af1ff580f",
+  "current_period_details": {
+    "period": "2026-09",
+    "reconciled_utc": "2026-09-25T08:17:46.908192+00:00",
+    "commit": "ce8b5be19e5046d349e68045a0212d8af1ff580f",
+    "mode": "offline",
+    "verdict": "RECONCILED",
+    "discrepancies_count": 0,
+    "total_usage_events": 0,
+    "organizations_reconciled": 1,
+    "organizations": [
+      {
+        "org_id": "78246b6a-fafc-4a34-841c-0c737ef04783",
+        "organization": "org_demo_beta1",
+        "plan_id": "growth",
+        "status": "canceled",
+        "plan_limit": "1,000,000",
+        "recorded_usage": 0,
+        "overage_events": 0,
+        "invoices_paid": 0,
+        "flags": [
+          "NORMAL"
+        ],
+        "verdict": "RECONCILED"
+      }
+    ],
+    "accounting_notes": [
+      "Starter, Growth, and Enterprise tiers are institutional base commitments billed at beginning of cycle.",
+      "Zero usage events on active subscriptions denote prepaid platform access retainer and is not a discrepancy.",
+      "Metered overage beyond tier limits triggers automatic supplemental invoice.paid reconciliation."
+    ]
+  },
+  "history": [
+    {
+      "period": "2026-09",
+      "reconciled_utc": "2026-09-25T08:17:46.908192+00:00",
+      "verdict": "RECONCILED",
+      "discrepancies": 0
+    }
+  ]
+}
