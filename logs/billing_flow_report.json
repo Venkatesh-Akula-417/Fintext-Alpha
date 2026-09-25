@@ -1,6 +1,6 @@
 {
-  "generated_utc": "2026-09-25T08:15:06.448511+00:00",
-  "commit": "ce8b5be19e5046d349e68045a0212d8af1ff580f",
+  "generated_utc": "2026-09-25T09:17:29.917102+00:00",
+  "commit": "fc31900af9264dbfb5ecd98c3c95435a317afeed",
   "verdict": "CERTIFIED",
   "secrets_in_payload": false,
   "tests": [
@@ -25,13 +25,13 @@
     {
       "name": "Step D: tampered signature -> 400 + counter++",
       "expected": "HTTP 400, signature error counter incremented",
-      "observed": "HTTP 400, sig_err_before=0.0, sig_err_after=1.0",
+      "observed": "HTTP 400, sig_err_before=1.0, sig_err_after=2.0",
       "pass": true
     },
     {
       "name": "Step E: replayed old timestamp (>300s) -> 400",
       "expected": "HTTP 400, timestamp tolerance error",
-      "observed": "HTTP 400, ts_err_before=0.0, ts_err_after=1.0",
+      "observed": "HTTP 400, ts_err_before=1.0, ts_err_after=2.0",
       "pass": true
     },
     {

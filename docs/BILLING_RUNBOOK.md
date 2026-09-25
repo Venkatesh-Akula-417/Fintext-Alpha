@@ -172,10 +172,16 @@ FinText provides `scripts/test_billing_flow.py` for automated, non-destructive, 
 
 ### 4.1 Running the Drill
 ```bash
-# Execute full billing lifecycle drill against live local compose gateway:
+# On Linux / macOS (Bash):
+export STRIPE_WEBHOOK_SECRET="${STRIPE_WEBHOOK_SECRET:-whsec_REPLACE_ME}"
 python scripts/test_billing_flow.py \
   --base-url http://127.0.0.1:8000 \
-  --webhook-secret whsec_test_secret_32bytes_hex_padded_01 \
+  --json-report logs/billing_flow_report.json
+
+# On Windows (PowerShell):
+$env:STRIPE_WEBHOOK_SECRET = "whsec_REPLACE_ME"
+python scripts/test_billing_flow.py `
+  --base-url http://127.0.0.1:8000 `
   --json-report logs/billing_flow_report.json
 ```
 

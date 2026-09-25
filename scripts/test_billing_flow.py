@@ -125,9 +125,27 @@ def mask_secret(sec: str) -> str:
 def main():
     parser = argparse.ArgumentParser(description="FinText Billing Webhook & Dunning Offline Drill")
     parser.add_argument("--base-url", default="http://127.0.0.1:8000", help="FinText API base URL")
-    parser.add_argument("--webhook-secret", default=os.getenv("STRIPE_WEBHOOK_SECRET", "whsec_test_secret_32bytes_hex_padded_01"), help="Stripe webhook secret")
+    parser.add_argument(
+        "--webhook-secret",
+        default=os.environ.get("STRIPE_WEBHOOK_SECRET", ""),
+        help="Stripe webhook signing secret (loaded from STRIPE_WEBHOOK_SECRET environment variable)"
+    )
     parser.add_argument("--json-report", default="logs/billing_flow_report.json", help="Path to write certification JSON report")
     args = parser.parse_args()
+
+    if not args.webhook_secret:
+        print(f"\n{Colors.RED}{Colors.BOLD}[FATAL ERROR] STRIPE_WEBHOOK_SECRET environment variable is missing.{Colors.RESET}")
+        print("FinText webhook signature verification requires an explicit signing secret.")
+        print("\nRepair manual action:")
+        print("  On Windows (PowerShell):")
+        print('    $env:STRIPE_WEBHOOK_SECRET="whsec_REPLACE_ME"')
+        print("    python scripts/test_billing_flow.py")
+        print("  On Linux / macOS (Bash):")
+        print('    export STRIPE_WEBHOOK_SECRET="whsec_REPLACE_ME"')
+        print("    python scripts/test_billing_flow.py")
+        print("  Or provide CLI argument:")
+        print('    python scripts/test_billing_flow.py --webhook-secret "whsec_REPLACE_ME"\n')
+        sys.exit(2)
 
     print(f"\n{Colors.CYAN}{Colors.BOLD}{'=' * 79}{Colors.RESET}")
     print(f"{Colors.CYAN}{Colors.BOLD} FinText Alpha Vectorizer - Stripe Billing & Dunning Verification Drill{Colors.RESET}")
@@ -281,7 +299,7 @@ def main():
     # Step D: tampered signature -> 400 + counter increment
     # ─────────────────────────────────────────────────────────────────────────
     sig_err_before = get_metric_value(args.base_url, 'fintext_billing_webhook_errors_total{reason="signature"}')
-    bad_sig = compute_stripe_signature(payload_b_bytes, "whsec_wrong_key_for_tamper_test_hex_padded_00")
+    bad_sig = compute_stripe_signature(payload_b_bytes, "tampered_secret_key_for_offline_verification")
     status_d, resp_d = post_webhook(args.base_url, payload_b_bytes, bad_sig)
     sig_err_after = get_metric_value(args.base_url, 'fintext_billing_webhook_errors_total{reason="signature"}')
     step_d_pass = (status_d == 400 and (sig_err_after >= sig_err_before + 1 or "Invalid signature" in resp_d))
