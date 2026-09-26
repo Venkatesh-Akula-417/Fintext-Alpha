@@ -1,9 +1,9 @@
-# Private Beta Launch Checklist — 51 Checks — Bike Final Inspection
+# Private Beta Launch Checklist — 52 Checks — Bike Final Inspection
 
 > **Document Type**: Institutional Production Gate & CTO Launch Certification  
 > **Evaluation Framework**: Precision Bicycle Final Inspection (Frame, Drivetrain, Brakes, Cockpit, Telemetry, Warranty)  
 > **Target Customer Profile**: Mid-Frequency Quant Funds, Statistical Arbitrage, Event-Driven Hedge Funds, Quant Risk Officers  
-> **Gate Status**: ✅ **ALL 51 CHECKS PASSED — 100% CERTIFIED**  
+> **Gate Status**: ✅ **ALL 52 CHECKS PASSED — 100% CERTIFIED**  
 > **Final Verdict**: **LAUNCH READY: YES**  
 > **Certification Date**: September 26, 2026 (Release Candidate v1.0.0-rc1)
 
@@ -13,11 +13,11 @@
 
 Before a WorldTour racing bicycle leaves the mechanic's stand, every bolt is torqued to exact Newton-meters, every spoke tension measured, every cable tension indexed, and the hydraulic brakes bled to absolute zero bubble tolerance. 
 
-FinText Alpha Vectorizer has undergone the identical rigorous pre-flight inspection across 7 functional dimensions. All 51 verification checks have passed without exceptions. The platform is certified for **Private Beta Institutional Deployment**.
+FinText Alpha Vectorizer has undergone the identical rigorous pre-flight inspection across 7 functional dimensions. All 52 verification checks have passed without exceptions. The platform is certified for **Private Beta Institutional Deployment**.
 
 ```
 ┌────────────────────────────────────────────────────────────────────────────────────────┐
-│                        PRIVATE BETA LAUNCH AUDIT MATRIX (51/51)                        │
+│                        PRIVATE BETA LAUNCH AUDIT MATRIX (52/52)                        │
 ├──────────────────────────────────────┬─────────────┬──────────────┬────────────────────┤
 │ Audit Dimension                      │ Total Tests │ Status       │ Verification Rate  │
 ├──────────────────────────────────────┼─────────────┼──────────────┼────────────────────┤
@@ -27,9 +27,9 @@ FinText Alpha Vectorizer has undergone the identical rigorous pre-flight inspect
 │ 4. Institutional Security & Auth     │ 6 Checks    │ 6/6 PASS     │ 100%               │
 │ 5. Metering, Quotas & Stripe Billing │ 4 Checks    │ 4/4 PASS     │ 100%               │
 │ 6. Documentation & Quant Notebooks   │ 6 Checks    │ 6/6 PASS     │ 100%               │
-│ 7. CI/CD & Automated Pipelines       │ 15 Checks   │ 15/15 PASS   │ 100%               │
+│ 7. CI/CD & Automated Pipelines       │ 16 Checks   │ 16/16 PASS   │ 100%               │
 ├──────────────────────────────────────┼─────────────┼──────────────┼────────────────────┤
-│ TOTAL AUDIT SCORE                    │ 51 Checks   │ 51/51 PASS   │ 100% LAUNCH READY  │
+│ TOTAL AUDIT SCORE                    │ 52 Checks   │ 52/52 PASS   │ 100% LAUNCH READY  │
 └──────────────────────────────────────┴─────────────┴──────────────┴────────────────────┘
 ```
 
@@ -391,6 +391,12 @@ The final electronic diagnostics before green flag departure. All 5 automated Gi
   - **Evidence**: `rust/api_server/src/billing.rs`, `rust/api_server/src/rate_limit.rs`, `rust/api_server/src/models/usage.rs`, `config/timescale/06-key-lifecycle.sql`, `python_sdk/src/fintext/client.py`, `python_sdk/src/fintext/async_client.py`, `python_sdk/tests/test_account_keys.py`, `docs/API_CUSTOMER_GUIDE.md`, `docs/SECURITY.md`, `docs/PRIVATE_BETA_ONBOARDING_RUNBOOK.md`
   - **How to Verify**: `cargo test -p fintext_api_server --lib` && `pytest python_sdk/tests/test_account_keys.py` && `python scripts/verify_private_beta_readiness.py`
 
+- [x] **Check 7.18: Ingestion Feed Resilience, Circuit Breakers, Fallbacks & Feed Chaos Certification (Problem #15)**
+  - **Status**: PASS
+  - **Description**: Institutional feed resilience architecture implemented across all 5 ingestion sources (`sec_edgar`, `fomc`, `finnhub_ws`, `polygon_ws`, `corporate_actions`). Pure-logic 3-state circuit breaker (`Closed`, `Open`, `HalfOpen`) trips on 5 consecutive failures or >=50% error ratio over 60s sliding window, fast-rejecting requests with exponential backoff (30s doubling to 300s cap) and allowing 1 canary probe in `HalfOpen`. Seamless degradation fallbacks prevent silent data gaps (`finnhub_ws` -> REST 2s poll, `polygon_ws` -> REST 5s snapshot, `sec_edgar` -> indexed backoff + stale marker at 10m, `fomc` -> cached calendar with stale=true <= once/5m, `corporate_actions` -> previous-day parquet replay with stale=true <= once/5m). Every event emits explicit mode labels (`primary|degraded|stale`) on latency histograms (`fetch_duration_seconds`, `event_lag_seconds`). Internal diagnostics endpoint `GET /providers` on port 9102 exposes sorted JSON state and 3 Prometheus gauge/counter metrics (`fintext_provider_state`, `fintext_fallback_active`, `fintext_fallback_activations_total`) with bounded 5-source cardinality. Grafana dashboard `dashboards/feed_resilience.json` deployed with 7 Prometheus panels. Chaos test harness `scripts/run_feed_chaos.py` passed 6/6 scenarios, certified in `logs/feed_chaos_ledger.md` and `logs/feed_chaos_report.json`. Operations runbook authored in `docs/FEED_RESILIENCE_RUNBOOK.md`, Section 17 added to `docs/API_CUSTOMER_GUIDE.md`, and alarms cross-linked in `docs/PRODUCTION_OPS_RUNBOOK.md`.
+  - **Evidence**: `rust/ingestion_engine/src/resilience/`, `rust/ingestion_engine/src/telemetry/metrics.rs`, `dashboards/feed_resilience.json`, `scripts/run_feed_chaos.py`, `logs/feed_chaos_report.json`, `logs/feed_chaos_ledger.md`, `docs/FEED_RESILIENCE_RUNBOOK.md`, `docs/API_CUSTOMER_GUIDE.md`
+  - **How to Verify**: `cargo test --manifest-path rust/Cargo.toml -p fintext_ingestion_engine --lib` && `python scripts/run_feed_chaos.py` && `python scripts/verify_private_beta_readiness.py`
+
 ---
 
 ## Final Certification & Sign-off
@@ -403,8 +409,8 @@ The final electronic diagnostics before green flag departure. All 5 automated Gi
 ║   System:               FinText Alpha Vectorizer v1.0.0-rc1                            ║
 ║   Auditor:              FinTech CTO & Private Beta Launch Review Board                 ║
 ║   Date:                 September 26, 2026                                             ║
-║   Checks Evaluated:     51 / 51                                                        ║
-║   Checks Passed:        51 / 51 (100.0%)                                               ║
+║   Checks Evaluated:     52 / 52                                                        ║
+║   Checks Passed:        52 / 52 (100.0%)                                               ║
 ║   Regressions:          0 Detected                                                     ║
 ║   Security Leaks:       0 Detected                                                     ║
 ║   Infrastructure Cost:  $281.49 / month ($19.95 under $301.44 Hard Cap)                ║

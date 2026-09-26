@@ -49,7 +49,7 @@ def record_check(number: int, name: str, passed: bool, evidence: str):
 
 banner_line = "=" * 79
 print(f"\n{Colors.CYAN}{Colors.BOLD}{banner_line}{Colors.RESET}")
-print(f"{Colors.CYAN}{Colors.BOLD} FinText Alpha Vectorizer - Private Beta 29-Check Readiness Audit{Colors.RESET}")
+print(f"{Colors.CYAN}{Colors.BOLD} FinText Alpha Vectorizer - Private Beta 30-Check Readiness Audit{Colors.RESET}")
 print(f"{Colors.CYAN}{Colors.BOLD}{banner_line}{Colors.RESET}\n")
 
 
@@ -887,6 +887,50 @@ except Exception as e:
     record_check(29, "Tenant Key Lifecycle & Quota Headers Certified", False, str(e))
 
 # ─────────────────────────────────────────────────────────────────────────────
+# Check 30: Feed Resilience, Circuit Breakers & Chaos Recovery Certified (Problem #15)
+# ─────────────────────────────────────────────────────────────────────────────
+try:
+    breaker_file = REPO_ROOT / "rust" / "ingestion_engine" / "src" / "resilience" / "breaker.rs"
+    breaker_mod = REPO_ROOT / "rust" / "ingestion_engine" / "src" / "resilience" / "mod.rs"
+    dashboard_file = REPO_ROOT / "dashboards" / "feed_resilience.json"
+    chaos_report = REPO_ROOT / "logs" / "feed_chaos_report.json"
+    chaos_ledger = REPO_ROOT / "logs" / "feed_chaos_ledger.md"
+    runbook_file = REPO_ROOT / "docs" / "FEED_RESILIENCE_RUNBOOK.md"
+
+    has_breaker = False
+    if breaker_file.exists() and breaker_mod.exists():
+        bt = breaker_file.read_text(encoding="utf-8")
+        has_breaker = "CircuitBreaker" in bt and "State::Closed" in bt and "State::Open" in bt and "State::HalfOpen" in bt
+
+    has_dash = False
+    dash_panels = 0
+    if dashboard_file.exists():
+        dt = json.loads(dashboard_file.read_text(encoding="utf-8"))
+        dash_panels = len(dt.get("panels", []))
+        has_dash = dash_panels >= 6
+
+    has_chaos = False
+    scenarios_passed = 0
+    if chaos_report.exists():
+        ct = json.loads(chaos_report.read_text(encoding="utf-8"))
+        scenarios_passed = ct.get("chaos_scenarios_passed", ct.get("passed_scenarios", 0))
+        has_chaos = ct.get("status") in ("PASS", "CERTIFIED_RESILIENT") and scenarios_passed == 6
+
+    has_runbook = False
+    if runbook_file.exists():
+        rt = runbook_file.read_text(encoding="utf-8")
+        has_runbook = "Degradation Matrix" in rt and "SEV-2" in rt and "SEV-1" in rt
+
+    passed = has_breaker and has_dash and has_chaos and has_runbook
+    evidence = (
+        f"Breaker core implemented, {dash_panels} panels in feed_resilience.json, "
+        f"chaos {scenarios_passed}/6 scenarios PASS, runbook active"
+    )
+    record_check(30, "Feed Resilience & Circuit Breakers Certified", passed, evidence)
+except Exception as e:
+    record_check(30, "Feed Resilience & Circuit Breakers Certified", False, str(e))
+
+# ─────────────────────────────────────────────────────────────────────────────
 # Print Results Table
 # ─────────────────────────────────────────────────────────────────────────────
 print(f"{'#':<3} | {'Check Description':<40} | {'Status':<8} | {'Evidence'}")
@@ -900,11 +944,11 @@ print(f"Total Checks: {len(results)}")
 print(f"Passed:       {Colors.GREEN}{checks_passed}{Colors.RESET}")
 print(f"Failed:       {Colors.RED}{checks_failed}{Colors.RESET}")
 
-if checks_failed == 0:
-    print(f"\n{Colors.GREEN}{Colors.BOLD}>>> VERDICT: ALL 29 AUTOMATED CHECKS PASSED. SYSTEM IS LAUNCH READY! <<<{Colors.RESET}\n")
+if checks_failed == 0 and len(results) == 30:
+    print(f"\n{Colors.GREEN}{Colors.BOLD}>>> VERDICT: ALL 30 AUTOMATED CHECKS PASSED. SYSTEM IS LAUNCH READY! <<<{Colors.RESET}\n")
     sys.exit(0)
 else:
-    print(f"\n{Colors.RED}{Colors.BOLD}>>> VERDICT: {checks_failed} CHECKS FAILED. RESOLVE BEFORE LAUNCH. <<<{Colors.RESET}\n")
+    print(f"\n{Colors.RED}{Colors.BOLD}>>> VERDICT: {checks_failed} CHECKS FAILED (Total {len(results)}/30). RESOLVE BEFORE LAUNCH. <<<{Colors.RESET}\n")
     sys.exit(1)
 
 

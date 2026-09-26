@@ -636,6 +636,34 @@ curl -s -X GET "https://api.fintext.internal/v1/account/usage" \
 }
 ```
 
+---
+
+## 17. Upstream Feed Freshness Semantics & Degradation Modes
+
+As an institutional platform servicing quantitative hedge funds, FinText Alpha Vectorizer guarantees operational transparency during upstream vendor disruptions. Feed failures never manifest as silent data gaps, missing intervals, or unhandled pipeline panics. Instead, our per-source circuit breaker architecture degrades gracefully into bounded, labeled fallback modes.
+
+### 17.1 Mode Definitions
+
+Every signal emitted via streaming feeds or queryable via REST carries metadata indicating its acquisition lineage and freshness state:
+
+| Operational Mode | Meaning | Ingestion Pipeline Behavior | Latency Impact |
+| :--- | :--- | :--- | :--- |
+| **`primary`** | Normal Operations | Sub-second real-time streaming WebSocket (`finnhub_ws`, `polygon_ws`) or low-latency indexed poller (`sec_edgar`). | Native sub-second SLA ($<500$ ms P95). |
+| **`degraded`** | Graceful Vendor Fallback | Upstream WebSocket connection dropped, stalled, or rate-limited. Ingestion engine automatically falls back to bounded REST polling (2s for Finnhub, 5s for Polygon). | Freshness lag increases by $+ \le 3$s (Finnhub) or $+ \le 6$s (Polygon). Data correctness & PIT invariants remain 100% intact. |
+| **`stale`** | Vendor Extended Outage | Upstream vendor suffering prolonged outage ($>10$m for SEC EDGAR, or unavailable FOMC/Corporate Actions files). Ingestion engine serves last cached certified snapshot rate-limited to $\le$ once per 5 minutes. | Labeled `stale=true` (or `mode=stale`). No fabricated synthetic data. |
+
+### 17.2 Quantitative Consumer Best Practices
+
+1. **Sub-Second Execution Specialists**:
+   Algorithms executing latency-critical intraday momentum strategies should check the `mode` tag. If `mode == "degraded"`, account for the $+2\text{s}$ to $+5\text{s}$ REST polling variance before placing aggressive market orders.
+2. **Point-in-Time Integrity Guarantee**:
+   Even in `degraded` or `stale` modes, point-in-time correctness is strictly preserved:
+   $$\forall r \in \text{Signals}, \quad T_{\text{commit}}(r) \ge T_{\text{published}}(r) \ge T_{\text{event}}(r)$$
+   Look-ahead bias is mathematically zero across all operational states.
+3. **Platform Transparency**:
+   Inspect real-time provider state via internal Prometheus metrics or operational dashboards (see [`docs/FEED_RESILIENCE_RUNBOOK.md`](./FEED_RESILIENCE_RUNBOOK.md)).
+
+
 
 
 

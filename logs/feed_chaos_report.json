@@ -1,0 +1,64 @@
+{
+  "cardinality_bounded_sources": 5,
+  "chaos_scenarios_passed": 6,
+  "chaos_scenarios_total": 6,
+  "degradation_fallbacks_verified": [
+    "finnhub_ws -> finnhub_rest_poll (2s cadence, mode=degraded)",
+    "polygon_ws -> polygon_rest_snapshot (5s cadence, mode=degraded)",
+    "sec_edgar -> exponential_backoff_and_stale_10m (mode=stale)",
+    "fomc -> cached_calendar_stale_rate_limited_5m (mode=stale)",
+    "corporate_actions -> replay_previous_day_parquet_stale_5m (mode=stale)"
+  ],
+  "execution_wall_seconds": 0.12,
+  "mode_labeling_certified": true,
+  "per_source_isolation_verified": true,
+  "run_id": "chaos_run_20260926_121518Z",
+  "scenarios": {
+    "scenario_1_finnhub_ws": {
+      "description": "WS failure trips breaker at streak=5 -> REST fallback active (2s) -> HalfOpen probe recovers to Closed",
+      "passed": true,
+      "source": "finnhub_ws",
+      "transitions": [
+        "closed->open",
+        "open->half_open",
+        "half_open->closed"
+      ]
+    },
+    "scenario_2_polygon_ws": {
+      "description": "Polygon WS drop trips breaker -> probe failure doubles backoff to 60s -> second probe recovers to Closed",
+      "passed": true,
+      "source": "polygon_ws",
+      "transitions": [
+        "closed->open",
+        "open->half_open",
+        "half_open->open",
+        "open->half_open",
+        "half_open->closed"
+      ]
+    },
+    "scenario_3_sec_edgar": {
+      "description": "50% error ratio in 60s sliding window trips breaker -> marks mode=stale after 10m continuous outage",
+      "passed": true,
+      "source": "sec_edgar",
+      "transitions": [
+        "closed->open"
+      ]
+    },
+    "scenario_4_fomc_stale": {
+      "description": "Fed calendar outage trips breaker -> serves cached calendar with mode=stale rate-limited to <= once per 5 min",
+      "passed": true,
+      "source": "fomc"
+    },
+    "scenario_5_corporate_actions": {
+      "description": "Corporate actions feed failure trips breaker -> replays previous-day parquet with mode=stale",
+      "passed": true,
+      "source": "corporate_actions"
+    },
+    "scenario_6_source_isolation": {
+      "description": "Tripping finnhub_ws has strictly zero side-effects on sec_edgar, fomc, polygon_ws, corporate_actions",
+      "passed": true
+    }
+  },
+  "status": "CERTIFIED_RESILIENT",
+  "timestamp_utc": "2026-09-26T12:15:18Z"
+}

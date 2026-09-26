@@ -286,12 +286,17 @@ development services with local logging — zero impact on the default developer
 | `fintext-rds-high-cpu-{env}` | `AWS/RDS/CPUUtilization` | > 80% avg | 2 × 5m periods | Warning |
 | `fintext-rds-low-storage-{env}` | `AWS/RDS/FreeStorageSpace` | < 15 GB avg | 1 × 5m period | Critical |
 | `fintext-backup-failed-{env}` | `fintext/BackupJobFailed` | ≥ 1 max | 1 × 1m period | Critical |
+| `fintext-feed-breaker-open-{env}` | `fintext_provider_state` | == 2 (Open) | 1 × 5m period | Warning (Degraded) |
+
+> **Note on Feed Resilience:** Upstream feed vendor disruptions trigger per-source circuit breakers and automatic REST degradation. For operational runbook and customer advisory templates, see [`docs/FEED_RESILIENCE_RUNBOOK.md`](file:///d:/FinText-Alpha-Vectorizer/docs/FEED_RESILIENCE_RUNBOOK.md).
 
 ### 6.2 Custom Application Metrics
 
 | Metric | Namespace | Published By | Values |
 | :--- | :--- | :--- | :--- |
 | `BackupJobFailed` | `fintext` | `scripts/backup_pg.sh` (s3 mode) | `0` = success, `1` = failure |
+| `fintext_provider_state` | `fintext/ingestion` | Ingestion Telemetry (:9102) | `0` = Closed, `1` = Half-Open, `2` = Open |
+| `fintext_fallback_active` | `fintext/ingestion` | Ingestion Telemetry (:9102) | `0` = Primary, `1` = Degraded/Stale |
 
 ---
 

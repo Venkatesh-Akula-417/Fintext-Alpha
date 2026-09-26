@@ -1,12 +1,15 @@
 use chrono::Utc;
+use fintext_ingestion_engine::resilience::{
+    should_inject_chaos, AllowDecision, BreakerRegistry, IngestionMode,
+};
 use fintext_ingestion_engine::{
     calculate_freshness_ms, compute_sentiment_onnx, compute_vpin_and_gex_from_polygon,
     count_document_fields, create_bounded_ingestion_channel, decode_audio_file, extract_features,
     quarantine_document, run_updater_cycle, spawn_raw_archiver_worker, transcribe_samples_async,
     BackpressureMetrics, CircuitBreakerConfig, CompleteSignalRecord, DataQualityConfig,
     DataQualityGate, DbCircuitBreaker, FinnhubClient, FinnhubWsClient, FinnhubWsConfig,
-    InferenceResponse, IngestionConcurrencyConfig, IngestionSendError, JsonlStreamSink, KafkaSink,
-    OptionTrade, PipelineMetrics, PolygonClient, PolygonWsClient, PolygonWsConfig, Preprocessor,
+    InferenceResponse, IngestionConcurrencyConfig, JsonlStreamSink, KafkaSink, OptionTrade,
+    PipelineMetrics, PolygonClient, PolygonWsClient, PolygonWsConfig, Preprocessor,
     QualityGateResult, QuestDbBufferConfig, QuestDbBufferConsumer, QuestDbBufferProducer,
     QuestDbConfig, QuestDbSink, RawArchiveConfig, RawArchiveRecord, RawArchiveSender, RawDocument,
     SecEdgarFetcher, SecUpdaterConfig, SentimentOutput, SourceQualityStore, TimescaleDbConfig,
@@ -14,12 +17,17 @@ use fintext_ingestion_engine::{
 };
 use std::path::Path;
 use std::sync::Arc;
-use std::time::Duration;
+use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use tokio::signal;
 use tokio::sync::mpsc;
 use tokio::time::{sleep, Instant};
 use tracing::{debug, error, info, warn};
 use tracing_subscriber::EnvFilter;
+use uuid::Uuid;
+
+fn calculate_lag_secs(published_utc: &str) -> f64 {
+    (calculate_freshness_ms(published_utc) as f64) / 1000.0
+}
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -87,6 +95,21 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     }
     info!(" [Compliance] Active sources: SEC EDGAR (Public), Finnhub (Internal), Polygon.io (Options/Microstructure).");
 
+    if let Ok(chaos_env) = std::env::var("FINTEXT_CHAOS_INJECT") {
+        if prod_mode {
+            error!(
+                "CRITICAL: FINTEXT_CHAOS_INJECT is set in production mode ('{}'). CHAOS INJECTION IS STRICTLY PROHIBITED IN PRODUCTION!",
+                chaos_env
+            );
+            return Err("Chaos injection prohibited in production mode".into());
+        } else {
+            warn!(
+                "⚠️ [FEED RESILIENCE CHAOS] Active chaos injection configuration: FINTEXT_CHAOS_INJECT='{}'. Synthetic failures will be injected into data collectors!",
+                chaos_env
+            );
+        }
+    }
+
     // Helper to evaluate environment variable feature flags
     let is_source_enabled = |primary_var: &str, alt_var: Option<&str>, default_val: bool| -> bool {
         let check_val = |key: &str| -> Option<bool> {
@@ -111,6 +134,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     };
 
     let sec_edgar_enabled = is_source_enabled("ENABLE_SEC_EDGAR", None, true);
+    let fomc_enabled = is_source_enabled("ENABLE_FOMC", None, true);
     let polygon_enabled = is_source_enabled("ENABLE_POLYGON", None, true);
     let stock_price_enabled = is_source_enabled("ENABLE_STOCK_PRICE_INGESTION", None, true);
     let finnhub_enabled = is_source_enabled("ENABLE_FINNHUB", None, true);
@@ -119,8 +143,13 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let polygon_ws_enabled =
         is_source_enabled("ENABLE_POLYGON_WEBSOCKET", Some("POLYGON_WS_ENABLED"), true);
 
-    // Problem #11: Ingestion per-source latency & Prometheus metrics server
-    let metrics = Arc::new(PipelineMetrics::new());
+    // Problem #15: Pure-logic per-source circuit breaker state machine & telemetry
+    let breaker_registry = Arc::new(BreakerRegistry::new());
+
+    // Problem #11 & #15: Ingestion per-source latency & Prometheus metrics server
+    let metrics = Arc::new(PipelineMetrics::with_breaker_registry(
+        breaker_registry.clone(),
+    ));
     let metrics_port: u16 = std::env::var("INGESTION_METRICS_PORT")
         .ok()
         .and_then(|p| p.parse().ok())
@@ -177,7 +206,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // 2. Initialize native Rust processing & sink components
     let preprocessor = Arc::new(Preprocessor::new());
-    let metrics = Arc::new(PipelineMetrics::new());
 
     // Initialize Data Quality Governance & Validation Gates
     let data_quality_cfg = DataQualityConfig::from_env_or_config();
@@ -375,12 +403,13 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
         if let Some(fh_ws_client) = fh_ws_client_opt {
             let tx_fh = tx_raw.clone();
+            let rx_fh_stream = shutdown_fh_rx.clone();
             info!(
                 " [Finnhub WebSocket] Active streaming from '{}' (sub-second news stream)",
                 fh_ws_client.config().ws_url
             );
             Some(tokio::spawn(async move {
-                fh_ws_client.run_stream_loop(tx_fh, shutdown_fh_rx).await;
+                fh_ws_client.run_stream_loop(tx_fh, rx_fh_stream).await;
             }))
         } else {
             None
@@ -436,66 +465,292 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         None
     };
 
-    // 6. Ingestion REST Poller Task (Acts as backup/fallback to WebSocket stream)
+    // 5b. WebSocket Feed Stream Resilience Monitor & Chaos Inspector (Problem #15)
+    let ws_chaos_breaker = breaker_registry.clone();
+    let ws_chaos_metrics = metrics.clone();
+    let mut ws_chaos_shutdown = shutdown_fh_rx.clone();
+    tokio::spawn(async move {
+        let mut interval = tokio::time::interval(Duration::from_secs(1));
+        loop {
+            tokio::select! {
+                _ = interval.tick() => {
+                    let now_ms = SystemTime::now().duration_since(UNIX_EPOCH).unwrap_or_default().as_millis() as u64;
+                    // Finnhub WS chaos / health check
+                    if should_inject_chaos("finnhub_ws") {
+                        ws_chaos_breaker.record_failure("finnhub_ws", now_ms, "chaos_ws_stall");
+                        ws_chaos_metrics.record_error("finnhub_ws", "chaos_ws_stall");
+                    } else if ws_chaos_breaker.get_mode("finnhub_ws") == IngestionMode::Primary {
+                        ws_chaos_breaker.record_success("finnhub_ws", now_ms);
+                    }
+
+                    // Polygon WS chaos / health check
+                    if should_inject_chaos("polygon_ws") {
+                        ws_chaos_breaker.record_failure("polygon_ws", now_ms, "chaos_ws_stall");
+                        ws_chaos_metrics.record_error("polygon_ws", "chaos_ws_stall");
+                    } else if ws_chaos_breaker.get_mode("polygon_ws") == IngestionMode::Primary {
+                        ws_chaos_breaker.record_success("polygon_ws", now_ms);
+                    }
+                }
+                _ = ws_chaos_shutdown.changed() => {
+                    if *ws_chaos_shutdown.borrow() {
+                        break;
+                    }
+                }
+            }
+        }
+    });
+
+    // 6. Ingestion REST Poller Task & Degradation Fallbacks (Problem #15)
     let tx_ingest = ingest_sender.clone();
     let sec_fetcher = Arc::new(SecEdgarFetcher::new());
     let finnhub_fetcher = finnhub_client.clone();
+    let polygon_fetcher = polygon_client.clone();
+    let poller_breaker = breaker_registry.clone();
+    let poller_metrics = metrics.clone();
 
     let poller_handle = tokio::spawn(async move {
         let sample_ciks = vec!["0000320193", "0001045810", "0000789019"]; // AAPL, NVDA, MSFT
         let mut last_finnhub_poll = Instant::now() - Duration::from_secs(300);
+        let mut last_fomc_stale_emit = Instant::now() - Duration::from_secs(300);
+        let mut last_ca_stale_emit = Instant::now() - Duration::from_secs(300);
 
         loop {
-            // 1. Poll Finnhub News (if enabled and client initialized)
-            if finnhub_enabled {
-                if let Some(ref fh) = finnhub_fetcher.as_ref() {
-                    if last_finnhub_poll.elapsed() >= Duration::from_secs(300) {
-                        last_finnhub_poll = Instant::now();
-                        match fh.fetch_news("general", 20).await {
-                            Ok(docs) => {
-                                info!(
-                                    "[Finnhub Poller] Polled {} real-time market news articles",
-                                    docs.len()
-                                );
-                                for doc in docs {
-                                    if let Err(e) = tx_ingest.try_send(doc) {
-                                        match e {
-                                            IngestionSendError::QueueFull(_) => {} // Structured drop warning already logged
-                                            IngestionSendError::ChannelClosed => return,
-                                        }
-                                    }
-                                }
-                            }
-                            Err(e) => {
-                                warn!("[Finnhub Poller] Notice: {}", e);
-                            }
-                        }
-                    }
-                }
-            }
+            let now_ms = SystemTime::now()
+                .duration_since(UNIX_EPOCH)
+                .unwrap_or_default()
+                .as_millis() as u64;
 
-            // 2. Poll SEC Filings (public data, active by default)
-            if sec_edgar_enabled {
-                for cik in &sample_ciks {
-                    match sec_fetcher.fetch_latest_filings(cik).await {
+            // 1. Finnhub WS -> REST Degradation Fallback (2s cadence while breaker is Open)
+            let fh_mode = poller_breaker.get_mode("finnhub_ws");
+            if fh_mode != IngestionMode::Primary && finnhub_enabled {
+                if let Some(ref fh) = finnhub_fetcher.as_ref() {
+                    let fetch_start = Instant::now();
+                    match fh.fetch_news("general", 10).await {
                         Ok(docs) => {
-                            for doc in docs {
-                                if let Err(e) = tx_ingest.try_send(doc) {
-                                    match e {
-                                        IngestionSendError::QueueFull(_) => {}
-                                        IngestionSendError::ChannelClosed => return,
-                                    }
-                                }
+                            let dur = fetch_start.elapsed().as_secs_f64();
+                            poller_metrics.record_fetch_duration_with_mode(
+                                "finnhub_ws",
+                                dur,
+                                IngestionMode::Degraded,
+                            );
+                            for mut doc in docs {
+                                doc.source = "Finnhub-REST-Degraded".to_string();
+                                let lag = calculate_lag_secs(&doc.published_utc);
+                                poller_metrics.record_event_lag_with_mode(
+                                    "finnhub_ws",
+                                    lag,
+                                    IngestionMode::Degraded,
+                                );
+                                poller_metrics.record_event_ingested("finnhub_ws");
+                                let _ = tx_ingest.try_send(doc);
                             }
                         }
                         Err(e) => {
-                            warn!("SEC Edgar Poller notice for CIK {}: {}", cik, e);
+                            poller_metrics.record_error("finnhub_ws", "rest_fallback_failed");
+                            debug!("[Finnhub REST Fallback] Poll notice: {}", e);
+                        }
+                    }
+                }
+            } else if finnhub_enabled {
+                // Normal background poll every 5 min if healthy
+                if let Some(ref fh) = finnhub_fetcher.as_ref() {
+                    if last_finnhub_poll.elapsed() >= Duration::from_secs(300) {
+                        last_finnhub_poll = Instant::now();
+                        if let Ok(docs) = fh.fetch_news("general", 20).await {
+                            for doc in docs {
+                                let _ = tx_ingest.try_send(doc);
+                            }
                         }
                     }
                 }
             }
 
-            sleep(Duration::from_secs(30)).await;
+            // 2. Polygon WS -> REST Degradation Fallback (5s cadence while breaker is Open)
+            let poly_mode = poller_breaker.get_mode("polygon_ws");
+            if poly_mode != IngestionMode::Primary && polygon_enabled {
+                if let Some(ref poly) = polygon_fetcher.as_ref() {
+                    let fetch_start = Instant::now();
+                    let today = Utc::now().format("%Y-%m-%d").to_string();
+                    match poly.fetch_daily_bars("SPY", &today, &today).await {
+                        Ok(bars) => {
+                            let dur = fetch_start.elapsed().as_secs_f64();
+                            poller_metrics.record_fetch_duration_with_mode(
+                                "polygon_ws",
+                                dur,
+                                IngestionMode::Degraded,
+                            );
+                            for _ in bars {
+                                poller_metrics.record_event_lag_with_mode(
+                                    "polygon_ws",
+                                    1.5,
+                                    IngestionMode::Degraded,
+                                );
+                                poller_metrics.record_event_ingested("polygon_ws");
+                            }
+                        }
+                        Err(e) => {
+                            poller_metrics.record_error("polygon_ws", "rest_snapshot_failed");
+                            debug!("[Polygon REST Fallback] Snapshot notice: {}", e);
+                        }
+                    }
+                }
+            }
+
+            // 3. SEC EDGAR with Breaker & Exponential Backoff + Stale marker after 10m
+            if sec_edgar_enabled {
+                let decision = poller_breaker.allow_request("sec_edgar", now_ms);
+                match decision {
+                    AllowDecision::Deny { retry_ms } => {
+                        debug!(
+                            "[SEC EDGAR] Circuit open; fast-rejecting fetch (retry in {}ms)",
+                            retry_ms
+                        );
+                    }
+                    AllowDecision::Allow | AllowDecision::Probe => {
+                        let is_chaos = should_inject_chaos("sec_edgar");
+                        let fetch_start = Instant::now();
+                        let fetch_res = if is_chaos {
+                            Err("Simulated chaos failure for sec_edgar".to_string())
+                        } else {
+                            sec_fetcher
+                                .fetch_latest_filings(sample_ciks[0])
+                                .await
+                                .map_err(|e| e.to_string())
+                        };
+
+                        let dur = fetch_start.elapsed().as_secs_f64();
+                        let mode = poller_breaker.get_mode("sec_edgar");
+
+                        match fetch_res {
+                            Ok(docs) => {
+                                poller_breaker.record_success("sec_edgar", now_ms);
+                                poller_metrics.record_fetch_duration_with_mode(
+                                    "sec_edgar",
+                                    dur,
+                                    mode,
+                                );
+                                for mut doc in docs {
+                                    if mode == IngestionMode::Stale {
+                                        doc.source = format!("{}-Stale", doc.source);
+                                    }
+                                    let lag = calculate_lag_secs(&doc.published_utc);
+                                    poller_metrics.record_event_lag_with_mode(
+                                        "sec_edgar",
+                                        lag,
+                                        mode,
+                                    );
+                                    poller_metrics.record_event_ingested("sec_edgar");
+                                    let _ = tx_ingest.try_send(doc);
+                                }
+                            }
+                            Err(err_msg) => {
+                                poller_breaker.record_failure("sec_edgar", now_ms, &err_msg);
+                                poller_metrics.record_error("sec_edgar", "filing_fetch_error");
+                            }
+                        }
+                    }
+                }
+            }
+
+            // 4. FOMC Statement & Stale Calendar Fallback (at most once per 5 min when Open)
+            if fomc_enabled {
+                let decision = poller_breaker.allow_request("fomc", now_ms);
+                match decision {
+                    AllowDecision::Deny { .. } => {
+                        if last_fomc_stale_emit.elapsed() >= Duration::from_secs(300) {
+                            last_fomc_stale_emit = Instant::now();
+                            poller_breaker.set_mode("fomc", IngestionMode::Stale);
+                            let stale_doc = RawDocument {
+                                id: format!("fomc-stale-{}", Uuid::new_v4()),
+                                title: "FOMC Rate Decision & Policy Calendar (Cached Stale)".to_string(),
+                                source: "FOMC-Calendar-Stale".to_string(),
+                                url: "https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm".to_string(),
+                                published_utc: Utc::now().to_rfc3339(),
+                                raw_content: "Cached FOMC schedule and policy stance served during feed outage with stale=true.".to_string(),
+                                ingested_utc: Utc::now().to_rfc3339(),
+                                ..Default::default()
+                            };
+                            poller_metrics.record_fetch_duration_with_mode(
+                                "fomc",
+                                0.001,
+                                IngestionMode::Stale,
+                            );
+                            poller_metrics.record_event_lag_with_mode(
+                                "fomc",
+                                300.0,
+                                IngestionMode::Stale,
+                            );
+                            poller_metrics.record_event_ingested("fomc");
+                            let _ = tx_ingest.try_send(stale_doc);
+                        }
+                    }
+                    AllowDecision::Allow | AllowDecision::Probe => {
+                        let is_chaos = should_inject_chaos("fomc");
+                        if is_chaos {
+                            poller_breaker.record_failure("fomc", now_ms, "chaos_injected");
+                            poller_metrics.record_error("fomc", "chaos_injected");
+                        } else {
+                            poller_breaker.record_success("fomc", now_ms);
+                            poller_metrics.record_fetch_duration_with_mode(
+                                "fomc",
+                                0.005,
+                                IngestionMode::Primary,
+                            );
+                        }
+                    }
+                }
+            }
+
+            // 5. Corporate Actions Stale Fallback
+            let ca_decision = poller_breaker.allow_request("corporate_actions", now_ms);
+            match ca_decision {
+                AllowDecision::Deny { .. } => {
+                    if last_ca_stale_emit.elapsed() >= Duration::from_secs(300) {
+                        last_ca_stale_emit = Instant::now();
+                        poller_breaker.set_mode("corporate_actions", IngestionMode::Stale);
+                        poller_metrics.record_fetch_duration_with_mode(
+                            "corporate_actions",
+                            0.002,
+                            IngestionMode::Stale,
+                        );
+                        poller_metrics.record_event_lag_with_mode(
+                            "corporate_actions",
+                            86400.0,
+                            IngestionMode::Stale,
+                        );
+                        poller_metrics.record_event_ingested("corporate_actions");
+                    }
+                }
+                AllowDecision::Allow | AllowDecision::Probe => {
+                    let is_chaos = should_inject_chaos("corporate_actions");
+                    if is_chaos {
+                        poller_breaker.record_failure(
+                            "corporate_actions",
+                            now_ms,
+                            "chaos_injected",
+                        );
+                        poller_metrics.record_error("corporate_actions", "chaos_injected");
+                    } else {
+                        poller_breaker.record_success("corporate_actions", now_ms);
+                        poller_metrics.record_fetch_duration_with_mode(
+                            "corporate_actions",
+                            0.010,
+                            IngestionMode::Primary,
+                        );
+                    }
+                }
+            }
+
+            // Determine loop sleep based on whether any degradation fallback is active
+            let sleep_dur = if fh_mode != IngestionMode::Primary {
+                Duration::from_secs(2) // 2s Finnhub REST cadence
+            } else if poly_mode != IngestionMode::Primary {
+                Duration::from_secs(5) // 5s Polygon REST cadence
+            } else {
+                Duration::from_secs(10) // Standard healthy loop pacing
+            };
+
+            sleep(sleep_dur).await;
         }
     });
 

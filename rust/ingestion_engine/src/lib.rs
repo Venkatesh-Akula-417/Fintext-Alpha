@@ -9,10 +9,16 @@ pub mod ipc;
 pub mod nlp;
 pub mod pipeline;
 pub mod quality;
+pub mod resilience;
 pub mod sources;
 pub mod storage;
 pub mod streaming;
 pub mod telemetry;
+
+pub use resilience::{
+    should_inject_chaos, AllowDecision, BreakerRegistry, BreakerState, CircuitBreaker,
+    IngestionMode,
+};
 
 use std::sync::atomic::{AtomicBool, Ordering};
 

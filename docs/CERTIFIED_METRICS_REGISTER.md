@@ -37,10 +37,10 @@ In high-assurance quantitative systems, disparate documents frequently suffer fr
 | **14** | **Signal Alpha Decay vs IS** | `4.07%` | $< 50.0\%$ | `logs/signal_quality_report.json` | `4d001bf` | 2026-09-24 | Monthly |
 | **15** | **Time-To-First-Value (TTFV)** | `1.62 s` | $< 300\text{ s}$ | `logs/tenant_provisioning_report.json`| `a31d508` | 2026-09-24 | Per Onboarding |
 | **16** | **Cloud Run-Rate Budget** | `$295.00–$301.44 / mo` | $\le \$310 / \text{mo}$ | `docs/CLOUD_COST_OPTIMIZATION.md` | `a31d508` | 2026-09-24 | Monthly Audit |
-| **17** | **Readiness Audit Suite Checks** | `29 / 29 Checks Passed` | 100.0% Pass | `scripts/verify_private_beta_readiness.py` | current | 2026-09-26 | Per Commit |
+| **17** | **Readiness Audit Suite Checks** | `30 / 30 Checks Passed` | 100.0% Pass | `scripts/verify_private_beta_readiness.py` | current | 2026-09-26 | Per Commit |
 | **18** | **Rust API Gateway Unit Tests** | `514 / 514 Passed` | 100.0% Pass | `rust/api_server/src/lib.rs` | current | 2026-09-26 | Per Commit |
-| **19** | **Rust Ingestion Daemon Tests** | `113 / 113 Passed` | 100.0% Pass | `rust/ingestion_engine/` | current | 2026-09-26 | Per Commit |
-| **20** | **Private Beta Launch Checks** | `51 / 51 Checks Passed` | 100.0% Pass | `docs/PRIVATE_BETA_LAUNCH_CHECKLIST.md` | current | 2026-09-26 | Per Release |
+| **19** | **Rust Ingestion Daemon Tests** | `121 / 121 Passed` | 100.0% Pass | `rust/ingestion_engine/` | current | 2026-09-26 | Per Commit |
+| **20** | **Private Beta Launch Checks** | `52 / 52 Checks Passed` | 100.0% Pass | `docs/PRIVATE_BETA_LAUNCH_CHECKLIST.md` | current | 2026-09-26 | Per Release |
 | **21** | **Billing Flow Lifecycle Certification** | `CERTIFIED (7/7 Scenarios)` | 100.0% Pass | `logs/billing_flow_report.json` | current | 2026-09-25 | Per Release |
 | **22** | **Monthly Billing Reconciliation** | `RECONCILED (0 Discrepancies)`| Zero Drift | `logs/billing_reconciliation_report.json` | current | 2026-09-25 | Monthly Close |
 | **23** | **Webhook Signature Scheme & Tolerance**| `HMAC-SHA256, 300s window` | Constant-Time | `rust/api_server/src/billing.rs` | current | 2026-09-25 | Continuous |
@@ -56,6 +56,8 @@ In high-assurance quantitative systems, disparate documents frequently suffer fr
 | **33** | **RLS Penetration & Boundary Defense** | `CERTIFIED (44/44 Vectors Pass, 0 Leaks)` | Strict 0 Leaks | `logs/rls_isolation_report.json` | current | 2026-09-26 | Per Commit |
 | **34** | **Tenant API-Key Self-Service Lifecycle** | `CERTIFIED (Max 10 Keys, 0 Secret Leaks)` | 100.0% Pass | `rust/api_server/src/billing.rs` | current | 2026-09-26 | Per Release |
 | **35** | **Quota Transparency Headers** | `RFC 6585 Compliant (Reset=Unix Epoch Sec)` | Informational | `rust/api_server/src/rate_limit.rs` | current | 2026-09-26 | Continuous |
+| **36** | **Circuit Breaker Thresholds & Chaos Recovery** | `CERTIFIED (6/6 Scenarios Pass, 0 Gaps)` | Fast-Fail <= 300s Backoff | `logs/feed_chaos_report.json` | current | 2026-09-26 | Per Release |
+| **37** | **Upstream Fallback Lag Budgets** | `Finnhub 2.0s REST / Polygon 5.0s Snapshot` | $P_{95} \le 5.000\text{ s}$ degraded | `rust/ingestion_engine/src/main.rs` | current | 2026-09-26 | Continuous |
 
 ---
 
@@ -143,6 +145,14 @@ In high-assurance quantitative systems, disparate documents frequently suffer fr
 - **Verification Method:** Unit and integration tests in `rust/api_server/src/billing.rs`, `rust/api_server/src/rate_limit.rs`, and Python SDK `python_sdk/tests/test_account_keys.py`.
 - **SLA Commitment:** 100.0% clean pass rate, zero plaintext credential leakage in logs or database, exact Unix epoch integer headers.
 - **Source Artifact:** `rust/api_server/src/billing.rs`, `rust/api_server/src/rate_limit.rs`, and `docs/API_CUSTOMER_GUIDE.md`.
+
+### 3.12 Ingestion Circuit Breakers & Upstream Fallbacks (Metrics 36–37)
+- **Mathematical Definition:**
+  - Circuit Breaker State Transition: Pure-logic state machine per feed source (`Closed` -> `Open` on 5 consecutive failures or $\ge 50\%$ errors over 60s sliding window; `Open` fast-rejects with exponential backoff $30\text{s} \times 2^k \le 300\text{s}$; `HalfOpen` admits 1 canary probe; success -> `Closed`, failure -> `Open`).
+  - Upstream Degradation Fallback Budgets: Streaming feed websocket outages degrade cleanly into labeled REST pollers (`finnhub_ws` $\to$ REST 2s polling; `polygon_ws` $\to$ REST 5s snapshots; `sec_edgar` $\to$ indexed backoff + stale marker at 10m; `fomc` $\to$ cached calendar stale=true $\le$ once/5m; `corporate_actions` $\to$ previous-day parquet replay stale=true $\le$ once/5m). Every event carries explicit mode label `primary`, `degraded`, or `stale`.
+- **Verification Method:** Unit tests in `rust/ingestion_engine/src/resilience/breaker.rs` (121/121 lib tests pass), automated chaos harness `scripts/run_feed_chaos.py` (6/6 scenarios certified), and internal provider telemetry endpoint `GET http://127.0.0.1:9102/providers`.
+- **SLA Commitment:** Zero unhandled crashes, zero silent data gaps, fallback lag bounded by documented SLA, and 100% mode labeling on `fetch_duration_seconds` and `event_lag_seconds`.
+- **Source Artifact:** `logs/feed_chaos_report.json`, `logs/feed_chaos_ledger.md`, `dashboards/feed_resilience.json`, and `docs/FEED_RESILIENCE_RUNBOOK.md`.
 
 ---
 

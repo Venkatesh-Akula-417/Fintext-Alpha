@@ -73,6 +73,8 @@ logs/*
 !logs/backup_ledger.md
 !logs/dr_ledger.md
 !logs/dr_report.json
+!logs/feed_chaos_ledger.md
+!logs/feed_chaos_report.json
 !logs/.gitkeep
 logs/soak_history.jsonl
 

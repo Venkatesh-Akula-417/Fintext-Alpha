@@ -8,6 +8,8 @@ use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::{Arc, RwLock};
 use tracing::info;
 
+use crate::resilience::{BreakerRegistry, IngestionMode};
+
 /// Standard Prometheus sub-second latency histogram buckets (0.005s to 2.0s).
 pub const HISTOGRAM_BUCKETS: [f64; 9] = [
     0.005, 0.010, 0.025, 0.050, 0.100, 0.250, 0.500, 1.000, 2.000,
@@ -22,10 +24,40 @@ pub const VALID_SOURCES: [&str; 5] = [
     "corporate_actions",
 ];
 
+/// Sub-histogram tracking latency for a specific ingestion mode (primary, degraded, stale).
+#[derive(Debug, Default)]
+pub struct ModeHistogram {
+    pub buckets: [AtomicU64; 9],
+    pub overflow: AtomicU64,
+    pub count: AtomicU64,
+    pub sum_us: AtomicU64,
+}
+
+impl ModeHistogram {
+    pub fn record(&self, val_secs: f64) {
+        let dur = val_secs.max(0.0);
+        let us = (dur * 1_000_000.0) as u64;
+        self.sum_us.fetch_add(us, Ordering::Relaxed);
+        self.count.fetch_add(1, Ordering::Relaxed);
+
+        let mut matched = false;
+        for (i, &bucket) in HISTOGRAM_BUCKETS.iter().enumerate() {
+            if dur <= bucket {
+                self.buckets[i].fetch_add(1, Ordering::Relaxed);
+                matched = true;
+            }
+        }
+        if !matched {
+            self.overflow.fetch_add(1, Ordering::Relaxed);
+        }
+    }
+}
+
 /// Per-source latency histogram and error counter telemetry container.
 #[derive(Debug)]
 pub struct PerSourceTelemetry {
     pub source: String,
+    // Overall totals for backward compatibility
     pub fetch_buckets: [AtomicU64; 9],
     pub fetch_overflow: AtomicU64,
     pub fetch_count: AtomicU64,
@@ -35,6 +67,15 @@ pub struct PerSourceTelemetry {
     pub lag_overflow: AtomicU64,
     pub lag_count: AtomicU64,
     pub lag_sum_us: AtomicU64,
+
+    // Problem #15: Per-mode latency sub-histograms
+    pub primary_fetch: ModeHistogram,
+    pub degraded_fetch: ModeHistogram,
+    pub stale_fetch: ModeHistogram,
+
+    pub primary_lag: ModeHistogram,
+    pub degraded_lag: ModeHistogram,
+    pub stale_lag: ModeHistogram,
 
     pub events_ingested_total: AtomicU64,
     pub errors_by_reason: Arc<RwLock<HashMap<String, u64>>>,
@@ -54,13 +95,26 @@ impl PerSourceTelemetry {
             lag_count: AtomicU64::new(0),
             lag_sum_us: AtomicU64::new(0),
 
+            primary_fetch: Default::default(),
+            degraded_fetch: Default::default(),
+            stale_fetch: Default::default(),
+
+            primary_lag: Default::default(),
+            degraded_lag: Default::default(),
+            stale_lag: Default::default(),
+
             events_ingested_total: AtomicU64::new(0),
             errors_by_reason: Arc::new(RwLock::new(HashMap::new())),
         }
     }
 
-    /// Records HTTP/WS batch fetch duration in seconds.
+    /// Records HTTP/WS batch fetch duration in seconds (defaulting to Primary mode).
     pub fn record_fetch_duration(&self, duration_secs: f64) {
+        self.record_fetch_duration_with_mode(duration_secs, IngestionMode::Primary);
+    }
+
+    /// Records HTTP/WS batch fetch duration in seconds with explicit IngestionMode.
+    pub fn record_fetch_duration_with_mode(&self, duration_secs: f64, mode: IngestionMode) {
         let dur = duration_secs.max(0.0);
         let us = (dur * 1_000_000.0) as u64;
         self.fetch_sum_us.fetch_add(us, Ordering::Relaxed);
@@ -76,10 +130,21 @@ impl PerSourceTelemetry {
         if !matched {
             self.fetch_overflow.fetch_add(1, Ordering::Relaxed);
         }
+
+        match mode {
+            IngestionMode::Primary => self.primary_fetch.record(duration_secs),
+            IngestionMode::Degraded => self.degraded_fetch.record(duration_secs),
+            IngestionMode::Stale => self.stale_fetch.record(duration_secs),
+        }
     }
 
-    /// Records event latency lag (source event timestamp to DB commit timestamp) in seconds.
+    /// Records event latency lag in seconds (defaulting to Primary mode).
     pub fn record_event_lag(&self, lag_secs: f64) {
+        self.record_event_lag_with_mode(lag_secs, IngestionMode::Primary);
+    }
+
+    /// Records event latency lag in seconds with explicit IngestionMode.
+    pub fn record_event_lag_with_mode(&self, lag_secs: f64, mode: IngestionMode) {
         let lag = lag_secs.max(0.0);
         let us = (lag * 1_000_000.0) as u64;
         self.lag_sum_us.fetch_add(us, Ordering::Relaxed);
@@ -94,6 +159,12 @@ impl PerSourceTelemetry {
         }
         if !matched {
             self.lag_overflow.fetch_add(1, Ordering::Relaxed);
+        }
+
+        match mode {
+            IngestionMode::Primary => self.primary_lag.record(lag_secs),
+            IngestionMode::Degraded => self.degraded_lag.record(lag_secs),
+            IngestionMode::Stale => self.stale_lag.record(lag_secs),
         }
     }
 
@@ -159,6 +230,9 @@ pub struct PipelineMetrics {
 
     // Problem #11: Per-source telemetry
     sources: Arc<HashMap<String, Arc<PerSourceTelemetry>>>,
+
+    // Problem #15: Per-source circuit breakers & provider health telemetry
+    pub breaker_registry: Arc<BreakerRegistry>,
 }
 
 impl Default for PipelineMetrics {
@@ -169,6 +243,10 @@ impl Default for PipelineMetrics {
 
 impl PipelineMetrics {
     pub fn new() -> Self {
+        Self::with_breaker_registry(Arc::new(BreakerRegistry::new()))
+    }
+
+    pub fn with_breaker_registry(breaker_registry: Arc<BreakerRegistry>) -> Self {
         let mut map = HashMap::new();
         for &s in &VALID_SOURCES {
             map.insert(s.to_string(), Arc::new(PerSourceTelemetry::new(s)));
@@ -182,6 +260,7 @@ impl PipelineMetrics {
             total_stored: Arc::new(AtomicU64::new(0)),
             total_preprocessing_latency_us: Arc::new(AtomicU64::new(0)),
             sources: Arc::new(map),
+            breaker_registry,
         }
     }
 
@@ -190,14 +269,29 @@ impl PipelineMetrics {
     }
 
     pub fn record_fetch_duration(&self, source: &str, duration_secs: f64) {
+        let mode = self.breaker_registry.get_mode(source);
+        self.record_fetch_duration_with_mode(source, duration_secs, mode);
+    }
+
+    pub fn record_fetch_duration_with_mode(
+        &self,
+        source: &str,
+        duration_secs: f64,
+        mode: IngestionMode,
+    ) {
         if let Some(s) = self.sources.get(source) {
-            s.record_fetch_duration(duration_secs);
+            s.record_fetch_duration_with_mode(duration_secs, mode);
         }
     }
 
     pub fn record_event_lag(&self, source: &str, lag_secs: f64) {
+        let mode = self.breaker_registry.get_mode(source);
+        self.record_event_lag_with_mode(source, lag_secs, mode);
+    }
+
+    pub fn record_event_lag_with_mode(&self, source: &str, lag_secs: f64, mode: IngestionMode) {
         if let Some(s) = self.sources.get(source) {
-            s.record_event_lag(lag_secs);
+            s.record_event_lag_with_mode(lag_secs, mode);
         }
     }
 
@@ -251,38 +345,47 @@ impl PipelineMetrics {
         }
     }
 
-    /// Renders all per-source and pipeline metrics into standard Prometheus exposition format.
+    /// Renders all per-source, mode-labeled and pipeline metrics into standard Prometheus exposition format.
     pub fn render_prometheus(&self) -> String {
-        let mut out = String::with_capacity(4096);
+        let mut out = String::with_capacity(8192);
 
         // Header comments
-        out.push_str("# HELP fetch_duration_seconds HTTP/WS batch fetch wall time per source\n");
+        out.push_str(
+            "# HELP fetch_duration_seconds HTTP/WS batch fetch wall time per source and mode\n",
+        );
         out.push_str("# TYPE fetch_duration_seconds histogram\n");
 
         for &src in &VALID_SOURCES {
             if let Some(s) = self.sources.get(src) {
-                let count = s.fetch_count.load(Ordering::Relaxed);
-                let sum_sec = s.fetch_sum_us.load(Ordering::Relaxed) as f64 / 1_000_000.0;
+                let modes = [
+                    ("primary", &s.primary_fetch),
+                    ("degraded", &s.degraded_fetch),
+                    ("stale", &s.stale_fetch),
+                ];
+                for (m_str, h) in &modes {
+                    let count = h.count.load(Ordering::Relaxed);
+                    let sum_sec = h.sum_us.load(Ordering::Relaxed) as f64 / 1_000_000.0;
 
-                for (i, &bucket) in HISTOGRAM_BUCKETS.iter().enumerate() {
-                    let b_count = s.fetch_buckets[i].load(Ordering::Relaxed);
+                    for (i, &bucket) in HISTOGRAM_BUCKETS.iter().enumerate() {
+                        let b_count = h.buckets[i].load(Ordering::Relaxed);
+                        out.push_str(&format!(
+                            "fetch_duration_seconds_bucket{{source=\"{}\",mode=\"{}\",le=\"{:.3}\"}} {}\n",
+                            src, m_str, bucket, b_count
+                        ));
+                    }
                     out.push_str(&format!(
-                        "fetch_duration_seconds_bucket{{source=\"{}\",le=\"{:.3}\"}} {}\n",
-                        src, bucket, b_count
+                        "fetch_duration_seconds_bucket{{source=\"{}\",mode=\"{}\",le=\"+Inf\"}} {}\n",
+                        src, m_str, count
+                    ));
+                    out.push_str(&format!(
+                        "fetch_duration_seconds_sum{{source=\"{}\",mode=\"{}\"}} {:.6}\n",
+                        src, m_str, sum_sec
+                    ));
+                    out.push_str(&format!(
+                        "fetch_duration_seconds_count{{source=\"{}\",mode=\"{}\"}} {}\n",
+                        src, m_str, count
                     ));
                 }
-                out.push_str(&format!(
-                    "fetch_duration_seconds_bucket{{source=\"{}\",le=\"+Inf\"}} {}\n",
-                    src, count
-                ));
-                out.push_str(&format!(
-                    "fetch_duration_seconds_sum{{source=\"{}\"}} {:.6}\n",
-                    src, sum_sec
-                ));
-                out.push_str(&format!(
-                    "fetch_duration_seconds_count{{source=\"{}\"}} {}\n",
-                    src, count
-                ));
             }
         }
 
@@ -291,28 +394,35 @@ impl PipelineMetrics {
 
         for &src in &VALID_SOURCES {
             if let Some(s) = self.sources.get(src) {
-                let count = s.lag_count.load(Ordering::Relaxed);
-                let sum_sec = s.lag_sum_us.load(Ordering::Relaxed) as f64 / 1_000_000.0;
+                let modes = [
+                    ("primary", &s.primary_lag),
+                    ("degraded", &s.degraded_lag),
+                    ("stale", &s.stale_lag),
+                ];
+                for (m_str, h) in &modes {
+                    let count = h.count.load(Ordering::Relaxed);
+                    let sum_sec = h.sum_us.load(Ordering::Relaxed) as f64 / 1_000_000.0;
 
-                for (i, &bucket) in HISTOGRAM_BUCKETS.iter().enumerate() {
-                    let b_count = s.lag_buckets[i].load(Ordering::Relaxed);
+                    for (i, &bucket) in HISTOGRAM_BUCKETS.iter().enumerate() {
+                        let b_count = h.buckets[i].load(Ordering::Relaxed);
+                        out.push_str(&format!(
+                            "event_lag_seconds_bucket{{source=\"{}\",mode=\"{}\",le=\"{:.3}\"}} {}\n",
+                            src, m_str, bucket, b_count
+                        ));
+                    }
                     out.push_str(&format!(
-                        "event_lag_seconds_bucket{{source=\"{}\",le=\"{:.3}\"}} {}\n",
-                        src, bucket, b_count
+                        "event_lag_seconds_bucket{{source=\"{}\",mode=\"{}\",le=\"+Inf\"}} {}\n",
+                        src, m_str, count
+                    ));
+                    out.push_str(&format!(
+                        "event_lag_seconds_sum{{source=\"{}\",mode=\"{}\"}} {:.6}\n",
+                        src, m_str, sum_sec
+                    ));
+                    out.push_str(&format!(
+                        "event_lag_seconds_count{{source=\"{}\",mode=\"{}\"}} {}\n",
+                        src, m_str, count
                     ));
                 }
-                out.push_str(&format!(
-                    "event_lag_seconds_bucket{{source=\"{}\",le=\"+Inf\"}} {}\n",
-                    src, count
-                ));
-                out.push_str(&format!(
-                    "event_lag_seconds_sum{{source=\"{}\"}} {:.6}\n",
-                    src, sum_sec
-                ));
-                out.push_str(&format!(
-                    "event_lag_seconds_count{{source=\"{}\"}} {}\n",
-                    src, count
-                ));
             }
         }
 
@@ -376,6 +486,44 @@ impl PipelineMetrics {
             ));
         }
 
+        // Fixed cardinality bounded to exactly 5 institutional sources
+        out.push_str("\n# Fixed cardinality bounded to exactly 5 institutional sources: sec_edgar, fomc, finnhub_ws, polygon_ws, corporate_actions\n");
+
+        out.push_str(
+            "# HELP fintext_provider_state Circuit breaker state (0=closed, 1=half_open, 2=open)\n",
+        );
+        out.push_str("# TYPE fintext_provider_state gauge\n");
+        let now_ms = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap_or_default()
+            .as_millis() as u64;
+
+        let snapshot = self.breaker_registry.get_telemetry_snapshot(now_ms);
+        for (src, state, _, _) in &snapshot {
+            out.push_str(&format!(
+                "fintext_provider_state{{source=\"{}\"}} {}\n",
+                src, state
+            ));
+        }
+
+        out.push_str("\n# HELP fintext_fallback_active Fallback degradation mode active indicator (0=primary, 1=degraded/stale)\n");
+        out.push_str("# TYPE fintext_fallback_active gauge\n");
+        for (src, _, fallback, _) in &snapshot {
+            out.push_str(&format!(
+                "fintext_fallback_active{{source=\"{}\"}} {}\n",
+                src, fallback
+            ));
+        }
+
+        out.push_str("\n# HELP fintext_fallback_activations_total Total number of circuit breaker trips to Open state\n");
+        out.push_str("# TYPE fintext_fallback_activations_total counter\n");
+        for (src, _, _, activations) in &snapshot {
+            out.push_str(&format!(
+                "fintext_fallback_activations_total{{source=\"{}\"}} {}\n",
+                src, activations
+            ));
+        }
+
         out
     }
 }
@@ -417,6 +565,19 @@ pub async fn start_metrics_server(
                                     "application/json",
                                     r#"{"status":"healthy","service":"fintext_ingestion_telemetry"}"#
                                         .to_string(),
+                                )
+                            } else if first_line.starts_with("GET /providers") {
+                                let now_ms = std::time::SystemTime::now()
+                                    .duration_since(std::time::UNIX_EPOCH)
+                                    .unwrap_or_default()
+                                    .as_millis()
+                                    as u64;
+                                let json_val = m.breaker_registry.get_provider_health_json(now_ms);
+                                (
+                                    "HTTP/1.1 200 OK",
+                                    "application/json",
+                                    serde_json::to_string_pretty(&json_val)
+                                        .unwrap_or_else(|_| "{}".to_string()),
                                 )
                             } else {
                                 (
@@ -513,6 +674,9 @@ mod tests {
         assert!(prom.contains("errors_total{source=\"finnhub_ws\",reason=\"rate_limited\"} 1"));
         assert!(prom.contains("# TYPE event_lag_seconds histogram"));
         assert!(prom.contains("# TYPE fetch_duration_seconds histogram"));
+        assert!(prom.contains("fintext_provider_state{source=\"finnhub_ws\"} 0"));
+        assert!(prom.contains("fintext_fallback_active{source=\"finnhub_ws\"} 0"));
+        assert!(prom.contains("fintext_fallback_activations_total{source=\"finnhub_ws\"} 0"));
     }
 
     #[tokio::test]
@@ -543,12 +707,23 @@ mod tests {
 
         let body = resp.text().await.unwrap();
         assert!(body.contains("events_ingested_total{source=\"sec_edgar\"} 1"));
-        assert!(body.contains("event_lag_seconds_bucket{source=\"sec_edgar\",le=\"0.025\"} 1"));
+        assert!(body.contains(
+            "event_lag_seconds_bucket{source=\"sec_edgar\",mode=\"primary\",le=\"0.025\"} 1"
+        ));
 
         // Test /health
         let health_url = format!("http://127.0.0.1:{}/health", port);
         let health_resp = client.get(&health_url).send().await.unwrap();
         assert_eq!(health_resp.status(), reqwest::StatusCode::OK);
+
+        // Test /providers
+        let prov_url = format!("http://127.0.0.1:{}/providers", port);
+        let prov_resp = client.get(&prov_url).send().await.unwrap();
+        assert_eq!(prov_resp.status(), reqwest::StatusCode::OK);
+        let prov_body = prov_resp.text().await.unwrap();
+        assert!(prov_body.contains("\"sec_edgar\""));
+        assert!(prov_body.contains("\"state\": \"closed\""));
+        assert!(prov_body.contains("\"mode\": \"primary\""));
 
         handle.abort();
     }
