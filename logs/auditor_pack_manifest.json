@@ -1,0 +1,370 @@
+{
+  "ci_run_reference": "GitHub Actions Run Set #13 (Pipeline, Security Scan, Drift, Model Validation, PIT, Status)",
+  "disclaimer": "Evidence index for auditor convenience; not a SOC2 certification claim.",
+  "document_id": "SOC2-EVID-MANIFEST-2026-V1",
+  "evidence_items": [
+    {
+      "controls": [
+        "A1.2"
+      ],
+      "criticality": "HIGH",
+      "description": "Automated disaster recovery drill certifying RTO of 0.111s against 4.0h SLA",
+      "id": "EVID-A12-01",
+      "path": "logs/backup_restore_test_report.json",
+      "sha256": "67f38de1df58ce1aef441d9fe1d0b7d72f7457b7b07e9cfbb15e4b3f9b958263",
+      "size_bytes": 766,
+      "status": "PRESENT"
+    },
+    {
+      "controls": [
+        "A1.2"
+      ],
+      "criticality": "HIGH",
+      "description": "Immutable ledger tracking continuous soak stability, RSS slope, and zero leak proof",
+      "id": "EVID-A12-02",
+      "path": "logs/soak_ledger.md",
+      "sha256": "649a49b8f11747dd967ec2cb92280953a5d5ac0c0a7d6a5453ae222c32bb8f33",
+      "size_bytes": 1331,
+      "status": "PRESENT"
+    },
+    {
+      "controls": [
+        "A1.2"
+      ],
+      "criticality": "HIGH",
+      "description": "S3 backup bucket lifecycle (7-day expiration) and raw Parquet Glacier transition (90d)",
+      "id": "EVID-A12-03",
+      "path": "infra/terraform/s3.tf",
+      "sha256": "a99f1992b62e1305614a22d02bf6035c18b6eae749ae37d56fcf6ec10e54e5e9",
+      "size_bytes": 6302,
+      "status": "PRESENT"
+    },
+    {
+      "controls": [
+        "A1.2"
+      ],
+      "criticality": "HIGH",
+      "description": "GA Multi-AZ high-availability cutover plan, priced deltas, and rollback runbook",
+      "id": "EVID-A12-04",
+      "path": "docs/HA_MULTIAZ_GA_CUTOVER_PLAN.md",
+      "sha256": "dafbc76fda0e6e4a0c7040dcc9e4dadc0e7837d20101be66b1bbbc7554f2324d",
+      "size_bytes": 19276,
+      "status": "PRESENT"
+    },
+    {
+      "controls": [
+        "CC3.1",
+        "CC3.2"
+      ],
+      "criticality": "MEDIUM",
+      "description": "Architecture Decision Record evaluating us-east-1 colocation and risk trade-offs",
+      "id": "EVID-CC31-01",
+      "path": "docs/LATENCY_AND_COLOCATION_DECISION.md",
+      "sha256": "a1fe25cf4baf1c07017cb6e75413abd07518dd8372e0206e23ebdf0476a25b39",
+      "size_bytes": 11479,
+      "status": "PRESENT"
+    },
+    {
+      "controls": [
+        "CC3.1",
+        "CC3.2"
+      ],
+      "criticality": "HIGH",
+      "description": "Step-by-step AWS production provisioning, verification, and incident repair runbook",
+      "id": "EVID-CC31-02",
+      "path": "docs/PRODUCTION_DEPLOYMENT_RUNBOOK.md",
+      "sha256": "821a5eddd11c4059911285e49fb50e9b53b5f622ed130f5456ba89590548be41",
+      "size_bytes": 21512,
+      "status": "PRESENT"
+    },
+    {
+      "controls": [
+        "CC3.1",
+        "CC3.2"
+      ],
+      "criticality": "HIGH",
+      "description": "Third-party penetration testing methodology, scope inventory, and remediation SLAs",
+      "id": "EVID-CC31-03",
+      "path": "docs/PENTEST_PLAN.md",
+      "sha256": "84200a506dd23331f481ce89d9ef70a4005e0d81f125990a7b9782d38aba745c",
+      "size_bytes": 13110,
+      "status": "PRESENT"
+    },
+    {
+      "controls": [
+        "CC3.1",
+        "CC3.2"
+      ],
+      "criticality": "HIGH",
+      "description": "Founder-side security posture hardening tracker (2FA, PAT rotation, soak scheduler)",
+      "id": "EVID-CC31-04",
+      "path": "docs/FOUNDER_ACTION_TRACKER.md",
+      "sha256": "96432edb74ae201c0b360659f954ee16c408e4cfafa792393600fd3d78e57e47",
+      "size_bytes": 10391,
+      "status": "PRESENT"
+    },
+    {
+      "controls": [
+        "CC6.1",
+        "CC6.3"
+      ],
+      "criticality": "HIGH",
+      "description": "Multi-tenant PostgreSQL Row-Level Security isolation drill (0 leaks across 20 tables)",
+      "id": "EVID-CC61-01",
+      "path": "logs/rls_isolation_report.json",
+      "sha256": "b327580f832623689bea52f7b24608d26edcce854b8b185852a48a1e9decf022",
+      "size_bytes": 7867,
+      "status": "PRESENT"
+    },
+    {
+      "controls": [
+        "CC6.1",
+        "CC6.3"
+      ],
+      "criticality": "HIGH",
+      "description": "Self-service usage RLS query scoping, admin token gating, and audit logging",
+      "id": "EVID-CC61-02",
+      "path": "rust/api_server/src/billing.rs",
+      "sha256": "279b4faf254d3b3c1b2fbedc01151215a7678af77a8ba80568bec8501f1405f1",
+      "size_bytes": 114965,
+      "status": "PRESENT"
+    },
+    {
+      "controls": [
+        "CC6.1",
+        "CC6.3"
+      ],
+      "criticality": "MEDIUM",
+      "description": "Per-tenant IP whitelist CIDR matching middleware and 403 Forbidden contract",
+      "id": "EVID-CC61-03",
+      "path": "rust/api_server/src/ip_whitelist.rs",
+      "sha256": "8b637d173b9919ef83ada972337c75d67788041179476e4d264a4eed661e2975",
+      "size_bytes": 27240,
+      "status": "PRESENT"
+    },
+    {
+      "controls": [
+        "CC6.1"
+      ],
+      "criticality": "HIGH",
+      "description": "Cryptographic JWT claim validation, session expiration, and role extraction",
+      "id": "EVID-CC61-04",
+      "path": "rust/api_server/src/auth.rs",
+      "sha256": "4523bfd46cc179db5c47ff54ff4dbe90a4836d2992a46a05ed81eeda1b75f18d",
+      "size_bytes": 20375,
+      "status": "PRESENT"
+    },
+    {
+      "controls": [
+        "CC6.1",
+        "CC6.3"
+      ],
+      "criticality": "HIGH",
+      "description": "PostgreSQL kernel RLS DDL policies for tenant session context binding",
+      "id": "EVID-CC61-05",
+      "path": "config/timescale/03-rls-multi-tenant-isolation.sql",
+      "sha256": "1d86814bc001e3b884bea9c88420dec29436d1b482eb01120b22e1772f8c744b",
+      "size_bytes": 28485,
+      "status": "PRESENT"
+    },
+    {
+      "controls": [
+        "CC6.1",
+        "CC6.3"
+      ],
+      "criticality": "MEDIUM",
+      "description": "Stripe webhook signature validation, replay defense, and dunning state machine",
+      "id": "EVID-CC61-06",
+      "path": "logs/billing_flow_report.json",
+      "sha256": "360e7f6015232732a2f2c61905747e5f2b7ff58d5bec178c0fac2455536a3b5b",
+      "size_bytes": 2344,
+      "status": "PRESENT"
+    },
+    {
+      "controls": [
+        "CC6.1",
+        "CC6.3"
+      ],
+      "criticality": "MEDIUM",
+      "description": "Monthly usage metering to Stripe invoice reconciliation verification (0 drift)",
+      "id": "EVID-CC61-07",
+      "path": "logs/billing_reconciliation_report.json",
+      "sha256": "ee7648de2d31b6befda8a0194fc7a0325e8f0b260bf6077e2a433ab2e4f4f6e6",
+      "size_bytes": 1496,
+      "status": "PRESENT"
+    },
+    {
+      "controls": [
+        "CC6.6"
+      ],
+      "criticality": "HIGH",
+      "description": "Defense-in-depth security group chaining (EC2 80/443/22, RDS strictly from EC2)",
+      "id": "EVID-CC66-01",
+      "path": "infra/terraform/security_groups.tf",
+      "sha256": "70bdae16f835b95e5d23c692998e9fb156c5e5a5878d7627b4bdfd7692020729",
+      "size_bytes": 3226,
+      "status": "PRESENT"
+    },
+    {
+      "controls": [
+        "CC6.6"
+      ],
+      "criticality": "HIGH",
+      "description": "Least-privilege IAM instance role, S3 least-privilege policy, and CloudWatch permissions",
+      "id": "EVID-CC66-02",
+      "path": "infra/terraform/iam.tf",
+      "sha256": "5c6357bfa0dea6583593cd39c5591242b1394a5b6dea9b12cb5ca4017f5ac22e",
+      "size_bytes": 3269,
+      "status": "PRESENT"
+    },
+    {
+      "controls": [
+        "CC6.6"
+      ],
+      "criticality": "HIGH",
+      "description": "Private database subnet placement, storage encryption (KMS/gp3), and parameter hardening",
+      "id": "EVID-CC66-03",
+      "path": "infra/terraform/rds.tf",
+      "sha256": "d8fd94cb386e7c240de94dc7e0769f08b9d9dd5154bfd58198a2e1ebbc9ef88d",
+      "size_bytes": 3972,
+      "status": "PRESENT"
+    },
+    {
+      "controls": [
+        "CC6.6"
+      ],
+      "criticality": "MEDIUM",
+      "description": "Institutional platform security whitepaper, credential redaction, and threat model",
+      "id": "EVID-CC66-04",
+      "path": "docs/SECURITY.md",
+      "sha256": "a153e5913c8f40edcb2e7ed26325a8658cd06d8944631f649b6e34ca4cfedb2d",
+      "size_bytes": 13123,
+      "status": "PRESENT"
+    },
+    {
+      "controls": [
+        "CC7.1",
+        "CC7.2"
+      ],
+      "criticality": "MEDIUM",
+      "description": "CloudWatch log groups with 30-day retention and automated CPU/storage alarms",
+      "id": "EVID-CC71-01",
+      "path": "infra/terraform/cloudwatch.tf",
+      "sha256": "d948fe23cad76f37397cc3de7cfebe00a86f13db6ebb222ab91cee9499e54a27",
+      "size_bytes": 4241,
+      "status": "PRESENT"
+    },
+    {
+      "controls": [
+        "CC7.1",
+        "CC7.2"
+      ],
+      "criticality": "MEDIUM",
+      "description": "Zero-cost public status page cron telemetry surveillance workflow",
+      "id": "EVID-CC71-02",
+      "path": ".github/workflows/status-page.yml",
+      "sha256": "14444e68dbae1a75747eb08a88d1c064dc08f8cca743d558f4b91e4b72bd7941",
+      "size_bytes": 5735,
+      "status": "PRESENT"
+    },
+    {
+      "controls": [
+        "CC7.1",
+        "CC7.2"
+      ],
+      "criticality": "MEDIUM",
+      "description": "Prometheus container memory leak and SLA degradation alerting rules",
+      "id": "EVID-CC71-03",
+      "path": "k8s/observability/prometheus-alerts.yaml",
+      "sha256": "b19bc103efb6a09240ca64bd2fcc9ca6af7133680060906845c88d3a9714ecb2",
+      "size_bytes": 13334,
+      "status": "PRESENT"
+    },
+    {
+      "controls": [
+        "CC7.1",
+        "CC7.2"
+      ],
+      "criticality": "LOW",
+      "description": "Day-2 operational tenant usage, quota headroom, and ingestion latency dashboard",
+      "id": "EVID-CC71-04",
+      "path": "dashboards/tenant_usage.json",
+      "sha256": "1c7e34c16e882b4336da2b3d4431ff3ddf54ab75113179f330dbc22b39ed9950",
+      "size_bytes": 12738,
+      "status": "PRESENT"
+    },
+    {
+      "controls": [
+        "CC7.1"
+      ],
+      "criticality": "MEDIUM",
+      "description": "Sub-second Prometheus latency histograms (0.005s..2.0s) across market feeds",
+      "id": "EVID-CC71-05",
+      "path": "rust/ingestion_engine/src/telemetry/metrics.rs",
+      "sha256": "5647615707f237335fc13f6f9a362c06d9ad4e5294424843f0249468581d03b3",
+      "size_bytes": 20934,
+      "status": "PRESENT"
+    },
+    {
+      "controls": [
+        "CC8.1"
+      ],
+      "criticality": "HIGH",
+      "description": "49-check comprehensive launch readiness certification and pre-flight gate",
+      "id": "EVID-CC81-01",
+      "path": "docs/PRIVATE_BETA_LAUNCH_CHECKLIST.md",
+      "sha256": "2c826657316a5edc9daccb61128a7e349b8cf00c9226e5eb4ae1ecbec1518983",
+      "size_bytes": 37832,
+      "status": "PRESENT"
+    },
+    {
+      "controls": [
+        "CC8.1"
+      ],
+      "criticality": "HIGH",
+      "description": "Automated 27-check readiness audit suite certifying code, models, and docs",
+      "id": "EVID-CC81-02",
+      "path": "scripts/verify_private_beta_readiness.py",
+      "sha256": "70f04709e6eccfc0b5dc3cc13ee8cd49604d63c53b625872ca4a1527202b8adf",
+      "size_bytes": 47398,
+      "status": "PRESENT"
+    },
+    {
+      "controls": [
+        "CC8.1"
+      ],
+      "criticality": "HIGH",
+      "description": "Continuous Integration workflow enforcing rust test suites, clippy, and security scans",
+      "id": "EVID-CC81-03",
+      "path": ".github/workflows/ci.yml",
+      "sha256": "64eeeeb44a104b6b132b5b14453b6f9008d33b0b82e622428e9b80de4975b9d8",
+      "size_bytes": 6465,
+      "status": "PRESENT"
+    },
+    {
+      "controls": [
+        "CC8.1"
+      ],
+      "criticality": "HIGH",
+      "description": "Authoritative single source of truth for all certified platform metrics and parameters",
+      "id": "EVID-CC81-04",
+      "path": "docs/CERTIFIED_METRICS_REGISTER.md",
+      "sha256": "c8c5f197bf798dd89f15ad5a72572bfeb6160018a4eef70beee43af3ef2f0539",
+      "size_bytes": 14868,
+      "status": "PRESENT"
+    }
+  ],
+  "generated_at_utc": "2026-09-26T07:34:18.865917+00:00",
+  "git_lineage": {
+    "branch": "main",
+    "head_commit_sha": "6e0b125106131192a51193a927d93b26ba0493f9",
+    "head_commit_short": "6e0b125"
+  },
+  "manifest_version": "1.0.0",
+  "summary": {
+    "integrity_pass": true,
+    "missing_items": 0,
+    "present_items": 28,
+    "total_items": 28
+  }
+}

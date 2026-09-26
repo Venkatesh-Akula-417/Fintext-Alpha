@@ -112,3 +112,23 @@ variable "cloudwatch_retention_days" {
   default     = 30
   description = "Log retention period in days for CloudWatch log groups"
 }
+
+# ── GA High Availability Staged Variables (Defaults False) ───────────────────
+
+variable "rds_multi_az" {
+  type        = bool
+  default     = false
+  description = "Enable RDS PostgreSQL Multi-AZ synchronous standby deployment for GA cutover"
+}
+
+variable "ha_compute_enabled" {
+  type        = bool
+  default     = false
+  description = "Enable dual-node EC2 compute architecture across availability zones for GA"
+}
+
+variable "alb_enabled" {
+  type        = bool
+  default     = false
+  description = "Deploy Application Load Balancer across public subnets for GA compute failover"
+}

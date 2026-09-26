@@ -77,7 +77,7 @@ resource "aws_db_instance" "fintext_metadata" {
   port     = 5432
 
   # Network & High Availability Configuration
-  multi_az               = false # Cost-capped single-AZ for initial beta ($129.94/mo vs $259.88/mo)
+  multi_az               = var.rds_multi_az # Cost-capped single-AZ for initial beta ($129.94/mo vs $259.88/mo); staged for GA cutover
   publicly_accessible    = false
   db_subnet_group_name   = aws_db_subnet_group.fintext_db_subnets.name
   parameter_group_name   = aws_db_parameter_group.fintext_pg16.name

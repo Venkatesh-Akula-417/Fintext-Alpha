@@ -102,3 +102,47 @@ resource "aws_eip" "fintext_api_eip" {
     Tier = "Network-EIP"
   }
 }
+
+# ── Staged GA Multi-AZ Compute & Ingress (Default Disabled) ──────────────────
+
+resource "aws_instance" "fintext_api_secondary" {
+  count                  = var.ha_compute_enabled ? 1 : 0
+  ami                    = data.aws_ami.ubuntu.id
+  instance_type          = var.ec2_instance_type
+  subnet_id              = aws_subnet.public[1].id
+  vpc_security_group_ids = [aws_security_group.ec2_sg.id]
+  iam_instance_profile   = aws_iam_instance_profile.ec2_profile.name
+
+  root_block_device {
+    volume_type           = "gp3"
+    volume_size           = var.ec2_root_volume_size_gb
+    encrypted             = true
+    delete_on_termination = true
+
+    tags = {
+      Name = "fintext-api-secondary-root-gp3-${var.environment}"
+      Tier = "Storage-OS"
+    }
+  }
+
+  tags = {
+    Name = "fintext-api-secondary-host-${var.environment}"
+    Tier = "Compute-Application-Secondary"
+  }
+}
+
+resource "aws_lb" "fintext_alb" {
+  count              = var.alb_enabled ? 1 : 0
+  name               = "fintext-alb-${var.environment}"
+  internal           = false
+  load_balancer_type = "application"
+  security_groups    = [aws_security_group.ec2_sg.id]
+  subnets            = aws_subnet.public[*].id
+
+  enable_deletion_protection = false
+
+  tags = {
+    Name = "fintext-alb-${var.environment}"
+    Tier = "Ingress-ALB"
+  }
+}

@@ -68,6 +68,8 @@ logs/*
 !logs/billing_flow_report.json
 !logs/billing_reconciliation_report.json
 !logs/infra_validate_report.json
+!logs/auditor_pack_manifest.json
+!logs/founder_actions_evidence.md
 !logs/.gitkeep
 logs/soak_history.jsonl
 

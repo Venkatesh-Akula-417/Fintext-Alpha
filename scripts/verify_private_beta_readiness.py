@@ -49,7 +49,7 @@ def record_check(number: int, name: str, passed: bool, evidence: str):
 
 banner_line = "=" * 79
 print(f"\n{Colors.CYAN}{Colors.BOLD}{banner_line}{Colors.RESET}")
-print(f"{Colors.CYAN}{Colors.BOLD} FinText Alpha Vectorizer - Private Beta 26-Check Readiness Audit{Colors.RESET}")
+print(f"{Colors.CYAN}{Colors.BOLD} FinText Alpha Vectorizer - Private Beta 27-Check Readiness Audit{Colors.RESET}")
 print(f"{Colors.CYAN}{Colors.BOLD}{banner_line}{Colors.RESET}\n")
 
 
@@ -727,6 +727,73 @@ except Exception as e:
     record_check(26, "Tenant Usage & Ingestion Telemetry Certified", False, str(e))
 
 # ─────────────────────────────────────────────────────────────────────────────
+# Check 27: Assurance & GA-Path Governance Certified (Problem #12)
+# ─────────────────────────────────────────────────────────────────────────────
+try:
+    pentest_plan = REPO_ROOT / "docs" / "PENTEST_PLAN.md"
+    auditor_pack_doc = REPO_ROOT / "docs" / "SOC2_AUDITOR_PACK.md"
+    manifest_script = REPO_ROOT / "scripts" / "build_auditor_pack.py"
+    ha_plan = REPO_ROOT / "docs" / "HA_MULTIAZ_GA_CUTOVER_PLAN.md"
+    founder_tracker = REPO_ROOT / "docs" / "FOUNDER_ACTION_TRACKER.md"
+    founder_evidence = REPO_ROOT / "logs" / "founder_actions_evidence.md"
+    manifest_json = REPO_ROOT / "logs" / "auditor_pack_manifest.json"
+    tf_variables = REPO_ROOT / "infra" / "terraform" / "variables.tf"
+
+    docs_exist = (
+        pentest_plan.exists()
+        and auditor_pack_doc.exists()
+        and manifest_script.exists()
+        and ha_plan.exists()
+        and founder_tracker.exists()
+        and founder_evidence.exists()
+    )
+
+    # Execute build_auditor_pack.py and verify 0 missing items
+    pack_proc = subprocess.run(
+        [sys.executable, str(manifest_script)],
+        cwd=str(REPO_ROOT),
+        capture_output=True,
+        text=True,
+    )
+    pack_exit_ok = (pack_proc.returncode == 0)
+
+    manifest_valid = False
+    missing_items_count = 999
+    present_items_count = 0
+    if manifest_json.exists():
+        try:
+            m_data = json.loads(manifest_json.read_text(encoding="utf-8"))
+            summary = m_data.get("summary", {})
+            missing_items_count = summary.get("missing_items", 999)
+            present_items_count = summary.get("present_items", 0)
+            manifest_valid = (missing_items_count == 0 and present_items_count >= 25)
+        except Exception:
+            manifest_valid = False
+
+    # Verify staged HA variables in variables.tf
+    tf_text = tf_variables.read_text(encoding="utf-8") if tf_variables.exists() else ""
+    staged_ha_vars = (
+        'variable "rds_multi_az"' in tf_text
+        and 'default     = false' in tf_text
+        and 'variable "ha_compute_enabled"' in tf_text
+        and 'variable "alb_enabled"' in tf_text
+    )
+
+    passed = (
+        docs_exist
+        and pack_exit_ok
+        and manifest_valid
+        and staged_ha_vars
+    )
+    evidence = (
+        f"Pen-Test Plan live, SOC2 Pack ({present_items_count} items SHA256-pinned, 0 missing), "
+        f"HA Cutover Plan staged (vars default-false), Tracker live"
+    )
+    record_check(27, "Assurance & GA-Path Governance Certified", passed, evidence)
+except Exception as e:
+    record_check(27, "Assurance & GA-Path Governance Certified", False, str(e))
+
+# ─────────────────────────────────────────────────────────────────────────────
 # Print Results Table
 # ─────────────────────────────────────────────────────────────────────────────
 print(f"{'#':<3} | {'Check Description':<40} | {'Status':<8} | {'Evidence'}")
@@ -741,7 +808,7 @@ print(f"Passed:       {Colors.GREEN}{checks_passed}{Colors.RESET}")
 print(f"Failed:       {Colors.RED}{checks_failed}{Colors.RESET}")
 
 if checks_failed == 0:
-    print(f"\n{Colors.GREEN}{Colors.BOLD}>>> VERDICT: ALL 26 AUTOMATED CHECKS PASSED. SYSTEM IS LAUNCH READY! <<<{Colors.RESET}\n")
+    print(f"\n{Colors.GREEN}{Colors.BOLD}>>> VERDICT: ALL 27 AUTOMATED CHECKS PASSED. SYSTEM IS LAUNCH READY! <<<{Colors.RESET}\n")
     sys.exit(0)
 else:
     print(f"\n{Colors.RED}{Colors.BOLD}>>> VERDICT: {checks_failed} CHECKS FAILED. RESOLVE BEFORE LAUNCH. <<<{Colors.RESET}\n")

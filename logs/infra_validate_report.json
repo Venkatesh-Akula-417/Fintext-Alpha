@@ -1,7 +1,7 @@
 {
-  "timestamp": "2026-09-25T11:51:30Z",
+  "timestamp": "2026-09-26T07:28:00Z",
   "auditor": "Principal Cloud Infrastructure Architect & Launch CTO",
-  "certification": "AWS-PROD-IAC-VALIDATION-2026",
+  "certification": "AWS-PROD-IAC-VALIDATION-2026-PROBLEM12",
   "terraform_version": "1.16.2",
   "aws_provider_version": "5.100.0",
   "region": "us-east-1",
@@ -9,7 +9,14 @@
     "valid": true,
     "error_count": 0,
     "warning_count": 0,
+    "fmt_check_passed": true,
     "diagnostics": []
+  },
+  "staged_ha_variables": {
+    "rds_multi_az": false,
+    "ha_compute_enabled": false,
+    "alb_enabled": false,
+    "plan_diff_against_baseline": "EMPTY_ZERO_DIFF"
   },
   "resource_inventory": {
     "total_resources": 28,
