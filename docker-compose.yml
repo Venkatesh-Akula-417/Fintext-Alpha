@@ -247,6 +247,82 @@ services:
       - ./logs:/logs
     command: ["run", "/scripts/load_test.js"]
 
+  # ── Production Profile Services: CloudWatch Container Log Shipping ───────────
+  fintext-api-prod:
+    profiles: ["prod"]
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: api
+    container_name: fintext-api-gateway-prod
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+    environment:
+      - DATABASE_URL=postgres://fintext:fintext@postgres:5432/fintext_metadata
+      - TIMESCALE_DB_URL=postgres://fintext:fintext@postgres:5432/fintext_metadata
+      - ENABLE_TIMESCALEDB=true
+      - TIMESCALE_PRIMARY=true
+      - QUESTDB_ENABLED=false
+      - QUESTDB_URL=http://questdb:9000
+      - KAFKA_BOOTSTRAP_SERVERS=kafka:9092
+      - KAFKA_TOPIC_REALTIME=sentiment-updates
+      - PORT=8000
+      - RUST_LOG=info
+    volumes:
+      - ./config:/app/config:ro
+    logging:
+      driver: "awslogs"
+      options:
+        awslogs-region: "us-east-1"
+        awslogs-group: "${FINTEXT_LOG_GROUP:-fintext-prod}"
+        awslogs-stream: "${HOSTNAME:-node1}"
+        max-size: "50m"
+        max-file: "3"
+
+  fintext-ingestion-prod:
+    profiles: ["prod"]
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: ingestion
+    container_name: fintext-ingestion-engine-prod
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+    environment:
+      - TIMESCALE_PRIMARY=true
+      - ENABLE_TIMESCALEDB=true
+      - TIMESCALE_DB_URL=postgres://fintext:fintext@postgres:5432/fintext_metadata
+      - QUESTDB_ENABLED=false
+      - QUESTDB_URL=http://questdb:9000
+      - KAFKA_BOOTSTRAP_SERVERS=kafka:9092
+      - KAFKA_TOPIC=sentiment-events
+      - KAFKA_TOPIC_REALTIME=sentiment-updates
+      - INGESTION_METRICS_PORT=9102
+      - RUST_LOG=info
+    ports:
+      - "127.0.0.1:9102:9102"
+    volumes:
+      - ./config:/app/config:ro
+      - ./data/stream:/app/data/stream
+    logging:
+      driver: "awslogs"
+      options:
+        awslogs-region: "us-east-1"
+        awslogs-group: "${FINTEXT_LOG_GROUP:-fintext-prod}"
+        awslogs-stream: "${HOSTNAME:-node1}"
+        max-size: "50m"
+        max-file: "3"
+
 volumes:
   questdb_data:
     driver: local

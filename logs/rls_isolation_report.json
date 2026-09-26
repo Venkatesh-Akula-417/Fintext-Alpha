@@ -1,6 +1,6 @@
 {
-  "generated_utc": "2026-09-26T04:30:49.400171+00:00",
-  "commit": "734837989e735442155d38f637a46f31d433ad2c",
+  "generated_utc": "2026-09-26T08:18:14.898916+00:00",
+  "commit": "09ad90e3b39f676b01089fbdcd04092e72b6c958",
   "rls_enabled_tables": [
     "audit_logs",
     "organizations",
@@ -236,7 +236,7 @@
       "name": "tenant_own_rows_accessible",
       "table": "audit_logs",
       "expected": 1,
-      "observed": 17,
+      "observed": 21,
       "pass": true
     },
     {

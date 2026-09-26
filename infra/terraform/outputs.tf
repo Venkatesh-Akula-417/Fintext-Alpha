@@ -56,3 +56,8 @@ output "cloudwatch_ingestion_log_group" {
   value       = aws_cloudwatch_log_group.ingestion_engine.name
   description = "CloudWatch log group for Vector Ingestion Engine"
 }
+
+output "ops_topic_arn" {
+  value       = local.alerting_enabled ? aws_sns_topic.fintext_ops[0].arn : ""
+  description = "ARN of the SNS topic for operational and backup failure alerts (empty when alerting disabled)"
+}

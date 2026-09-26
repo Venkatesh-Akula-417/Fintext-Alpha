@@ -43,6 +43,8 @@ resource "aws_cloudwatch_metric_alarm" "ec2_high_cpu" {
     InstanceId = aws_instance.fintext_api.id
   }
 
+  alarm_actions = local.alerting_enabled ? [aws_sns_topic.fintext_ops[0].arn] : []
+
   tags = {
     Severity = "Warning"
     Tier     = "Compute-Monitoring"
@@ -59,6 +61,7 @@ resource "aws_cloudwatch_metric_alarm" "ec2_status_check" {
   statistic           = "Maximum"
   threshold           = 0
   alarm_description   = "EC2 instance status check failed (Host or System failure detected)"
+  alarm_actions       = local.alerting_enabled ? [aws_sns_topic.fintext_ops[0].arn] : []
 
   dimensions = {
     InstanceId = aws_instance.fintext_api.id
@@ -80,6 +83,7 @@ resource "aws_cloudwatch_metric_alarm" "rds_high_cpu" {
   statistic           = "Average"
   threshold           = 80
   alarm_description   = "RDS TimescaleDB CPU utilization exceeded 80% for 10 minutes"
+  alarm_actions       = local.alerting_enabled ? [aws_sns_topic.fintext_ops[0].arn] : []
 
   dimensions = {
     DBInstanceIdentifier = aws_db_instance.fintext_metadata.identifier
@@ -101,6 +105,7 @@ resource "aws_cloudwatch_metric_alarm" "rds_low_storage" {
   statistic           = "Average"
   threshold           = 15000000000 # 15 GB threshold in bytes
   alarm_description   = "RDS TimescaleDB free storage space dropped below 15 GB"
+  alarm_actions       = local.alerting_enabled ? [aws_sns_topic.fintext_ops[0].arn] : []
 
   dimensions = {
     DBInstanceIdentifier = aws_db_instance.fintext_metadata.identifier
@@ -109,5 +114,27 @@ resource "aws_cloudwatch_metric_alarm" "rds_low_storage" {
   tags = {
     Severity = "Critical"
     Tier     = "Database-Monitoring"
+  }
+}
+
+# ── Disaster Recovery & Scheduled Backup Job Failure Alarm ────────────────────
+
+resource "aws_cloudwatch_metric_alarm" "backup_failed" {
+  count = local.alerting_enabled ? 1 : 0
+
+  alarm_name          = "fintext-backup-failed-${var.environment}"
+  comparison_operator = "GreaterThanOrEqualToThreshold"
+  evaluation_periods  = 1
+  metric_name         = "BackupJobFailed"
+  namespace           = "fintext"
+  period              = 60
+  statistic           = "Maximum"
+  threshold           = 1
+  alarm_description   = "Scheduled PostgreSQL backup job failed or missed execution window"
+  alarm_actions       = [aws_sns_topic.fintext_ops[0].arn]
+
+  tags = {
+    Severity = "Critical"
+    Tier     = "Database-Disaster-Recovery"
   }
 }

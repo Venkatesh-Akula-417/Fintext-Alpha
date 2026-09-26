@@ -132,3 +132,16 @@ variable "alb_enabled" {
   default     = false
   description = "Deploy Application Load Balancer across public subnets for GA compute failover"
 }
+
+# ── Operations & Day-2 Alerting Staged Variables (Default Disabled) ──────────
+
+variable "ops_alert_email" {
+  type        = string
+  default     = ""
+  description = "Operational alert notification email address for CloudWatch alarms and backup failure SNS topic"
+
+  validation {
+    condition     = var.ops_alert_email == "" || can(regex("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$", var.ops_alert_email))
+    error_message = "The ops_alert_email variable must be an empty string or a valid email address."
+  }
+}
