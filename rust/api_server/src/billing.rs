@@ -10,7 +10,9 @@ use crate::audit_logs::log_audit_event;
 use crate::auth::{AuthErrorResponse, Claims};
 use crate::models::{
     AccountUsageResponse, AdminTenantUsageResponse, ApiKeyAuditItem, AuditLogSummaryItem,
-    DailyUsageItem, EndpointGroupUsageItem, SubscriptionDetailItem,
+    DailyUsageItem, EndpointGroupUsageItem, SubscriptionDetailItem, TenantCreateKeyRequest,
+    TenantCreateKeyResponse, TenantKeyItem, TenantListKeysResponse, TenantRevokeKeyResponse,
+    TenantRotateKeyResponse,
 };
 use crate::state::AppState;
 use crate::ConstantTimeEq;
@@ -2764,6 +2766,703 @@ pub async fn admin_tenant_usage_handler(
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// Tenant API-Key Self-Service Lifecycle (Problem #14)
+// ─────────────────────────────────────────────────────────────────────────────
+
+/// Generates a cryptographically secure tenant API key with `ft_live_` prefix and 256 bits of entropy.
+///
+/// Returns `(raw_plaintext_key, safe_prefix, sha256_hex_digest)`.
+pub fn generate_tenant_api_key_material() -> (String, String, String) {
+    use rand::Rng;
+    let mut rng = rand::thread_rng();
+    const BASE62_CHARS: &[u8] = b"0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
+    let random_body: String = (0..43)
+        .map(|_| {
+            let idx = rng.gen_range(0..BASE62_CHARS.len());
+            BASE62_CHARS[idx] as char
+        })
+        .collect();
+
+    let raw_key = format!("ft_live_{}", random_body);
+    let prefix = raw_key[..16].to_string(); // e.g. "ft_live_AbC123Xy"
+    let key_hash = crate::users::hash_api_key(&raw_key);
+
+    (raw_key, prefix, key_hash)
+}
+
+/// Helper to resolve tenant organization ID and user UUID from request claims.
+fn resolve_tenant_identity(
+    claims: &Claims,
+) -> Result<(String, Uuid, Option<Uuid>), (StatusCode, Json<serde_json::Value>)> {
+    let org_id = match &claims.org_id {
+        Some(org) if !org.trim().is_empty() => org.trim().to_string(),
+        _ => claims.sub.trim().to_string(),
+    };
+
+    if org_id.is_empty() {
+        return Err((
+            StatusCode::UNAUTHORIZED,
+            Json(serde_json::json!({
+                "error": "Unauthorized",
+                "message": "Missing tenant organization identifier in authentication claims"
+            })),
+        ));
+    }
+
+    let user_uuid = Uuid::parse_str(&claims.sub).unwrap_or_else(|_| Uuid::nil());
+
+    let org_uuid = Uuid::parse_str(&org_id).ok();
+
+    Ok((org_id, user_uuid, org_uuid))
+}
+
+/// Tenant self-service API key creation endpoint (`POST /v1/account/keys`).
+///
+/// Returns the plaintext key material strictly once upon creation.
+/// Enforces a maximum of 10 active keys per tenant.
+#[utoipa::path(
+    post,
+    path = "/v1/account/keys",
+    request_body = TenantCreateKeyRequest,
+    responses(
+        (status = 201, description = "API key created successfully", body = TenantCreateKeyResponse),
+        (status = 400, description = "Active key quota exceeded or invalid request", body = AuthErrorResponse),
+        (status = 401, description = "Unauthorized - Missing or invalid credentials", body = AuthErrorResponse)
+    ),
+    security(
+        ("BearerAuth" = []),
+        ("ApiKeyAuth" = [])
+    ),
+    tag = "Account & API Keys"
+)]
+pub async fn tenant_create_key_handler(
+    State(state): State<AppState>,
+    req: Request,
+) -> Result<(StatusCode, Json<TenantCreateKeyResponse>), (StatusCode, Json<serde_json::Value>)> {
+    let claims = req.extensions().get::<Claims>().cloned().ok_or_else(|| {
+        (
+            StatusCode::UNAUTHORIZED,
+            Json(serde_json::json!({
+                "error": "Unauthorized",
+                "message": "Missing authentication claims in request context"
+            })),
+        )
+    })?;
+
+    let (org_id, user_uuid, org_uuid) = resolve_tenant_identity(&claims)?;
+
+    // Parse request body
+    let body_bytes = axum::body::to_bytes(req.into_body(), 1024 * 64)
+        .await
+        .map_err(|e| {
+            (
+                StatusCode::BAD_REQUEST,
+                Json(serde_json::json!({
+                    "error": "BadRequest",
+                    "message": format!("Failed to read request body: {}", e)
+                })),
+            )
+        })?;
+
+    let payload: TenantCreateKeyRequest = if body_bytes.is_empty() {
+        TenantCreateKeyRequest {
+            name: None,
+            expires_in_days: None,
+        }
+    } else {
+        serde_json::from_slice(&body_bytes).unwrap_or(TenantCreateKeyRequest {
+            name: None,
+            expires_in_days: None,
+        })
+    };
+
+    let now = Utc::now();
+    let expires_at = payload
+        .expires_in_days
+        .map(|days| now + chrono::Duration::days(days));
+    let key_name = payload.name.unwrap_or_else(|| "Default Key".to_string());
+
+    // Enforce max 10 active keys per tenant
+    if let Some(pool) = &state.db_pool {
+        let active_count: i64 = sqlx::query_scalar(
+            "SELECT COUNT(*) FROM api_keys WHERE (org_id = $1 OR user_id = $2) AND revoked_at IS NULL",
+        )
+        .bind(&org_id)
+        .bind(user_uuid)
+        .fetch_one(pool)
+        .await
+        .unwrap_or(0);
+
+        if active_count >= 10 {
+            return Err((
+                StatusCode::BAD_REQUEST,
+                Json(serde_json::json!({
+                    "error": "QuotaExceeded",
+                    "message": "Maximum active API keys limit (10) reached for this organization"
+                })),
+            ));
+        }
+    } else {
+        let active_count = state
+            .api_key_registry
+            .list_by_user(&user_uuid)
+            .into_iter()
+            .filter(|k| k.revoked_at.is_none())
+            .count();
+        if active_count >= 10 {
+            return Err((
+                StatusCode::BAD_REQUEST,
+                Json(serde_json::json!({
+                    "error": "QuotaExceeded",
+                    "message": "Maximum active API keys limit (10) reached for this organization"
+                })),
+            ));
+        }
+    }
+
+    let (raw_key, prefix, key_hash) = generate_tenant_api_key_material();
+    let key_id = Uuid::new_v4();
+
+    if let Some(pool) = &state.db_pool {
+        let insert_res = sqlx::query(
+            r#"
+            INSERT INTO api_keys (
+                id, user_id, name, key_hash, prefix, created_at,
+                revoked_at, expires_at, rotated_from, rotation_status, org_id
+            )
+            VALUES ($1, $2, $3, $4, $5, $6, NULL, $7, NULL, 'none', $8)
+            "#,
+        )
+        .bind(key_id)
+        .bind(user_uuid)
+        .bind(&key_name)
+        .bind(&key_hash)
+        .bind(&prefix)
+        .bind(now)
+        .bind(expires_at)
+        .bind(&org_id)
+        .execute(pool)
+        .await;
+
+        if let Err(e) = insert_res {
+            error!(
+                "[Billing] Failed to persist new API key for org '{}': {}",
+                org_id, e
+            );
+            return Err((
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(serde_json::json!({
+                    "error": "InternalError",
+                    "message": "Failed to create API key in database"
+                })),
+            ));
+        }
+    }
+
+    // Always cache in memory registry for immediate fast-path auth
+    state.api_key_registry.insert(crate::users::StoredApiKey {
+        id: key_id,
+        user_id: user_uuid,
+        name: key_name.clone(),
+        key_hash: key_hash.clone(),
+        prefix: prefix.clone(),
+        created_at: now,
+        revoked_at: None,
+        expires_at,
+        rotated_from: None,
+        rotation_status: "none".to_string(),
+    });
+
+    // Immutable audit logging (Zero-plaintext invariant: prefix and key_id only)
+    let _ = log_audit_event(
+        &state,
+        org_uuid,
+        &claims.sub,
+        "api_key.create",
+        "api_key",
+        Some(&key_id.to_string()),
+        serde_json::json!({
+            "key_id": key_id.to_string(),
+            "prefix": prefix,
+            "name": key_name,
+            "expires_at": expires_at.map(|e| e.to_rfc3339()),
+        }),
+        None,
+    )
+    .await;
+
+    Ok((
+        StatusCode::CREATED,
+        Json(TenantCreateKeyResponse {
+            id: key_id,
+            name: key_name,
+            prefix,
+            created_at: now.to_rfc3339(),
+            expires_at: expires_at.map(|e| e.to_rfc3339()),
+            plaintext_once: raw_key,
+        }),
+    ))
+}
+
+/// Tenant self-service API key revocation endpoint (`DELETE /v1/account/keys/{key_id}`).
+#[utoipa::path(
+    delete,
+    path = "/v1/account/keys/{key_id}",
+    params(
+        ("key_id" = Uuid, Path, description = "Identifier of the API key to revoke")
+    ),
+    responses(
+        (status = 200, description = "API key revoked successfully", body = TenantRevokeKeyResponse),
+        (status = 400, description = "Key already revoked", body = AuthErrorResponse),
+        (status = 401, description = "Unauthorized", body = AuthErrorResponse),
+        (status = 404, description = "API key not found", body = AuthErrorResponse)
+    ),
+    security(
+        ("BearerAuth" = []),
+        ("ApiKeyAuth" = [])
+    ),
+    tag = "Account & API Keys"
+)]
+pub async fn tenant_revoke_key_handler(
+    State(state): State<AppState>,
+    Path(key_id): Path<Uuid>,
+    req: Request,
+) -> Result<Json<TenantRevokeKeyResponse>, (StatusCode, Json<serde_json::Value>)> {
+    let claims = req.extensions().get::<Claims>().cloned().ok_or_else(|| {
+        (
+            StatusCode::UNAUTHORIZED,
+            Json(serde_json::json!({
+                "error": "Unauthorized",
+                "message": "Missing authentication claims in request context"
+            })),
+        )
+    })?;
+
+    let (org_id, user_uuid, org_uuid) = resolve_tenant_identity(&claims)?;
+    let now = Utc::now();
+
+    if let Some(pool) = &state.db_pool {
+        let existing: Option<(Option<DateTime<Utc>>,)> = sqlx::query_as(
+            "SELECT revoked_at FROM api_keys WHERE id = $1 AND (org_id = $2 OR user_id = $3)",
+        )
+        .bind(key_id)
+        .bind(&org_id)
+        .bind(user_uuid)
+        .fetch_optional(pool)
+        .await
+        .unwrap_or(None);
+
+        match existing {
+            None => {
+                return Err((
+                    StatusCode::NOT_FOUND,
+                    Json(serde_json::json!({
+                        "error": "NotFound",
+                        "message": format!("API key '{}' not found for this organization", key_id)
+                    })),
+                ));
+            }
+            Some((Some(_),)) => {
+                return Err((
+                    StatusCode::BAD_REQUEST,
+                    Json(serde_json::json!({
+                        "error": "BadRequest",
+                        "message": format!("API key '{}' is already revoked", key_id)
+                    })),
+                ));
+            }
+            Some((None,)) => {
+                let _ = sqlx::query(
+                    "UPDATE api_keys SET revoked_at = $1, rotation_status = 'revoked' WHERE id = $2 AND (org_id = $3 OR user_id = $4)",
+                )
+                .bind(now)
+                .bind(key_id)
+                .bind(&org_id)
+                .bind(user_uuid)
+                .execute(pool)
+                .await;
+            }
+        }
+    } else {
+        match state.api_key_registry.get_by_id(&key_id) {
+            None => {
+                return Err((
+                    StatusCode::NOT_FOUND,
+                    Json(serde_json::json!({
+                        "error": "NotFound",
+                        "message": format!("API key '{}' not found", key_id)
+                    })),
+                ));
+            }
+            Some(k) if k.revoked_at.is_some() => {
+                return Err((
+                    StatusCode::BAD_REQUEST,
+                    Json(serde_json::json!({
+                        "error": "BadRequest",
+                        "message": format!("API key '{}' is already revoked", key_id)
+                    })),
+                ));
+            }
+            _ => {}
+        }
+    }
+
+    if let Some(mut k) = state.api_key_registry.get_by_id(&key_id) {
+        k.revoked_at = Some(now);
+        k.rotation_status = "revoked".to_string();
+        state.api_key_registry.insert(k);
+    }
+
+    let _ = log_audit_event(
+        &state,
+        org_uuid,
+        &claims.sub,
+        "api_key.revoke",
+        "api_key",
+        Some(&key_id.to_string()),
+        serde_json::json!({
+            "key_id": key_id.to_string(),
+            "status": "revoked",
+            "revoked_at": now.to_rfc3339(),
+        }),
+        None,
+    )
+    .await;
+
+    Ok(Json(TenantRevokeKeyResponse {
+        id: key_id,
+        status: "revoked".to_string(),
+        revoked_at: now.to_rfc3339(),
+    }))
+}
+
+/// Tenant self-service API key rotation endpoint (`POST /v1/account/keys/{key_id}/rotate`).
+///
+/// Atomically revokes the target key and provisions a replacement with continuous lineage.
+#[utoipa::path(
+    post,
+    path = "/v1/account/keys/{key_id}/rotate",
+    params(
+        ("key_id" = Uuid, Path, description = "Identifier of the active API key to rotate")
+    ),
+    responses(
+        (status = 200, description = "API key rotated successfully", body = TenantRotateKeyResponse),
+        (status = 400, description = "Key already revoked or invalid", body = AuthErrorResponse),
+        (status = 401, description = "Unauthorized", body = AuthErrorResponse),
+        (status = 404, description = "API key not found", body = AuthErrorResponse)
+    ),
+    security(
+        ("BearerAuth" = []),
+        ("ApiKeyAuth" = [])
+    ),
+    tag = "Account & API Keys"
+)]
+pub async fn tenant_rotate_key_handler(
+    State(state): State<AppState>,
+    Path(key_id): Path<Uuid>,
+    req: Request,
+) -> Result<Json<TenantRotateKeyResponse>, (StatusCode, Json<serde_json::Value>)> {
+    let claims = req.extensions().get::<Claims>().cloned().ok_or_else(|| {
+        (
+            StatusCode::UNAUTHORIZED,
+            Json(serde_json::json!({
+                "error": "Unauthorized",
+                "message": "Missing authentication claims in request context"
+            })),
+        )
+    })?;
+
+    let (org_id, user_uuid, org_uuid) = resolve_tenant_identity(&claims)?;
+    let now = Utc::now();
+
+    let (key_name, original_expires_at) = if let Some(pool) = &state.db_pool {
+        let existing: Option<(String, Option<DateTime<Utc>>, Option<DateTime<Utc>>)> = sqlx::query_as(
+            "SELECT name, revoked_at, expires_at FROM api_keys WHERE id = $1 AND (org_id = $2 OR user_id = $3)",
+        )
+        .bind(key_id)
+        .bind(&org_id)
+        .bind(user_uuid)
+        .fetch_optional(pool)
+        .await
+        .unwrap_or(None);
+
+        match existing {
+            None => {
+                return Err((
+                    StatusCode::NOT_FOUND,
+                    Json(serde_json::json!({
+                        "error": "NotFound",
+                        "message": format!("API key '{}' not found for this organization", key_id)
+                    })),
+                ));
+            }
+            Some((_, Some(_), _)) => {
+                return Err((
+                    StatusCode::BAD_REQUEST,
+                    Json(serde_json::json!({
+                        "error": "BadRequest",
+                        "message": format!("Cannot rotate already revoked API key '{}'", key_id)
+                    })),
+                ));
+            }
+            Some((name, None, expires_at)) => (name, expires_at),
+        }
+    } else {
+        match state.api_key_registry.get_by_id(&key_id) {
+            None => {
+                return Err((
+                    StatusCode::NOT_FOUND,
+                    Json(serde_json::json!({
+                        "error": "NotFound",
+                        "message": format!("API key '{}' not found", key_id)
+                    })),
+                ));
+            }
+            Some(k) if k.revoked_at.is_some() => {
+                return Err((
+                    StatusCode::BAD_REQUEST,
+                    Json(serde_json::json!({
+                        "error": "BadRequest",
+                        "message": format!("Cannot rotate already revoked API key '{}'", key_id)
+                    })),
+                ));
+            }
+            Some(k) => (k.name, k.expires_at),
+        }
+    };
+
+    // Revoke old key with status 'rotated'
+    if let Some(pool) = &state.db_pool {
+        let _ = sqlx::query(
+            "UPDATE api_keys SET revoked_at = $1, rotation_status = 'rotated' WHERE id = $2",
+        )
+        .bind(now)
+        .bind(key_id)
+        .execute(pool)
+        .await;
+    }
+
+    if let Some(mut old_k) = state.api_key_registry.get_by_id(&key_id) {
+        old_k.revoked_at = Some(now);
+        old_k.rotation_status = "rotated".to_string();
+        state.api_key_registry.insert(old_k);
+    }
+
+    let (raw_key, prefix, key_hash) = generate_tenant_api_key_material();
+    let new_key_id = Uuid::new_v4();
+
+    if let Some(pool) = &state.db_pool {
+        let insert_res = sqlx::query(
+            r#"
+            INSERT INTO api_keys (
+                id, user_id, name, key_hash, prefix, created_at,
+                revoked_at, expires_at, rotated_from, rotation_status, org_id
+            )
+            VALUES ($1, $2, $3, $4, $5, $6, NULL, $7, $8, 'active', $9)
+            "#,
+        )
+        .bind(new_key_id)
+        .bind(user_uuid)
+        .bind(&key_name)
+        .bind(&key_hash)
+        .bind(&prefix)
+        .bind(now)
+        .bind(original_expires_at)
+        .bind(key_id)
+        .bind(&org_id)
+        .execute(pool)
+        .await;
+
+        if let Err(e) = insert_res {
+            error!(
+                "[Billing] Failed to persist rotated API key for org '{}': {}",
+                org_id, e
+            );
+            return Err((
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(serde_json::json!({
+                    "error": "InternalError",
+                    "message": "Failed to persist rotated API key"
+                })),
+            ));
+        }
+    }
+
+    state.api_key_registry.insert(crate::users::StoredApiKey {
+        id: new_key_id,
+        user_id: user_uuid,
+        name: key_name.clone(),
+        key_hash: key_hash.clone(),
+        prefix: prefix.clone(),
+        created_at: now,
+        revoked_at: None,
+        expires_at: original_expires_at,
+        rotated_from: Some(key_id),
+        rotation_status: "active".to_string(),
+    });
+
+    let _ = log_audit_event(
+        &state,
+        org_uuid,
+        &claims.sub,
+        "api_key.rotate",
+        "api_key",
+        Some(&new_key_id.to_string()),
+        serde_json::json!({
+            "old_key_id": key_id.to_string(),
+            "new_key_id": new_key_id.to_string(),
+            "prefix": prefix,
+            "name": key_name,
+        }),
+        None,
+    )
+    .await;
+
+    Ok(Json(TenantRotateKeyResponse {
+        id: new_key_id,
+        name: key_name,
+        prefix,
+        created_at: now.to_rfc3339(),
+        expires_at: original_expires_at.map(|e| e.to_rfc3339()),
+        plaintext_once: raw_key,
+        rotated_from: key_id,
+    }))
+}
+
+/// Tenant self-service API key inventory endpoint (`GET /v1/account/keys`).
+///
+/// Returns sanitized metadata for all keys owned by the authenticated tenant.
+#[utoipa::path(
+    get,
+    path = "/v1/account/keys",
+    responses(
+        (status = 200, description = "Tenant API key inventory", body = TenantListKeysResponse),
+        (status = 401, description = "Unauthorized", body = AuthErrorResponse)
+    ),
+    security(
+        ("BearerAuth" = []),
+        ("ApiKeyAuth" = [])
+    ),
+    tag = "Account & API Keys"
+)]
+pub async fn tenant_list_keys_handler(
+    State(state): State<AppState>,
+    req: Request,
+) -> Result<Json<TenantListKeysResponse>, (StatusCode, Json<serde_json::Value>)> {
+    let claims = req.extensions().get::<Claims>().cloned().ok_or_else(|| {
+        (
+            StatusCode::UNAUTHORIZED,
+            Json(serde_json::json!({
+                "error": "Unauthorized",
+                "message": "Missing authentication claims in request context"
+            })),
+        )
+    })?;
+
+    let (org_id, user_uuid, _) = resolve_tenant_identity(&claims)?;
+    let now = Utc::now();
+
+    let keys = if let Some(pool) = &state.db_pool {
+        let rows: Vec<(
+            Uuid,
+            String,
+            String,
+            DateTime<Utc>,
+            Option<DateTime<Utc>>,
+            Option<DateTime<Utc>>,
+            String,
+            Option<DateTime<Utc>>,
+            Option<Uuid>,
+        )> = sqlx::query_as(
+            r#"
+            SELECT id, name, prefix, created_at, expires_at, revoked_at, rotation_status, last_seen_utc, rotated_from
+            FROM api_keys
+            WHERE org_id = $1 OR user_id = $2
+            ORDER BY created_at DESC
+            "#,
+        )
+        .bind(&org_id)
+        .bind(user_uuid)
+        .fetch_all(pool)
+        .await
+        .unwrap_or_default();
+
+        rows.into_iter()
+            .map(
+                |(
+                    id,
+                    name,
+                    prefix,
+                    created_at,
+                    expires_at,
+                    revoked_at,
+                    rotation_status,
+                    last_seen_utc,
+                    rotated_from,
+                )| {
+                    let status = if revoked_at.is_some() {
+                        if rotation_status == "rotated" {
+                            "rotated".to_string()
+                        } else {
+                            "revoked".to_string()
+                        }
+                    } else if expires_at.map(|e| e <= now).unwrap_or(false) {
+                        "expired".to_string()
+                    } else {
+                        "active".to_string()
+                    };
+
+                    TenantKeyItem {
+                        id,
+                        name,
+                        prefix,
+                        created_at: created_at.to_rfc3339(),
+                        expires_at: expires_at.map(|e| e.to_rfc3339()),
+                        revoked_at: revoked_at.map(|r| r.to_rfc3339()),
+                        status,
+                        last_seen_utc: last_seen_utc.map(|l| l.to_rfc3339()),
+                        rotated_from,
+                    }
+                },
+            )
+            .collect()
+    } else {
+        state
+            .api_key_registry
+            .list_by_user(&user_uuid)
+            .into_iter()
+            .map(|k| {
+                let status = if k.revoked_at.is_some() {
+                    if k.rotation_status == "rotated" {
+                        "rotated".to_string()
+                    } else {
+                        "revoked".to_string()
+                    }
+                } else if k.expires_at.map(|e| e <= now).unwrap_or(false) {
+                    "expired".to_string()
+                } else {
+                    "active".to_string()
+                };
+
+                TenantKeyItem {
+                    id: k.id,
+                    name: k.name,
+                    prefix: k.prefix,
+                    created_at: k.created_at.to_rfc3339(),
+                    expires_at: k.expires_at.map(|e| e.to_rfc3339()),
+                    revoked_at: k.revoked_at.map(|r| r.to_rfc3339()),
+                    status,
+                    last_seen_utc: None,
+                    rotated_from: k.rotated_from,
+                }
+            })
+            .collect()
+    };
+
+    Ok(Json(TenantListKeysResponse { keys }))
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // Unit Tests
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -3192,5 +3891,83 @@ mod tests {
             assert!(k.prefix.starts_with("ak_"));
             assert!(!k.prefix.contains("hash"));
         }
+    }
+
+    #[test]
+    fn test_generate_tenant_api_key_material_entropy_and_prefix() {
+        let (raw_key, prefix, key_hash) = generate_tenant_api_key_material();
+
+        // 1. Prefix format: ft_live_ + 8 chars = 16 chars
+        assert!(raw_key.starts_with("ft_live_"));
+        assert_eq!(prefix.len(), 16);
+        assert!(prefix.starts_with("ft_live_"));
+        assert_eq!(&raw_key[..16], prefix);
+
+        // 2. Total length: "ft_live_" (8) + 43 base62 chars = 51 chars
+        assert_eq!(raw_key.len(), 51);
+
+        // 3. SHA-256 hex digest: 64 lowercase hex characters
+        assert_eq!(key_hash.len(), 64);
+        assert!(key_hash.chars().all(|c| c.is_ascii_hexdigit()));
+
+        // 4. Deterministic hashing match
+        let recomputed = crate::users::hash_api_key(&raw_key);
+        assert_eq!(key_hash, recomputed);
+
+        // 5. Uniqueness between successive calls
+        let (raw_key_2, prefix_2, key_hash_2) = generate_tenant_api_key_material();
+        assert_ne!(raw_key, raw_key_2);
+        assert_ne!(prefix, prefix_2);
+        assert_ne!(key_hash, key_hash_2);
+    }
+
+    #[test]
+    fn test_tenant_key_dto_serialization_zero_hash_leak() {
+        let key_item = crate::models::TenantKeyItem {
+            id: Uuid::new_v4(),
+            name: "Primary Prod Key".to_string(),
+            prefix: "ft_live_AbC123Xy".to_string(),
+            created_at: Utc::now().to_rfc3339(),
+            expires_at: None,
+            revoked_at: None,
+            status: "active".to_string(),
+            last_seen_utc: None,
+            rotated_from: None,
+        };
+
+        let list_resp = crate::models::TenantListKeysResponse {
+            keys: vec![key_item],
+        };
+
+        let serialized = serde_json::to_string(&list_resp).unwrap();
+
+        // Crucial security invariant: plaintext and hash are NEVER present in list responses
+        assert!(!serialized.contains("key_hash"));
+        assert!(!serialized.contains("plaintext"));
+        assert!(!serialized.contains("raw_key"));
+        assert!(serialized.contains("ft_live_AbC123Xy"));
+        assert!(serialized.contains("Primary Prod Key"));
+        assert!(serialized.contains("active"));
+    }
+
+    #[test]
+    fn test_tenant_create_key_response_contains_plaintext_once() {
+        let (raw_key, prefix, _) = generate_tenant_api_key_material();
+        let key_id = Uuid::new_v4();
+        let resp = crate::models::TenantCreateKeyResponse {
+            id: key_id,
+            name: "CI Runner".to_string(),
+            prefix: prefix.clone(),
+            created_at: Utc::now().to_rfc3339(),
+            expires_at: None,
+            plaintext_once: raw_key.clone(),
+        };
+
+        let serialized = serde_json::to_string(&resp).unwrap();
+
+        // Must contain plaintext_once strictly once in create response
+        assert!(serialized.contains("plaintext_once"));
+        assert!(serialized.contains(&raw_key));
+        assert!(!serialized.contains("key_hash"));
     }
 }

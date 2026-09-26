@@ -10,6 +10,7 @@ use axum::http::{HeaderValue, StatusCode};
 use axum::middleware::Next;
 use axum::response::{IntoResponse, Response};
 use axum::Json;
+use chrono::Utc;
 use serde::{Deserialize, Serialize};
 use std::env;
 use std::sync::{Arc, Mutex};
@@ -266,7 +267,8 @@ pub async fn rate_limit_middleware(
         if let Ok(val) = HeaderValue::from_str(&status.remaining.to_string()) {
             headers.insert(HEADER_RATELIMIT_REMAINING, val);
         }
-        if let Ok(val) = HeaderValue::from_str(&status.reset_seconds.to_string()) {
+        let reset_epoch = Utc::now().timestamp() + status.reset_seconds as i64;
+        if let Ok(val) = HeaderValue::from_str(&reset_epoch.to_string()) {
             headers.insert(HEADER_RATELIMIT_RESET, val);
         }
 
@@ -295,8 +297,11 @@ pub async fn rate_limit_middleware(
         }
         headers.insert(HEADER_RATELIMIT_REMAINING, HeaderValue::from_static("0"));
         if let Ok(val) = HeaderValue::from_str(&status.reset_seconds.to_string()) {
-            headers.insert(HEADER_RATELIMIT_RESET, val.clone());
             headers.insert(HEADER_RETRY_AFTER, val);
+        }
+        let reset_epoch = Utc::now().timestamp() + status.reset_seconds as i64;
+        if let Ok(val) = HeaderValue::from_str(&reset_epoch.to_string()) {
+            headers.insert(HEADER_RATELIMIT_RESET, val);
         }
 
         Err(response)
@@ -421,5 +426,20 @@ mod tests {
 
         let refilled = limiter.check_rate_limit("trader_gamma");
         assert!(refilled.allowed);
+    }
+
+    #[test]
+    fn test_ratelimit_reset_header_is_unix_epoch() {
+        let now = Utc::now().timestamp();
+        let reset_seconds = 45u64;
+        let reset_epoch = Utc::now().timestamp() + reset_seconds as i64;
+
+        assert!(reset_epoch >= now + 45);
+        assert!(reset_epoch <= now + 47);
+        // Ensure it's a valid Unix epoch timestamp (seconds since 1970)
+        assert!(reset_epoch > 1_700_000_000);
+        assert_eq!(HEADER_RATELIMIT_RESET, "X-RateLimit-Reset");
+        assert_eq!(HEADER_RATELIMIT_LIMIT, "X-RateLimit-Limit");
+        assert_eq!(HEADER_RATELIMIT_REMAINING, "X-RateLimit-Remaining");
     }
 }

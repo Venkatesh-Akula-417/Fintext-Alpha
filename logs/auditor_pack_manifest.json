@@ -47,8 +47,8 @@
       "description": "GA Multi-AZ high-availability cutover plan, priced deltas, and rollback runbook",
       "id": "EVID-A12-04",
       "path": "docs/HA_MULTIAZ_GA_CUTOVER_PLAN.md",
-      "sha256": "dafbc76fda0e6e4a0c7040dcc9e4dadc0e7837d20101be66b1bbbc7554f2324d",
-      "size_bytes": 19276,
+      "sha256": "de2534b24aeebb69a441808a49d121aa645a3e2fa000750c8df1b2ce6846ddbf",
+      "size_bytes": 19385,
       "status": "PRESENT"
     },
     {
@@ -112,7 +112,7 @@
       "description": "Multi-tenant PostgreSQL Row-Level Security isolation drill (0 leaks across 20 tables)",
       "id": "EVID-CC61-01",
       "path": "logs/rls_isolation_report.json",
-      "sha256": "b327580f832623689bea52f7b24608d26edcce854b8b185852a48a1e9decf022",
+      "sha256": "f92ba406452d475e87eff3171f0606da46ced4a0d0db5591e6fab41d95960d81",
       "size_bytes": 7867,
       "status": "PRESENT"
     },
@@ -125,8 +125,8 @@
       "description": "Self-service usage RLS query scoping, admin token gating, and audit logging",
       "id": "EVID-CC61-02",
       "path": "rust/api_server/src/billing.rs",
-      "sha256": "279b4faf254d3b3c1b2fbedc01151215a7678af77a8ba80568bec8501f1405f1",
-      "size_bytes": 114965,
+      "sha256": "4723d45b8b0cd99bc49c563d8bec2daf8a1921549abd6712a334d5e8a0881185",
+      "size_bytes": 141385,
       "status": "PRESENT"
     },
     {
@@ -237,8 +237,8 @@
       "description": "Institutional platform security whitepaper, credential redaction, and threat model",
       "id": "EVID-CC66-04",
       "path": "docs/SECURITY.md",
-      "sha256": "a153e5913c8f40edcb2e7ed26325a8658cd06d8944631f649b6e34ca4cfedb2d",
-      "size_bytes": 13123,
+      "sha256": "08d0902915bda4f66bedc5083d8fa44f4c67143c40d9e2d7791e33068718fd64",
+      "size_bytes": 15403,
       "status": "PRESENT"
     },
     {
@@ -250,8 +250,8 @@
       "description": "CloudWatch log groups with 30-day retention and automated CPU/storage alarms",
       "id": "EVID-CC71-01",
       "path": "infra/terraform/cloudwatch.tf",
-      "sha256": "d948fe23cad76f37397cc3de7cfebe00a86f13db6ebb222ab91cee9499e54a27",
-      "size_bytes": 4241,
+      "sha256": "5da09c24f802191ce2e3f00789f2bb29a2303534946faf05f1bf8d55cbc8d6ba",
+      "size_bytes": 5509,
       "status": "PRESENT"
     },
     {
@@ -313,8 +313,8 @@
       "description": "49-check comprehensive launch readiness certification and pre-flight gate",
       "id": "EVID-CC81-01",
       "path": "docs/PRIVATE_BETA_LAUNCH_CHECKLIST.md",
-      "sha256": "2c826657316a5edc9daccb61128a7e349b8cf00c9226e5eb4ae1ecbec1518983",
-      "size_bytes": 37832,
+      "sha256": "9c98384861ccda66db2c84d5d69d806c2a9ce3c4eb1b6361cfce970659150b31",
+      "size_bytes": 41413,
       "status": "PRESENT"
     },
     {
@@ -325,8 +325,8 @@
       "description": "Automated 27-check readiness audit suite certifying code, models, and docs",
       "id": "EVID-CC81-02",
       "path": "scripts/verify_private_beta_readiness.py",
-      "sha256": "70f04709e6eccfc0b5dc3cc13ee8cd49604d63c53b625872ca4a1527202b8adf",
-      "size_bytes": 47398,
+      "sha256": "e0c43d96a79b83b6caa1fbb32662bbf63004d392e0dc730d4ebab3b2b6e0e88d",
+      "size_bytes": 52624,
       "status": "PRESENT"
     },
     {
@@ -349,16 +349,16 @@
       "description": "Authoritative single source of truth for all certified platform metrics and parameters",
       "id": "EVID-CC81-04",
       "path": "docs/CERTIFIED_METRICS_REGISTER.md",
-      "sha256": "c8c5f197bf798dd89f15ad5a72572bfeb6160018a4eef70beee43af3ef2f0539",
-      "size_bytes": 14868,
+      "sha256": "8bf69735f94d989aba81fa0b84667a30e2c620b581ca29f0d2af8d8b1eaf3161",
+      "size_bytes": 17487,
       "status": "PRESENT"
     }
   ],
-  "generated_at_utc": "2026-09-26T07:34:18.865917+00:00",
+  "generated_at_utc": "2026-09-26T10:32:34.192147+00:00",
   "git_lineage": {
     "branch": "main",
-    "head_commit_sha": "6e0b125106131192a51193a927d93b26ba0493f9",
-    "head_commit_short": "6e0b125"
+    "head_commit_sha": "261d54095b60daf59b7d5ef74da86e611eb15c7f",
+    "head_commit_short": "261d540"
   },
   "manifest_version": "1.0.0",
   "summary": {

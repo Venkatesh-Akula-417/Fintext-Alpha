@@ -74,16 +74,53 @@ curl -X POST http://127.0.0.1:8000/v1/auth/token \
   }'
 ```
 
-### 2.2 Rotating API Keys (`/v1/users/api-keys`)
-Generate rotatable programmatic keys prefixed with `fintext_live_...`:
-```bash
-curl -X POST http://127.0.0.1:8000/v1/users/api-keys \
-  -H "Authorization: Bearer $TOKEN" \
-  -H "Content-Type: application/json" \
-  -d '{"name": "production_hft_feed", "expires_in_days": 90}'
-```
+### 2.2 Tenant API-Key Self-Service Lifecycle (`/v1/account/keys`)
 
-### 2.3 Network Ingress Confinement (IP & CIDR Whitelisting)
+Institutions can manage their entire API key lifecycle programmatically without contacting support:
+
+1. **Create API Key (`POST /v1/account/keys`)**:
+   Generates a cryptographically secure key with 256 bits of entropy and the standard `ft_live_` prefix (e.g. `ft_live_7sK2...`):
+   ```bash
+   curl -X POST http://127.0.0.1:8000/v1/account/keys \
+     -H "Authorization: Bearer $TOKEN" \
+     -H "Content-Type: application/json" \
+     -d '{"name": "Production Quant Execution", "expires_in_days": 90}'
+   ```
+   **Security Guarantee**: The plaintext key is returned strictly once in `plaintext_once`. It is never stored or logged in plain text. A strict maximum quota of 10 active keys per tenant is enforced.
+
+2. **List API Keys (`GET /v1/account/keys`)**:
+   Returns sanitized metadata for all keys owned by your organization (ID, name, safe 16-character prefix, status, expiration, and last seen). Secret tokens and hashes are never exposed:
+   ```bash
+   curl -s -H "Authorization: Bearer $TOKEN" http://127.0.0.1:8000/v1/account/keys
+   ```
+
+3. **Rotate API Key (`POST /v1/account/keys/{key_id}/rotate`)**:
+   Atomically revokes the target key and provisions a replacement key, preserving audit lineage (`rotated_from`):
+   ```bash
+   curl -X POST http://127.0.0.1:8000/v1/account/keys/{key_id}/rotate \
+     -H "Authorization: Bearer $TOKEN"
+   ```
+
+4. **Revoke API Key (`DELETE /v1/account/keys/{key_id}`)**:
+   Immediately revokes a key. Revoked keys are rejected with `401 Unauthorized` on all authenticated endpoints:
+   ```bash
+   curl -X DELETE http://127.0.0.1:8000/v1/account/keys/{key_id} \
+     -H "Authorization: Bearer $TOKEN"
+   ```
+
+### 2.3 Rate Limiting & Quota Transparency Headers
+
+Every response from protected endpoints includes institutional quota transparency headers:
+
+| Header Name | Format / Example | Description |
+| :--- | :--- | :--- |
+| `X-RateLimit-Limit` | `100` | Maximum request capacity allowed per rate limit window |
+| `X-RateLimit-Remaining` | `94` | Number of requests remaining in the current window |
+| `X-RateLimit-Reset` | `1790424000` | **Unix epoch timestamp** (seconds since 1970-01-01 UTC) when the quota window resets |
+
+**Exempt Paths**: Public operational probes (`/v1/health`, `/v1/status`, `/v1/readyz`, `/v1/metrics`, `/v1/openapi.json`) and billing webhooks (`/v1/billing/webhook`) are exempt from rate limiting to prevent false-positive monitoring outages.
+
+### 2.4 Network Ingress Confinement (IP & CIDR Whitelisting)
 
 For hedge funds and institutional prop desks operating under strict cybersecurity mandates (SOC 2, ISO 27001, SEC Safeguards Rule), FinText allows programmatic confinement of API traffic to authorized IP addresses and CIDR subnets:
 

@@ -70,6 +70,9 @@ logs/*
 !logs/infra_validate_report.json
 !logs/auditor_pack_manifest.json
 !logs/founder_actions_evidence.md
+!logs/backup_ledger.md
+!logs/dr_ledger.md
+!logs/dr_report.json
 !logs/.gitkeep
 logs/soak_history.jsonl
 

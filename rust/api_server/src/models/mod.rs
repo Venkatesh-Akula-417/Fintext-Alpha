@@ -108,6 +108,8 @@ pub use transcripts::{
 };
 pub use usage::{
     AccountUsageResponse, AdminTenantUsageResponse, ApiKeyAuditItem, AuditLogSummaryItem,
-    DailyUsageItem, EndpointGroupUsageItem, SubscriptionDetailItem, UsageGroupItem,
-    UsageStatsParams, UsageStatsResponse, UsageStatsSummary,
+    DailyUsageItem, EndpointGroupUsageItem, SubscriptionDetailItem, TenantCreateKeyRequest,
+    TenantCreateKeyResponse, TenantKeyItem, TenantListKeysResponse, TenantRevokeKeyResponse,
+    TenantRotateKeyResponse, UsageGroupItem, UsageStatsParams, UsageStatsResponse,
+    UsageStatsSummary,
 };

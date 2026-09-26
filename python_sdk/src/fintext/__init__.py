@@ -240,6 +240,11 @@ from fintext.models import (
     ModelValidationResponse,
     ModelValidation,
     PerClassMetrics,
+    TenantKeyItem,
+    TenantCreateKeyResponse,
+    TenantRevokeKeyResponse,
+    TenantRotateKeyResponse,
+    TenantListKeysResponse,
 )
 from fintext.version import __version__
 
@@ -477,6 +482,11 @@ __all__ = [
     "ModelValidationResponse",
     "ModelValidation",
     "PerClassMetrics",
+    "TenantKeyItem",
+    "TenantCreateKeyResponse",
+    "TenantRevokeKeyResponse",
+    "TenantRotateKeyResponse",
+    "TenantListKeysResponse",
     "decode_websocket_frame",
 ]
 

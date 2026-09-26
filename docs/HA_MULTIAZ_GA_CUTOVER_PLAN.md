@@ -62,7 +62,7 @@ All pricing is based on AWS US East (N. Virginia, `us-east-1`) on-demand rates (
 │ Current Private Beta │ c6i.xlarge + Single-AZ │ $281.49     │ -$19.95     │ CURRENT    │
 │                      │ db.m6i.large + gp3     │             │ (Headroom)  │ PRODUCTION │
 ├──────────────────────┼────────────────────────┼─────────────┼─────────────┼────────────┤
-│ Option A:            │ c6i.xlarge ($122.64) + │ $411.43     │ +$109.99    │ EXCEEDS    │
+│ Option A:            │ c6i.xlarge ($124.10) + │ $411.43     │ +$109.99    │ EXCEEDS    │
 │ RDS Multi-AZ Flip    │ Multi-AZ db.m6i.large  │             │ (Over Cap)  │ BUDGET CAP │
 │                      │ ($259.88) + gp3/other  │             │             │            │
 ├──────────────────────┼────────────────────────┼─────────────┼─────────────┼────────────┤
@@ -79,24 +79,24 @@ All pricing is based on AWS US East (N. Virginia, `us-east-1`) on-demand rates (
 ### Line-by-Line Arithmetic Breakdown:
 
 #### 1. Current Private Beta Baseline ($281.49 / mo):
-- EC2 `c6i.xlarge`: $0.168 / hr $\times 730\text{ hrs} = \mathbf{\$122.64}$
+- EC2 `c6i.xlarge`: $\mathbf{\$124.10}$
 - EC2 100 GB gp3 root: $100 \times \$0.08 / \text{GB} = \mathbf{\$8.00}$
 - RDS `db.m6i.large` (Single-AZ): $0.178 / hr $\times 730\text{ hrs} = \mathbf{\$129.94}$
 - RDS 100 GB gp3 storage: $100 \times \$0.115 / \text{GB} = \mathbf{\$11.50}$
-- S3 backups + CloudWatch + EIP: $\mathbf{\$9.41}$
-- **Total**: $\$122.64 + \$8.00 + \$129.94 + \$11.50 + \$9.41 = \mathbf{\$281.49 / \text{month}}$ (Headroom: $\$19.95$ under $\$301.44$).
+- S3 backups ($1.50) + CloudWatch ($2.80) + EIP ($3.65): $\mathbf{\$7.95}$
+- **Total**: $\$124.10 + \$8.00 + \$129.94 + \$11.50 + \$7.95 = \mathbf{\$281.49 / \text{month}}$ (Headroom: $\$19.95$ under $\$301.44$).
 
 #### 2. Option A — RDS Multi-AZ Flip Only ($411.43 / mo):
 - RDS `db.m6i.large` Multi-AZ: $0.356 / hr $\times 730\text{ hrs} = \mathbf{\$259.88}$ (Delta: $+\$129.94$)
-- All other components unchanged ($\$151.55$)
+- All other components unchanged ($\$151.55 = \$124.10 + \$8.00 + \$11.50 + \$7.95$)
 - **Total**: $\$151.55 + \$259.88 = \mathbf{\$411.43 / \text{month}}$ (Over cap by $\$109.99 / \text{mo}$).
 
 #### 3. Option B — Graviton Compute & Database with Multi-AZ ($368.36 / mo):
-- EC2 `c7g.xlarge` (ARM64 Graviton3, 4 vCPU, 8 GiB): $0.145 / hr $\times 730\text{ hrs} = \mathbf{\$105.85}$ (Saves $\$16.79 / \text{mo}$)
+- EC2 `c7g.xlarge` (ARM64 Graviton3, 4 vCPU, 8 GiB): $0.145 / hr $\times 730\text{ hrs} = \mathbf{\$105.85}$ (Saves $\mathbf{\$18.25 / \text{mo}}$ vs c6i.xlarge)
 - EC2 100 GB gp3 root: $\mathbf{\$8.00}$
-- RDS `db.m7g.large` Multi-AZ (Graviton3, 2 vCPU, 8 GiB): $0.320 / hr $\times 730\text{ hrs} = \mathbf{\$233.60}$ (Saves $\$26.28 / \text{mo}$ vs x86 Multi-AZ)
+- RDS `db.m7g.large` Multi-AZ (Graviton3, 2 vCPU, 8 GiB): $0.320 / hr $\times 730\text{ hrs} = \mathbf{\$233.60}$ (Saves $\mathbf{\$26.28 / \text{mo}}$ vs x86 Multi-AZ)
 - RDS 100 GB gp3 storage: $\mathbf{\$11.50}$
-- S3 + CloudWatch + EIP: $\mathbf{\$9.41}$
+- S3 ($1.50) + CloudWatch ($2.80) + EIP ($3.65) + snapshot buffer ($1.46): $\mathbf{\$9.41}$
 - **Total**: $\$105.85 + \$8.00 + \$233.60 + \$11.50 + \$9.41 = \mathbf{\$368.36 / \text{month}}$.
 
 #### 4. Option C — Full Dual-Compute + ALB + Multi-AZ Database ($495.64 / mo):

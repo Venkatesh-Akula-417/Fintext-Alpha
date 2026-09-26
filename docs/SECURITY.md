@@ -158,6 +158,22 @@ The customer-facing usage endpoint enforces multi-tenant confinement at the data
 - **Accountability Audit Trail (Safety Constraint S-2):** Every administrative diagnostic call creates an immutable record in `audit_logs` (`event_type: "admin.tenant_usage_view"`), recording the administrator identity, target `org_id`, and UTC timestamp to guarantee internal support accountability.
 - **Internal-Only Telemetry:** Ingestion telemetry endpoints (`fintext-ingestion:9102/metrics`) are bound to internal container networking and strictly blocked from public security groups.
 
+---
 
+## 11. Tenant API-Key Self-Service Lifecycle & Cryptographic Material Guarantees
 
+FinText provides programmatic tenant self-service API key management (`/v1/account/keys`) designed under strict Zero-Trust and Least-Exposure cryptographic principles:
 
+### 11.1 Entropy & Key Generation
+- **256-Bit Entropy**: Keys are generated using a cryptographically secure pseudorandom number generator (CSPRNG via `rand::thread_rng()`), formatted as `ft_live_` followed by 43 alphanumeric base62 characters (total 51 characters, 256 bits of entropy).
+- **Safe Prefix Partitioning**: The first 16 characters (`ft_live_...`) constitute the public `prefix`, allowing operational identification in audit logs and management consoles without compromising key entropy.
+
+### 11.2 Zero Plaintext Exposure Invariant
+- **Single-Exposure Response**: Raw plaintext keys are returned strictly once in `plaintext_once` upon initial creation (`POST /v1/account/keys`) or rotation (`POST /v1/account/keys/{key_id}/rotate`).
+- **Never Stored or Logged**: Plaintext keys are NEVER persisted to database tables, disk storage, application log files, or audit logs. Only a SHA-256 hex digest computed via `crate::users::hash_api_key` is stored in PostgreSQL (`api_keys.key_hash`).
+- **Zero Leak in Inventories**: All key list operations (`GET /v1/account/keys`) and usage audits (`GET /v1/account/usage`) serialize only sanitized metadata (key ID, safe prefix, name, status, created, expires, last seen). Key hashes and secret tokens are strictly excluded from all serialization DTOs.
+
+### 11.3 Rotation Lineage & Immediate Revocation
+- **Continuous Lineage Tracking**: Rotations atomically set the old key's `revoked_at` timestamp and status to `rotated`, while creating a replacement key referencing the predecessor via `rotated_from`. This guarantees uninterrupted audit trail traceability.
+- **Fail-Secure Rejection**: Revoking a key (`DELETE /v1/account/keys/{key_id}`) sets `revoked_at = NOW()` immediately. Both fast-path memory registries and database auth queries reject revoked keys with `401 Unauthorized`.
+- **Tenant Quota Enforcement**: A strict quota of maximum 10 active keys per tenant is enforced. Attempts to provision an 11th active key are rejected with `400 Bad Request` (`QuotaExceeded`).

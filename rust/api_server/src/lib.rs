@@ -76,9 +76,10 @@ use axum::routing::{any, delete, get, patch, post};
 use axum::Router;
 pub use billing::{
     account_usage_handler, admin_tenant_usage_handler, create_checkout_handler,
-    create_portal_handler, get_subscription_handler, init_billing_db, stripe_webhook_handler,
-    BillingWebhookResponse, CheckoutRequest, CheckoutResponse, MonthlyQuotaCache, PortalRequest,
-    PortalResponse, SubscriptionResponse,
+    create_portal_handler, generate_tenant_api_key_material, get_subscription_handler,
+    init_billing_db, stripe_webhook_handler, tenant_create_key_handler, tenant_list_keys_handler,
+    tenant_revoke_key_handler, tenant_rotate_key_handler, BillingWebhookResponse, CheckoutRequest,
+    CheckoutResponse, MonthlyQuotaCache, PortalRequest, PortalResponse, SubscriptionResponse,
 };
 pub use chat_alerts::{
     create_chat_alert_handler, delete_chat_alert_handler, dispatch_chat_alert,
@@ -488,6 +489,12 @@ pub fn create_app_with_state(state: AppState) -> Router {
         .route("/billing/portal", post(create_portal_handler))
         .route("/billing/subscription", get(get_subscription_handler))
         .route("/account/usage", get(account_usage_handler))
+        .route(
+            "/account/keys",
+            get(tenant_list_keys_handler).post(tenant_create_key_handler),
+        )
+        .route("/account/keys/:id", delete(tenant_revoke_key_handler))
+        .route("/account/keys/:id/rotate", post(tenant_rotate_key_handler))
         .route("/orgs", post(create_org_handler).get(list_orgs_handler))
         .route("/orgs/:id", get(get_org_handler))
         .route("/orgs/:id/invites", post(invite_member_handler))
@@ -676,6 +683,13 @@ pub fn public_v1_router(state: AppState) -> Router<AppState> {
         .route("/webhooks/:id", delete(delete_webhook_handler))
         // Account usage self-service (Problem #11)
         .route("/account/usage", get(account_usage_handler))
+        // Tenant API key self-service lifecycle (Problem #14)
+        .route(
+            "/account/keys",
+            get(tenant_list_keys_handler).post(tenant_create_key_handler),
+        )
+        .route("/account/keys/:id", delete(tenant_revoke_key_handler))
+        .route("/account/keys/:id/rotate", post(tenant_rotate_key_handler))
         // Apply institutional security & governance middleware
         .layer(from_fn_with_state(state.clone(), rate_limit_middleware))
         .layer(from_fn_with_state(state.clone(), metering_middleware))
@@ -7371,5 +7385,166 @@ mod tests {
         assert_eq!(resp_b.org_id, "fund_beta_77");
 
         assert_ne!(resp_a.org_id, resp_b.org_id);
+    }
+
+    #[tokio::test]
+    async fn test_tenant_api_key_lifecycle_create_list_rotate_revoke() {
+        let state = AppState::default();
+        let test_user_id = Uuid::new_v4().to_string();
+        let (auth_k, auth_v) = test_auth_header_for_org(&test_user_id, "fund_gamma_88");
+
+        // 1. Create API key
+        let app = create_app_with_state(state.clone());
+        let create_body = serde_json::json!({
+            "name": "Alpha-Bot-01",
+            "expires_in_days": 60
+        });
+        let req = Request::builder()
+            .method("POST")
+            .uri("/v1/account/keys")
+            .header(auth_k.clone(), auth_v.clone())
+            .header("Content-Type", "application/json")
+            .body(Body::from(serde_json::to_vec(&create_body).unwrap()))
+            .unwrap();
+
+        let res = app.oneshot(req).await.unwrap();
+        assert_eq!(res.status(), StatusCode::CREATED);
+
+        // Verify Quota Transparency Headers exist
+        assert!(
+            res.headers().contains_key("x-ratelimit-limit")
+                || res.headers().contains_key("X-RateLimit-Limit")
+        );
+        assert!(
+            res.headers().contains_key("x-ratelimit-remaining")
+                || res.headers().contains_key("X-RateLimit-Remaining")
+        );
+        let reset_hdr = res
+            .headers()
+            .get("X-RateLimit-Reset")
+            .or_else(|| res.headers().get("x-ratelimit-reset"));
+        assert!(reset_hdr.is_some());
+        let reset_epoch: i64 = reset_hdr.unwrap().to_str().unwrap().parse().unwrap();
+        assert!(reset_epoch > 1_700_000_000);
+
+        let body_bytes = res.into_body().collect().await.unwrap().to_bytes();
+        let create_resp: crate::models::TenantCreateKeyResponse =
+            serde_json::from_slice(&body_bytes).unwrap();
+        assert!(create_resp.plaintext_once.starts_with("ft_live_"));
+        assert_eq!(create_resp.name, "Alpha-Bot-01");
+        assert_eq!(create_resp.prefix.len(), 16);
+        let key_id = create_resp.id;
+
+        // 2. List API keys
+        let app = create_app_with_state(state.clone());
+        let req = Request::builder()
+            .method("GET")
+            .uri("/v1/account/keys")
+            .header(auth_k.clone(), auth_v.clone())
+            .body(Body::empty())
+            .unwrap();
+
+        let res = app.oneshot(req).await.unwrap();
+        assert_eq!(res.status(), StatusCode::OK);
+        let list_bytes = res.into_body().collect().await.unwrap().to_bytes();
+        let list_str = std::str::from_utf8(&list_bytes).unwrap();
+        // Plaintext and key_hash must never be leaked in list response
+        assert!(!list_str.contains("key_hash"));
+        assert!(!list_str.contains(&create_resp.plaintext_once));
+        let list_resp: crate::models::TenantListKeysResponse =
+            serde_json::from_slice(&list_bytes).unwrap();
+        let found = list_resp.keys.iter().find(|k| k.id == key_id);
+        assert!(found.is_some());
+        assert_eq!(found.unwrap().status, "active");
+
+        // 3. Rotate API key
+        let app = create_app_with_state(state.clone());
+        let req = Request::builder()
+            .method("POST")
+            .uri(format!("/v1/account/keys/{}/rotate", key_id))
+            .header(auth_k.clone(), auth_v.clone())
+            .body(Body::empty())
+            .unwrap();
+
+        let res = app.oneshot(req).await.unwrap();
+        assert_eq!(res.status(), StatusCode::OK);
+        let rotate_bytes = res.into_body().collect().await.unwrap().to_bytes();
+        let rotate_resp: crate::models::TenantRotateKeyResponse =
+            serde_json::from_slice(&rotate_bytes).unwrap();
+        assert_eq!(rotate_resp.rotated_from, key_id);
+        assert!(rotate_resp.plaintext_once.starts_with("ft_live_"));
+        let new_key_id = rotate_resp.id;
+        assert_ne!(key_id, new_key_id);
+
+        // 4. Revoke rotated new key
+        let app = create_app_with_state(state.clone());
+        let req = Request::builder()
+            .method("DELETE")
+            .uri(format!("/v1/account/keys/{}", new_key_id))
+            .header(auth_k.clone(), auth_v.clone())
+            .body(Body::empty())
+            .unwrap();
+
+        let res = app.oneshot(req).await.unwrap();
+        assert_eq!(res.status(), StatusCode::OK);
+        let revoke_bytes = res.into_body().collect().await.unwrap().to_bytes();
+        let revoke_resp: crate::models::TenantRevokeKeyResponse =
+            serde_json::from_slice(&revoke_bytes).unwrap();
+        assert_eq!(revoke_resp.id, new_key_id);
+        assert_eq!(revoke_resp.status, "revoked");
+    }
+
+    #[tokio::test]
+    async fn test_tenant_api_key_unauthenticated_rejected() {
+        let app = create_app();
+        let req = Request::builder()
+            .method("GET")
+            .uri("/v1/account/keys")
+            .body(Body::empty())
+            .unwrap();
+
+        let res = app.oneshot(req).await.unwrap();
+        assert_eq!(res.status(), StatusCode::UNAUTHORIZED);
+    }
+
+    #[tokio::test]
+    async fn test_tenant_api_key_quota_limit_10() {
+        let state = AppState::default();
+        let test_user_id = Uuid::new_v4().to_string();
+        let (auth_k, auth_v) = test_auth_header_for_org(&test_user_id, "fund_gamma_88");
+
+        // Create 10 keys
+        for i in 0..10 {
+            let app = create_app_with_state(state.clone());
+            let create_body = serde_json::json!({
+                "name": format!("Key-{}", i),
+            });
+            let req = Request::builder()
+                .method("POST")
+                .uri("/v1/account/keys")
+                .header(auth_k.clone(), auth_v.clone())
+                .header("Content-Type", "application/json")
+                .body(Body::from(serde_json::to_vec(&create_body).unwrap()))
+                .unwrap();
+
+            let res = app.oneshot(req).await.unwrap();
+            assert_eq!(res.status(), StatusCode::CREATED);
+        }
+
+        // 11th key must be rejected with 400 Bad Request (QuotaExceeded)
+        let app = create_app_with_state(state.clone());
+        let create_body = serde_json::json!({
+            "name": "Key-11-Overflow",
+        });
+        let req = Request::builder()
+            .method("POST")
+            .uri("/v1/account/keys")
+            .header(auth_k.clone(), auth_v.clone())
+            .header("Content-Type", "application/json")
+            .body(Body::from(serde_json::to_vec(&create_body).unwrap()))
+            .unwrap();
+
+        let res = app.oneshot(req).await.unwrap();
+        assert_eq!(res.status(), StatusCode::BAD_REQUEST);
     }
 }

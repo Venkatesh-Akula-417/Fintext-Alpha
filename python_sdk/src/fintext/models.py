@@ -2761,6 +2761,66 @@ class ModelValidationResponse(BaseModel):
 ModelValidation = ModelValidationResponse
 
 
+# ==============================================================================
+# Tenant API Key Self-Service Lifecycle (Problem #14)
+# ==============================================================================
+
+class TenantKeyItem(BaseModel):
+    """Metadata item representing an API key owned by the tenant."""
+    model_config = ConfigDict(extra="ignore")
+
+    id: str = Field(description="Unique API key UUID identifier")
+    name: str = Field(description="Descriptive name for the API key")
+    prefix: str = Field(description="Safe 16-character key prefix (e.g. ft_live_AbC123Xy)")
+    created_at: str = Field(description="ISO-8601 UTC timestamp when key was created")
+    expires_at: Optional[str] = Field(default=None, description="ISO-8601 UTC timestamp when key expires")
+    revoked_at: Optional[str] = Field(default=None, description="ISO-8601 UTC timestamp when key was revoked")
+    status: str = Field(description="Key status: 'active', 'revoked', 'rotated', or 'expired'")
+    last_seen_utc: Optional[str] = Field(default=None, description="ISO-8601 UTC timestamp of last usage")
+    rotated_from: Optional[str] = Field(default=None, description="Predecessor key UUID if created via rotation")
+
+
+class TenantCreateKeyResponse(BaseModel):
+    """Response payload upon creating a tenant API key. Contains plaintext strictly once."""
+    model_config = ConfigDict(extra="ignore")
+
+    id: str = Field(description="Unique API key UUID identifier")
+    name: str = Field(description="Descriptive name for the API key")
+    prefix: str = Field(description="Safe 16-character key prefix")
+    created_at: str = Field(description="ISO-8601 UTC timestamp when key was created")
+    expires_at: Optional[str] = Field(default=None, description="ISO-8601 UTC timestamp when key expires")
+    plaintext_once: str = Field(description="Plaintext API key with ft_live_ prefix, returned strictly once")
+
+
+class TenantRevokeKeyResponse(BaseModel):
+    """Response payload upon revoking a tenant API key."""
+    model_config = ConfigDict(extra="ignore")
+
+    id: str = Field(description="Unique API key UUID identifier")
+    status: str = Field(description="Revocation status ('revoked')")
+    revoked_at: str = Field(description="ISO-8601 UTC timestamp when key was revoked")
+
+
+class TenantRotateKeyResponse(BaseModel):
+    """Response payload upon rotating a tenant API key. Contains new plaintext strictly once."""
+    model_config = ConfigDict(extra="ignore")
+
+    id: str = Field(description="New replacement API key UUID identifier")
+    name: str = Field(description="Descriptive name for the API key")
+    prefix: str = Field(description="Safe 16-character key prefix of new key")
+    created_at: str = Field(description="ISO-8601 UTC timestamp when replacement key was created")
+    expires_at: Optional[str] = Field(default=None, description="ISO-8601 UTC timestamp when key expires")
+    plaintext_once: str = Field(description="Plaintext replacement API key, returned strictly once")
+    rotated_from: str = Field(description="UUID of the revoked predecessor key")
+
+
+class TenantListKeysResponse(BaseModel):
+    """List response of all API keys owned by tenant."""
+    model_config = ConfigDict(extra="ignore")
+
+    keys: List[TenantKeyItem] = Field(default_factory=list, description="List of tenant API key records")
+
+
 
 
 

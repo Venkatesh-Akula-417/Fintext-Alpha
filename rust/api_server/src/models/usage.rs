@@ -4,6 +4,7 @@
 
 use serde::{Deserialize, Serialize};
 use utoipa::{IntoParams, ToSchema};
+use uuid::Uuid;
 
 /// Query parameters for filtering and grouping user API usage statistics.
 #[derive(Debug, Clone, Deserialize, IntoParams, ToSchema)]
@@ -249,4 +250,106 @@ pub struct AdminTenantUsageResponse {
     pub usage: AccountUsageResponse,
     /// Commercial subscription and dunning health status
     pub subscription: Option<SubscriptionDetailItem>,
+}
+
+/// Request payload for creating a self-service tenant API key (`POST /v1/account/keys`).
+#[derive(Debug, Clone, Deserialize, ToSchema)]
+pub struct TenantCreateKeyRequest {
+    /// Optional friendly key label (defaults to "Default Key")
+    #[schema(example = "Production Signal Ingestion Key")]
+    pub name: Option<String>,
+    /// Optional key expiration duration in days (e.g. 30, 90, 365)
+    #[schema(example = 90)]
+    pub expires_in_days: Option<i64>,
+}
+
+/// Response payload upon creating a self-service tenant API key.
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, ToSchema)]
+pub struct TenantCreateKeyResponse {
+    /// Unique API key identifier
+    #[schema(example = "550e8400-e29b-41d4-a716-446655440000")]
+    pub id: Uuid,
+    /// Friendly label or identifier
+    #[schema(example = "Production Signal Ingestion Key")]
+    pub name: String,
+    /// Public prefix for log correlation (e.g. "ft_live_AbC123Xy")
+    #[schema(example = "ft_live_AbC123Xy")]
+    pub prefix: String,
+    /// Generation timestamp in UTC RFC3339 format
+    #[schema(example = "2026-09-26T10:00:00Z")]
+    pub created_at: String,
+    /// Expiration timestamp in UTC RFC3339 format (if configured)
+    pub expires_at: Option<String>,
+    /// Plaintext key returned strictly once upon generation. Store securely.
+    #[schema(example = "ft_live_AbC123Xy7890abcdefghijklmnopqrstuvwxyz123")]
+    pub plaintext_once: String,
+}
+
+/// Response payload upon revoking a self-service tenant API key (`DELETE /v1/account/keys/{key_id}`).
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, ToSchema)]
+pub struct TenantRevokeKeyResponse {
+    /// Revoked API key identifier
+    #[schema(example = "550e8400-e29b-41d4-a716-446655440000")]
+    pub id: Uuid,
+    /// Revocation status confirmation
+    #[schema(example = "revoked")]
+    pub status: String,
+    /// Revocation timestamp in UTC RFC3339 format
+    #[schema(example = "2026-09-26T10:05:00Z")]
+    pub revoked_at: String,
+}
+
+/// Response payload upon rotating a self-service tenant API key (`POST /v1/account/keys/{key_id}/rotate`).
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, ToSchema)]
+pub struct TenantRotateKeyResponse {
+    /// New active API key identifier
+    #[schema(example = "660e8400-e29b-41d4-a716-446655440001")]
+    pub id: Uuid,
+    /// Key label
+    #[schema(example = "Production Signal Ingestion Key")]
+    pub name: String,
+    /// Public prefix of the replacement key
+    #[schema(example = "ft_live_Zyx987Wv")]
+    pub prefix: String,
+    /// Generation timestamp in UTC RFC3339 format
+    #[schema(example = "2026-09-26T10:10:00Z")]
+    pub created_at: String,
+    /// Expiration timestamp in UTC RFC3339 format
+    pub expires_at: Option<String>,
+    /// Plaintext replacement key returned strictly once. Store securely.
+    #[schema(example = "ft_live_Zyx987Wv1234abcdefghijklmnopqrstuvwxyz456")]
+    pub plaintext_once: String,
+    /// Identifier of the previous key that was rotated and revoked
+    #[schema(example = "550e8400-e29b-41d4-a716-446655440000")]
+    pub rotated_from: Uuid,
+}
+
+/// Sanitized API key item for tenant key inventory listing.
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, ToSchema)]
+pub struct TenantKeyItem {
+    /// Unique API key identifier
+    pub id: Uuid,
+    /// Friendly label or identifier
+    pub name: String,
+    /// Public prefix for log correlation (e.g. "ft_live_AbC123Xy")
+    pub prefix: String,
+    /// Generation timestamp in UTC RFC3339 format
+    pub created_at: String,
+    /// Expiration timestamp in UTC RFC3339 format
+    pub expires_at: Option<String>,
+    /// Revocation timestamp in UTC RFC3339 format (if revoked)
+    pub revoked_at: Option<String>,
+    /// Key lifecycle status ("active", "revoked", "rotated", "expired")
+    pub status: String,
+    /// Last observed usage timestamp in UTC RFC3339 format
+    pub last_seen_utc: Option<String>,
+    /// Identifier of the ancestor key if created via rotation
+    pub rotated_from: Option<Uuid>,
+}
+
+/// Response payload for listing tenant API keys (`GET /v1/account/keys`).
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, ToSchema)]
+pub struct TenantListKeysResponse {
+    /// List of tenant-scoped API keys (strictly without plaintext secrets or hashes)
+    pub keys: Vec<TenantKeyItem>,
 }

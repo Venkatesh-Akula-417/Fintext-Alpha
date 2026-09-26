@@ -244,6 +244,16 @@ if __name__ == "__main__":
     print(f"AAPL Composite Score: {signal['composite_score']} (PIT: {signal['point_in_time']})")
 ```
 
+### 6.5 Tenant Self-Service API Key Lifecycle & Quota Transparency (`/v1/account/keys`)
+
+Private Beta clients can self-serve and automate key rotation without opening integration support tickets:
+
+- **Create Key**: `POST /v1/account/keys` returns `{"id": "...", "plaintext_once": "ft_live_..."}`. Plaintext key is displayed strictly once. Max 10 active keys per tenant.
+- **List Inventory**: `GET /v1/account/keys` returns active, revoked, and expired keys with safe 16-character prefixes (zero hash/secret exposure).
+- **Rotate Key**: `POST /v1/account/keys/{key_id}/rotate` revokes the old key with status `rotated` and issues a replacement key preserving lineage via `rotated_from`.
+- **Revoke Key**: `DELETE /v1/account/keys/{key_id}` revokes compromised or decommissioned keys immediately.
+- **Quota Transparency**: All responses emit `X-RateLimit-Limit`, `X-RateLimit-Remaining`, and `X-RateLimit-Reset` (Unix epoch seconds) to facilitate algorithmic backoff.
+
 ---
 
 ## 7. Week-1 Proactive Operational Monitoring

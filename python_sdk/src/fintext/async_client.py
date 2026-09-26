@@ -219,6 +219,11 @@ from fintext.models import (
     ModelValidationResponse,
     ModelValidation,
     PerClassMetrics,
+    TenantKeyItem,
+    TenantCreateKeyResponse,
+    TenantRevokeKeyResponse,
+    TenantRotateKeyResponse,
+    TenantListKeysResponse,
 )
 
 
@@ -5728,6 +5733,125 @@ class FinTextAsyncClient:
 
         self._update_rate_limit_headers(resp.headers)
         return resp.json()
+
+    async def create_key(
+        self,
+        name: Optional[str] = None,
+        expires_in_days: Optional[int] = None,
+    ) -> TenantCreateKeyResponse:
+        """Create a new tenant API key via self-service lifecycle.
+
+        Returns plaintext key material strictly once. Enforces max 10 active keys per tenant.
+
+        Args:
+            name: Optional descriptive label for the API key.
+            expires_in_days: Optional validity period in days.
+
+        Returns:
+            TenantCreateKeyResponse containing the new key UUID and plaintext_once.
+        """
+        await self._ensure_authenticated()
+        headers = {
+            "Authorization": f"Bearer {self.api_token}",
+            "Content-Type": "application/json",
+        }
+        endpoint = "/account/keys" if self.base_url.rstrip("/").endswith("/v1") else "/v1/account/keys"
+        payload: dict[str, Any] = {}
+        if name is not None:
+            payload["name"] = name
+        if expires_in_days is not None:
+            payload["expires_in_days"] = expires_in_days
+
+        try:
+            resp = await self._client.post(endpoint, headers=headers, json=payload)
+        except httpx.RequestError as exc:
+            raise FinTextConnectionError(f"Failed to connect to FinText API: {exc}") from exc
+
+        if not resp.is_success:
+            self._handle_response_error(resp)
+
+        self._update_rate_limit_headers(resp.headers)
+        return TenantCreateKeyResponse.model_validate(resp.json())
+
+    async def list_keys(self) -> list[TenantKeyItem]:
+        """List all API keys owned by the authenticated tenant.
+
+        Returns sanitized metadata (ID, name, prefix, status, timestamps). Plaintext and
+        hashes are never returned.
+
+        Returns:
+            List of TenantKeyItem records.
+        """
+        await self._ensure_authenticated()
+        headers = {"Authorization": f"Bearer {self.api_token}"}
+        endpoint = "/account/keys" if self.base_url.rstrip("/").endswith("/v1") else "/v1/account/keys"
+        try:
+            resp = await self._client.get(endpoint, headers=headers)
+        except httpx.RequestError as exc:
+            raise FinTextConnectionError(f"Failed to connect to FinText API: {exc}") from exc
+
+        if not resp.is_success:
+            self._handle_response_error(resp)
+
+        self._update_rate_limit_headers(resp.headers)
+        list_resp = TenantListKeysResponse.model_validate(resp.json())
+        return list_resp.keys
+
+    async def rotate_key(self, key_id: str) -> TenantRotateKeyResponse:
+        """Rotate an active tenant API key.
+
+        Atomically revokes the existing key and provisions a replacement with continuous lineage.
+
+        Args:
+            key_id: UUID string of the API key to rotate.
+
+        Returns:
+            TenantRotateKeyResponse containing the new key UUID and plaintext_once.
+        """
+        await self._ensure_authenticated()
+        clean_id = key_id.strip()
+        if not clean_id:
+            raise FinTextValidationError("API key 'key_id' cannot be empty.")
+
+        headers = {"Authorization": f"Bearer {self.api_token}"}
+        endpoint = f"/account/keys/{clean_id}/rotate" if self.base_url.rstrip("/").endswith("/v1") else f"/v1/account/keys/{clean_id}/rotate"
+        try:
+            resp = await self._client.post(endpoint, headers=headers)
+        except httpx.RequestError as exc:
+            raise FinTextConnectionError(f"Failed to connect to FinText API: {exc}") from exc
+
+        if not resp.is_success:
+            self._handle_response_error(resp)
+
+        self._update_rate_limit_headers(resp.headers)
+        return TenantRotateKeyResponse.model_validate(resp.json())
+
+    async def revoke_key(self, key_id: str) -> TenantRevokeKeyResponse:
+        """Revoke a tenant API key.
+
+        Args:
+            key_id: UUID string of the API key to revoke.
+
+        Returns:
+            TenantRevokeKeyResponse confirming revocation status and timestamp.
+        """
+        await self._ensure_authenticated()
+        clean_id = key_id.strip()
+        if not clean_id:
+            raise FinTextValidationError("API key 'key_id' cannot be empty.")
+
+        headers = {"Authorization": f"Bearer {self.api_token}"}
+        endpoint = f"/account/keys/{clean_id}" if self.base_url.rstrip("/").endswith("/v1") else f"/v1/account/keys/{clean_id}"
+        try:
+            resp = await self._client.delete(endpoint, headers=headers)
+        except httpx.RequestError as exc:
+            raise FinTextConnectionError(f"Failed to connect to FinText API: {exc}") from exc
+
+        if not resp.is_success:
+            self._handle_response_error(resp)
+
+        self._update_rate_limit_headers(resp.headers)
+        return TenantRevokeKeyResponse.model_validate(resp.json())
 
     async def close(self) -> None:
         """Close the underlying asynchronous HTTP client session."""

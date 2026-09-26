@@ -37,10 +37,10 @@ In high-assurance quantitative systems, disparate documents frequently suffer fr
 | **14** | **Signal Alpha Decay vs IS** | `4.07%` | $< 50.0\%$ | `logs/signal_quality_report.json` | `4d001bf` | 2026-09-24 | Monthly |
 | **15** | **Time-To-First-Value (TTFV)** | `1.62 s` | $< 300\text{ s}$ | `logs/tenant_provisioning_report.json`| `a31d508` | 2026-09-24 | Per Onboarding |
 | **16** | **Cloud Run-Rate Budget** | `$295.00–$301.44 / mo` | $\le \$310 / \text{mo}$ | `docs/CLOUD_COST_OPTIMIZATION.md` | `a31d508` | 2026-09-24 | Monthly Audit |
-| **17** | **Readiness Audit Suite Checks** | `27 / 27 Checks Passed` | 100.0% Pass | `scripts/verify_private_beta_readiness.py` | current | 2026-09-26 | Per Commit |
-| **18** | **Rust API Gateway Unit Tests** | `507 / 507 Passed` | 100.0% Pass | `rust/api_server/src/lib.rs` | current | 2026-09-26 | Per Commit |
+| **17** | **Readiness Audit Suite Checks** | `29 / 29 Checks Passed` | 100.0% Pass | `scripts/verify_private_beta_readiness.py` | current | 2026-09-26 | Per Commit |
+| **18** | **Rust API Gateway Unit Tests** | `514 / 514 Passed` | 100.0% Pass | `rust/api_server/src/lib.rs` | current | 2026-09-26 | Per Commit |
 | **19** | **Rust Ingestion Daemon Tests** | `113 / 113 Passed` | 100.0% Pass | `rust/ingestion_engine/` | current | 2026-09-26 | Per Commit |
-| **20** | **Private Beta Launch Checks** | `49 / 49 Checks Passed` | 100.0% Pass | `docs/PRIVATE_BETA_LAUNCH_CHECKLIST.md` | current | 2026-09-26 | Per Release |
+| **20** | **Private Beta Launch Checks** | `51 / 51 Checks Passed` | 100.0% Pass | `docs/PRIVATE_BETA_LAUNCH_CHECKLIST.md` | current | 2026-09-26 | Per Release |
 | **21** | **Billing Flow Lifecycle Certification** | `CERTIFIED (7/7 Scenarios)` | 100.0% Pass | `logs/billing_flow_report.json` | current | 2026-09-25 | Per Release |
 | **22** | **Monthly Billing Reconciliation** | `RECONCILED (0 Discrepancies)`| Zero Drift | `logs/billing_reconciliation_report.json` | current | 2026-09-25 | Monthly Close |
 | **23** | **Webhook Signature Scheme & Tolerance**| `HMAC-SHA256, 300s window` | Constant-Time | `rust/api_server/src/billing.rs` | current | 2026-09-25 | Continuous |
@@ -52,6 +52,10 @@ In high-assurance quantitative systems, disparate documents frequently suffer fr
 | **29** | **Ingestion Per-Source Lag P95 Telemetry** | `0.185 s (SEC EDGAR) / 0.042 s (Finnhub WS)` | $< 1.000\text{ s}$ | `rust/ingestion_engine/src/telemetry/metrics.rs` | current | 2026-09-26 | Continuous |
 | **30** | **Assurance Pack Manifest** | `buildable, SHA256-pinned (v1)` | Informational | `logs/auditor_pack_manifest.json` | current | 2026-09-26 | Per Commit |
 | **31** | **HA GA Cutover Plan** | `staged vars default-false, cap unchanged $301.44 pending founder decision` | Static Budget | `docs/HA_MULTIAZ_GA_CUTOVER_PLAN.md` | current | 2026-09-26 | Per Release |
+| **32** | **Point-in-Time DR Restore Drill** | `CERTIFIED_HEALTHY (RTO=4.93s, 0 Leaks)` | $< 14,400\text{ s}$ (4h) | `logs/dr_report.json` | current | 2026-09-26 | Weekly Drill |
+| **33** | **RLS Penetration & Boundary Defense** | `CERTIFIED (44/44 Vectors Pass, 0 Leaks)` | Strict 0 Leaks | `logs/rls_isolation_report.json` | current | 2026-09-26 | Per Commit |
+| **34** | **Tenant API-Key Self-Service Lifecycle** | `CERTIFIED (Max 10 Keys, 0 Secret Leaks)` | 100.0% Pass | `rust/api_server/src/billing.rs` | current | 2026-09-26 | Per Release |
+| **35** | **Quota Transparency Headers** | `RFC 6585 Compliant (Reset=Unix Epoch Sec)` | Informational | `rust/api_server/src/rate_limit.rs` | current | 2026-09-26 | Continuous |
 
 ---
 
@@ -123,6 +127,22 @@ In high-assurance quantitative systems, disparate documents frequently suffer fr
 - **Verification Method:** Execution of `python scripts/build_auditor_pack.py` and `terraform -chdir=infra/terraform validate`.
 - **SLA Commitment:** 100.0% evidence artifact presence and zero unbudgeted infrastructure cost increases.
 - **Source Artifact:** `docs/SOC2_AUDITOR_PACK.md`, `logs/auditor_pack_manifest.json`, and `docs/HA_MULTIAZ_GA_CUTOVER_PLAN.md`.
+
+### 3.10 Disaster Recovery Drill & RLS Boundary Defense (Metrics 32–33)
+- **Mathematical Definition:**
+  - Ephemeral Container Restore RTO: Elapsed wall-clock seconds from drill invocation to cluster health confirmation across 28 restored tables: $\text{RTO} \le 14,400\text{ s}$ (4 hours contractual SLA).
+  - Cross-Tenant Boundary Defense: Penetration matrix across 44 automated test vectors evaluating `fintext_app` (`NOBYPASSRLS`) containment, default-deny empty sets, and `WITH CHECK OPTION` write isolation.
+- **Verification Method:** Execution of `python scripts/run_dr_drill.py` (measured 4.928s) and `python scripts/test_rls_isolation.py` (44/44 pass, 0 leak rows).
+- **SLA Commitment:** $\text{RTO} < 14,400\text{ s}$, 0 cross-tenant leak rows across all tables.
+- **Source Artifact:** `logs/dr_report.json`, `logs/backup_ledger.md`, and `logs/rls_isolation_report.json`.
+
+### 3.11 Tenant Key Lifecycle & Quota Transparency (Metrics 34–35)
+- **Mathematical Definition:**
+  - Key Entropy & Isolation: 256 bits of CSPRNG entropy (`fintext_live_` + 32-byte hexadecimal token), SHA-256 salted digest storage, maximum 10 active keys per tenant, strictly scoped via `app.current_org_id`.
+  - Quota Transparency Emission: RFC 6585 header tuple `X-RateLimit-Limit`, `X-RateLimit-Remaining`, and `X-RateLimit-Reset` where Reset emits Unix epoch timestamp in UTC seconds: $t_{\text{reset}} = t_{\text{epoch}} + \Delta t_{\text{window}}$.
+- **Verification Method:** Unit and integration tests in `rust/api_server/src/billing.rs`, `rust/api_server/src/rate_limit.rs`, and Python SDK `python_sdk/tests/test_account_keys.py`.
+- **SLA Commitment:** 100.0% clean pass rate, zero plaintext credential leakage in logs or database, exact Unix epoch integer headers.
+- **Source Artifact:** `rust/api_server/src/billing.rs`, `rust/api_server/src/rate_limit.rs`, and `docs/API_CUSTOMER_GUIDE.md`.
 
 ---
 
