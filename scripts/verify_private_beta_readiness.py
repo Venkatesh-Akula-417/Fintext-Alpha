@@ -931,6 +931,44 @@ except Exception as e:
     record_check(30, "Feed Resilience & Circuit Breakers Certified", False, str(e))
 
 # ─────────────────────────────────────────────────────────────────────────────
+# Check 31: Beta Launch Rehearsal Harness + Go/No-Go Gate Doc
+# ─────────────────────────────────────────────────────────────────────────────
+try:
+    rehearsal_script = REPO_ROOT / "scripts" / "run_beta_rehearsal.py"
+    rehearsal_ledger = REPO_ROOT / "logs" / "beta_rehearsal_ledger.md"
+    go_no_go_doc = REPO_ROOT / "docs" / "BETA_GO_NO_GO.md"
+
+    has_script = rehearsal_script.exists()
+    has_go_no_go = False
+    gate_count = 0
+
+    if go_no_go_doc.exists():
+        gng_text = go_no_go_doc.read_text(encoding="utf-8")
+        has_go_no_go = True
+        # Count G1 through G10 gate rows
+        for i in range(1, 11):
+            if f"G{i}" in gng_text:
+                gate_count += 1
+
+    ledger_parseable = False
+    if rehearsal_ledger.exists():
+        led_text = rehearsal_ledger.read_text(encoding="utf-8")
+        # Check last non-empty line contains a pipe-delimited row with PASS or FAIL
+        lines = [l.strip() for l in led_text.splitlines() if l.strip().startswith("|") and "Run ID" not in l and "---" not in l]
+        if lines:
+            ledger_parseable = True
+
+    passed = has_script and has_go_no_go and gate_count == 10
+    evidence = (
+        f"Rehearsal script exists={has_script}, "
+        f"Go/No-Go doc exists={has_go_no_go} with {gate_count}/10 gates, "
+        f"Ledger parseable={ledger_parseable}"
+    )
+    record_check(31, "Beta Rehearsal Harness & Go/No-Go Gates", passed, evidence)
+except Exception as e:
+    record_check(31, "Beta Rehearsal Harness & Go/No-Go Gates", False, str(e))
+
+# ─────────────────────────────────────────────────────────────────────────────
 # Print Results Table
 # ─────────────────────────────────────────────────────────────────────────────
 print(f"{'#':<3} | {'Check Description':<40} | {'Status':<8} | {'Evidence'}")
@@ -944,12 +982,9 @@ print(f"Total Checks: {len(results)}")
 print(f"Passed:       {Colors.GREEN}{checks_passed}{Colors.RESET}")
 print(f"Failed:       {Colors.RED}{checks_failed}{Colors.RESET}")
 
-if checks_failed == 0 and len(results) == 30:
-    print(f"\n{Colors.GREEN}{Colors.BOLD}>>> VERDICT: ALL 30 AUTOMATED CHECKS PASSED. SYSTEM IS LAUNCH READY! <<<{Colors.RESET}\n")
+if checks_failed == 0 and len(results) == 31:
+    print(f"\n{Colors.GREEN}{Colors.BOLD}>>> VERDICT: ALL 31 AUTOMATED CHECKS PASSED. SYSTEM IS LAUNCH READY! <<<{Colors.RESET}\n")
     sys.exit(0)
 else:
-    print(f"\n{Colors.RED}{Colors.BOLD}>>> VERDICT: {checks_failed} CHECKS FAILED (Total {len(results)}/30). RESOLVE BEFORE LAUNCH. <<<{Colors.RESET}\n")
+    print(f"\n{Colors.RED}{Colors.BOLD}>>> VERDICT: {checks_failed} CHECKS FAILED (Total {len(results)}/31). RESOLVE BEFORE LAUNCH. <<<{Colors.RESET}\n")
     sys.exit(1)
-
-
-

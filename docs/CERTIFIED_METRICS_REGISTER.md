@@ -37,10 +37,10 @@ In high-assurance quantitative systems, disparate documents frequently suffer fr
 | **14** | **Signal Alpha Decay vs IS** | `4.07%` | $< 50.0\%$ | `logs/signal_quality_report.json` | `4d001bf` | 2026-09-24 | Monthly |
 | **15** | **Time-To-First-Value (TTFV)** | `1.62 s` | $< 300\text{ s}$ | `logs/tenant_provisioning_report.json`| `a31d508` | 2026-09-24 | Per Onboarding |
 | **16** | **Cloud Run-Rate Budget** | `$295.00–$301.44 / mo` | $\le \$310 / \text{mo}$ | `docs/CLOUD_COST_OPTIMIZATION.md` | `a31d508` | 2026-09-24 | Monthly Audit |
-| **17** | **Readiness Audit Suite Checks** | `30 / 30 Checks Passed` | 100.0% Pass | `scripts/verify_private_beta_readiness.py` | current | 2026-09-26 | Per Commit |
+| **17** | **Readiness Audit Suite Checks** | `31 / 31 Checks Passed` | 100.0% Pass | `scripts/verify_private_beta_readiness.py` | current | 2026-09-26 | Per Commit |
 | **18** | **Rust API Gateway Unit Tests** | `514 / 514 Passed` | 100.0% Pass | `rust/api_server/src/lib.rs` | current | 2026-09-26 | Per Commit |
 | **19** | **Rust Ingestion Daemon Tests** | `121 / 121 Passed` | 100.0% Pass | `rust/ingestion_engine/` | current | 2026-09-26 | Per Commit |
-| **20** | **Private Beta Launch Checks** | `52 / 52 Checks Passed` | 100.0% Pass | `docs/PRIVATE_BETA_LAUNCH_CHECKLIST.md` | current | 2026-09-26 | Per Release |
+| **20** | **Private Beta Launch Checks** | `53 / 53 Checks Passed` | 100.0% Pass | `docs/PRIVATE_BETA_LAUNCH_CHECKLIST.md` | current | 2026-09-26 | Per Release |
 | **21** | **Billing Flow Lifecycle Certification** | `CERTIFIED (7/7 Scenarios)` | 100.0% Pass | `logs/billing_flow_report.json` | current | 2026-09-25 | Per Release |
 | **22** | **Monthly Billing Reconciliation** | `RECONCILED (0 Discrepancies)`| Zero Drift | `logs/billing_reconciliation_report.json` | current | 2026-09-25 | Monthly Close |
 | **23** | **Webhook Signature Scheme & Tolerance**| `HMAC-SHA256, 300s window` | Constant-Time | `rust/api_server/src/billing.rs` | current | 2026-09-25 | Continuous |
@@ -58,6 +58,8 @@ In high-assurance quantitative systems, disparate documents frequently suffer fr
 | **35** | **Quota Transparency Headers** | `RFC 6585 Compliant (Reset=Unix Epoch Sec)` | Informational | `rust/api_server/src/rate_limit.rs` | current | 2026-09-26 | Continuous |
 | **36** | **Circuit Breaker Thresholds & Chaos Recovery** | `CERTIFIED (6/6 Scenarios Pass, 0 Gaps)` | Fast-Fail <= 300s Backoff | `logs/feed_chaos_report.json` | current | 2026-09-26 | Per Release |
 | **37** | **Upstream Fallback Lag Budgets** | `Finnhub 2.0s REST / Polygon 5.0s Snapshot` | $P_{95} \le 5.000\text{ s}$ degraded | `rust/ingestion_engine/src/main.rs` | current | 2026-09-26 | Continuous |
+| **38** | **Beta Launch Rehearsal Harness** | `CERTIFIED (local run, ledger parseable)` | 100.0% Pass | `scripts/run_beta_rehearsal.py`, `logs/beta_rehearsal_ledger.md` | current | 2026-09-26 | Per Release |
+| **39** | **Go/No-Go Gate Count** | `10 Gates, 0/10 DONE (honest baseline)` | All 10 PENDING at commit | `docs/BETA_GO_NO_GO.md` | current | 2026-09-26 | Per Release |
 
 ---
 

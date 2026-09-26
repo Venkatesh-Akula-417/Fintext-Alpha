@@ -301,8 +301,8 @@
       "description": "Sub-second Prometheus latency histograms (0.005s..2.0s) across market feeds",
       "id": "EVID-CC71-05",
       "path": "rust/ingestion_engine/src/telemetry/metrics.rs",
-      "sha256": "c9887606b9ad86833768d7b76b0027f46943134a25caad9d0376f4b0377b4380",
-      "size_bytes": 28382,
+      "sha256": "b7285a3a36345d40096314b5c3c250d367d6299e0cd6f683339d0d40b2d25aa1",
+      "size_bytes": 28486,
       "status": "PRESENT"
     },
     {
@@ -313,8 +313,8 @@
       "description": "49-check comprehensive launch readiness certification and pre-flight gate",
       "id": "EVID-CC81-01",
       "path": "docs/PRIVATE_BETA_LAUNCH_CHECKLIST.md",
-      "sha256": "407a85218d3465cea9949451a638948afce75613d73301e9ded3d3b401c42fd4",
-      "size_bytes": 43592,
+      "sha256": "5c6dcef1afced222e920833a7d9dd763d918d412b220fe9297c09a3336a44cbc",
+      "size_bytes": 45522,
       "status": "PRESENT"
     },
     {
@@ -325,8 +325,8 @@
       "description": "Automated 27-check readiness audit suite certifying code, models, and docs",
       "id": "EVID-CC81-02",
       "path": "scripts/verify_private_beta_readiness.py",
-      "sha256": "af091a0a4d0180c04d6acb1f20086a48b40d6b2099a30fcd99c4c91ba6532a9a",
-      "size_bytes": 55140,
+      "sha256": "c26b7fdbb269c67365756aa224834d9e73c94e3ce7ca73019169950346c086f0",
+      "size_bytes": 57058,
       "status": "PRESENT"
     },
     {
@@ -349,16 +349,16 @@
       "description": "Authoritative single source of truth for all certified platform metrics and parameters",
       "id": "EVID-CC81-04",
       "path": "docs/CERTIFIED_METRICS_REGISTER.md",
-      "sha256": "d8978ea6bdd241db15f90726154d3ff74d76613cbfee5312c321b5b2cf93aa40",
-      "size_bytes": 19412,
+      "sha256": "e1e6a292deeeda4c5e2525925716c71a6eee8f0aff57f6bec60b53da1efe9a95",
+      "size_bytes": 19790,
       "status": "PRESENT"
     }
   ],
-  "generated_at_utc": "2026-09-26T12:16:47.780829+00:00",
+  "generated_at_utc": "2026-09-26T13:36:15.695478+00:00",
   "git_lineage": {
     "branch": "main",
-    "head_commit_sha": "da1e1bc69337422fbcc10805431401f5c916f646",
-    "head_commit_short": "da1e1bc"
+    "head_commit_sha": "9f724004fe6203fa82303e9e4663dbaf0cd92f6d",
+    "head_commit_short": "9f72400"
   },
   "manifest_version": "1.0.0",
   "summary": {

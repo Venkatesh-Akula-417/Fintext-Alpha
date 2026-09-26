@@ -400,3 +400,106 @@ curl -s -X GET "https://api.fintext.internal/v1/admin/tenants/org_quant_alpha_42
 | **Client receives HTTP 429 Too Many Requests** | Burst token-bucket exhaustion or `requests_total >= plan_limit` | Inspect `by_endpoint_group` and daily trends. If uncoordinated backtesting parallelization, recommend rate-limit backoff or provide custom burst allocation. |
 | **`subscription.status == 'past_due'`** | Recurring Stripe card charge failed; dunning active | Notify fund billing contact of remaining grace period (`grace_until_utc`). Point client to Stripe customer portal URL (`POST /billing/portal`). |
 
+---
+
+## 12. Cohort-1 Comms Kit
+
+> **Gate Reference:** This section satisfies [BETA_GO_NO_GO.md](file:///d:/FinText-Alpha-Vectorizer/docs/BETA_GO_NO_GO.md) Gate G8: Cohort-1 Comms Kit Approved.
+
+### 12.1 Welcome Email Template
+
+```
+Subject: Welcome to FinText Alpha Vectorizer — Private Beta Access
+
+Dear [Client Primary Operator Name],
+
+We are pleased to confirm your Private Beta access to FinText Alpha
+Vectorizer, the institutional-grade NLP and alternative data platform
+for mid-frequency quantitative strategies.
+
+ENDPOINT & ACCESS
+─────────────────
+  API Base URL:       {{BASE_URL}}/v1
+  Health Check:       {{BASE_URL}}/v1/health
+  Status Page:        {{STATUS_URL}}
+  Documentation:      {{BASE_URL}}/docs
+
+CREDENTIAL DELIVERY
+───────────────────
+Your API key has been delivered via a one-time secure note through
+[1Password / Bitwarden / PGP-encrypted email — select applicable].
+The secure note expires 72 hours after generation. Please:
+
+  1. Retrieve and store the API key in your fund's secrets vault.
+  2. Confirm receipt by pinging: GET {{BASE_URL}}/v1/health
+     with header: X-API-Key: <your_key>
+  3. The key prefix (first 8 chars) is included below for
+     reconciliation: [PREFIX_HERE]
+
+IMPORTANT: This is the ONLY time the plaintext key is transmitted.
+FinText stores only SHA-256 hashes. If the key is lost, a new key
+must be generated and the previous key revoked.
+
+KEY ROTATION POLICY
+───────────────────
+  • Mandatory rotation cadence: every 90 calendar days.
+  • Self-service rotation: POST {{BASE_URL}}/v1/keys/rotate
+  • Upon rotation, the previous key enters a 24-hour grace window
+    before hard revocation.
+  • Maximum active keys per organization: 10.
+
+SUPPORT MATRIX
+──────────────
+  Tier   │ Channel              │ Response Time SLA
+  ───────┼──────────────────────┼───────────────────
+  T1     │ Email / Slack        │ < 4 business hours
+  T2     │ Scheduled Call       │ < 1 business day
+  T3     │ Emergency Hotline    │ < 1 hour (critical)
+
+  Escalation: support@fintext.io → cto@fintext.io (T3 only)
+
+DATA FRESHNESS & DEGRADATION SEMANTICS
+───────────────────────────────────────
+All FinText API responses include a `mode` field indicating data
+freshness:
+
+  • mode=primary     — Live upstream feed; real-time freshness.
+  • mode=degraded    — Upstream vendor temporary disruption; data
+                       served via REST polling fallback with
+                       bounded lag (Finnhub ≤2s, Polygon ≤5s).
+  • mode=stale       — Extended upstream outage (>10 min for
+                       SEC EDGAR, >5 min for FOMC/Corp Actions);
+                       cached/replay data served with timestamp
+                       of last known-good observation.
+
+Your quantitative models should incorporate this mode flag for
+position sizing and risk gating. Full degradation semantics and
+circuit breaker architecture are documented in:
+  docs/FEED_RESILIENCE_RUNBOOK.md
+
+We look forward to supporting your alpha research.
+
+Best regards,
+FinText Alpha Vectorizer — Platform Engineering Team
+```
+
+### 12.2 Credential Delivery Standard Operating Procedure
+
+| Step | Action | Owner | Verification |
+| :---: | :--- | :--- | :--- |
+| 1 | Generate key via `scripts/provision_tenant.py --live` | Platform Engineer | Exit code 0, TTFV < 300s |
+| 2 | Copy plaintext key from STDOUT (appears exactly once) | Platform Engineer | Key starts with `ft_` |
+| 3 | Create one-time secure note (1Password / Bitwarden) | Platform Engineer | 72h expiry, single-view |
+| 4 | Send secure note link via pre-approved channel | Platform Engineer | Email/Slack to primary operator |
+| 5 | Client confirms receipt + health ping success | Client Operator | HTTP 200 on /v1/health |
+| 6 | Discard local plaintext key from clipboard/terminal | Platform Engineer | Verified cleared |
+
+### 12.3 Ongoing Communication Cadence (Beta Period)
+
+| Event | Template | Channel | Audience |
+| :--- | :--- | :--- | :--- |
+| Weekly Status Digest | Automated from status cron | Email | All Cohort-1 |
+| Incident Notification | SEV-1/SEV-2 per ops runbook | Email + Slack | Affected tenants |
+| Rotation Reminder | 14-day advance notice | Email | Key owner |
+| Beta Feedback Survey | Monthly NPS + feature request | Email | Primary operators |
+

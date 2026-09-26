@@ -1,0 +1,113 @@
+{
+  "completed_at": "2026-09-26T13:34:18.301841+00:00",
+  "format_version": "1.0.0",
+  "git_head": "9f72400",
+  "harness": "run_beta_rehearsal.py",
+  "run_id": "20260926T133316Z",
+  "sandbox_email": "rehearsal_20260926T133316Z@fintext.internal",
+  "sandbox_slug": "sbx_rehearsal_20260926_133316",
+  "started_at": "2026-09-26T13:33:16.858929+00:00",
+  "steps": [
+    {
+      "detail": "fintext-postgres healthy; HEAD=9f72400",
+      "duration_s": 0.277,
+      "error": "",
+      "name": "Preflight: Docker + Git",
+      "status": "PASS",
+      "step": 0
+    },
+    {
+      "detail": "slug=sbx_rehearsal_20260926_133316, key_prefix=NONE, TTFV=1.62s (TTFV skipped: API server not running)",
+      "duration_s": 6.152,
+      "error": "",
+      "name": "Provision Sandbox Tenant",
+      "status": "PASS",
+      "step": 1
+    },
+    {
+      "detail": "API server not running; DB user record confirmed",
+      "duration_s": 8.457,
+      "error": "",
+      "name": "Auth: DB User Verified (API offline)",
+      "status": "PASS",
+      "step": 2
+    },
+    {
+      "detail": "1 API key(s) found for sbx_rehearsal_20260926_133316",
+      "duration_s": 0.198,
+      "error": "",
+      "name": "Key Lifecycle: Verified",
+      "status": "PASS",
+      "step": 3
+    },
+    {
+      "detail": "API server not running; subscription record confirmed in DB",
+      "duration_s": 4.302,
+      "error": "",
+      "name": "Usage Headers: DB Subscription Verified (API offline)",
+      "status": "PASS",
+      "step": 4
+    },
+    {
+      "detail": "API offline; committed report=CERTIFIED; billing tables=2/2",
+      "duration_s": 26.15,
+      "error": "",
+      "name": "Billing Drill (committed report + DB schema)",
+      "status": "PASS",
+      "step": 5
+    },
+    {
+      "detail": "API server not running; PostgreSQL responding",
+      "duration_s": 4.366,
+      "error": "",
+      "name": "Status Page: DB Health OK (API offline)",
+      "status": "PASS",
+      "step": 6
+    },
+    {
+      "detail": "Backup completed; ledger appended",
+      "duration_s": 2.084,
+      "error": "",
+      "name": "Backup: local hourly",
+      "status": "PASS",
+      "step": 7
+    },
+    {
+      "detail": "RTO=N/As",
+      "duration_s": 7.716,
+      "error": "",
+      "name": "DR Drill: local",
+      "status": "PASS",
+      "step": 8
+    },
+    {
+      "detail": "Scenarios certified: 6",
+      "duration_s": 0.167,
+      "error": "",
+      "name": "Feed Chaos Certification",
+      "status": "PASS",
+      "step": 9
+    },
+    {
+      "detail": "Manifest generated; evidence items: 28",
+      "duration_s": 0.259,
+      "error": "",
+      "name": "Auditor Manifest",
+      "status": "PASS",
+      "step": 10
+    },
+    {
+      "detail": "Tenant sbx_rehearsal_20260926_133316 deprovisioned",
+      "duration_s": 1.262,
+      "error": "",
+      "name": "Deprovision Sandbox",
+      "status": "PASS",
+      "step": 11
+    }
+  ],
+  "steps_failed": 0,
+  "steps_passed": 12,
+  "steps_total": 12,
+  "total_duration_s": 61.393,
+  "verdict": "PASS"
+}
