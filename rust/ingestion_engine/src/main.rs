@@ -119,6 +119,23 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let polygon_ws_enabled =
         is_source_enabled("ENABLE_POLYGON_WEBSOCKET", Some("POLYGON_WS_ENABLED"), true);
 
+    // Problem #11: Ingestion per-source latency & Prometheus metrics server
+    let metrics = Arc::new(PipelineMetrics::new());
+    let metrics_port: u16 = std::env::var("INGESTION_METRICS_PORT")
+        .ok()
+        .and_then(|p| p.parse().ok())
+        .unwrap_or(9102);
+    let metrics_addr = format!("0.0.0.0:{}", metrics_port);
+    if let Ok(_metrics_handle) =
+        fintext_ingestion_engine::telemetry::start_metrics_server(metrics.clone(), &metrics_addr)
+            .await
+    {
+        info!(
+            " [Telemetry] Internal Ingestion Prometheus metrics listening on http://{}/metrics (SG-confined internal port)",
+            metrics_addr
+        );
+    }
+
     // 1. Initialize Active Data Sources
     let polygon_client = if polygon_enabled {
         let client = PolygonClient::from_env().ok();

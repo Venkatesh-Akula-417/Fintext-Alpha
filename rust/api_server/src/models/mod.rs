@@ -106,4 +106,8 @@ pub use transcripts::{
     CreateTranscriptRequest, DeleteTranscriptResponse, TranscriptListParams,
     TranscriptListResponse, TranscriptMetadata, TranscriptResponse,
 };
-pub use usage::{UsageGroupItem, UsageStatsParams, UsageStatsResponse, UsageStatsSummary};
+pub use usage::{
+    AccountUsageResponse, AdminTenantUsageResponse, ApiKeyAuditItem, AuditLogSummaryItem,
+    DailyUsageItem, EndpointGroupUsageItem, SubscriptionDetailItem, UsageGroupItem,
+    UsageStatsParams, UsageStatsResponse, UsageStatsSummary,
+};

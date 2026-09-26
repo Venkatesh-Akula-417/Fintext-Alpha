@@ -1,11 +1,16 @@
 # FinText Alpha Vectorizer — Stripe Billing & Dunning Operations Runbook
 ═══════════════════════════════════════════════════════════════════════════════
 **Audience:** Site Reliability Engineers, DevOps, Compliance Officers, Billing Ops  
+**Authority:** Operational Source of Truth for Billing Procedures  
+**Metering Reference:** [`docs/BILLING_METERING_GUIDE.md`](./BILLING_METERING_GUIDE.md) (metering internals reference)  
 **Classification:** Confidential Institutional Operations  
 **Compliance Standard:** SOC2 Type II CC6.1 / CC6.6, SEC Rule 17a-4, FINRA Rule 4511  
 **Last Revised:** September 2026  
 **Document Owner:** Chief Technology Officer & Principal Billing Architect  
 ═══════════════════════════════════════════════════════════════════════════════
+
+> [!IMPORTANT]
+> **Authority Notice — Operational Source of Truth for Billing Procedures**: This runbook is the definitive operational manual for Day-2 billing maintenance, dunning state mitigation, Stripe webhook verification, and automated reconciliation drills. For commercial tier definitions, plan economics, and usage metering pipeline architecture, refer to [`docs/BILLING_METERING_GUIDE.md`](./BILLING_METERING_GUIDE.md).
 
 ---
 

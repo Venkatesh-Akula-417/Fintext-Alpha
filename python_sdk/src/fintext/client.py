@@ -5706,6 +5706,29 @@ class FinTextClient:
     # Ergonomic alias
     model_validation = get_model_validation
 
+    def usage(self) -> dict[str, Any]:
+        """
+        Retrieve tenant request consumption, plan limits, headroom, daily series,
+        API keys audit, own audit log, and IP whitelist CIDRs (GET /v1/account/usage).
+
+        Returns:
+            dict containing org_id, plan, plan_limit, requests_total, headroom_pct,
+            daily, by_endpoint_group, keys, recent_audit, ip_whitelist.
+        """
+        self._ensure_authenticated()
+        headers = {"Authorization": f"Bearer {self.api_token}"}
+        endpoint = "/account/usage" if self.base_url.rstrip("/").endswith("/v1") else "/v1/account/usage"
+        try:
+            resp = self._client.get(endpoint, headers=headers)
+        except httpx.RequestError as exc:
+            raise FinTextConnectionError(f"Failed to connect to FinText API: {exc}") from exc
+
+        if not resp.is_success:
+            self._handle_response_error(resp)
+
+        self._update_rate_limit_headers(resp.headers)
+        return resp.json()
+
     def close(self) -> None:
         """Close the underlying HTTP client session."""
         self._client.close()

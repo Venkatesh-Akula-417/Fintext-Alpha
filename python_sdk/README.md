@@ -74,6 +74,10 @@ print(f"Remaining Requests: {client.last_rate_limit.remaining}/{client.last_rate
 
 # 7. WebSocket Stream URL
 print(f"Real-time Stream URL: {client.ws_url(ticker='AAPL')}")
+
+# 8. Tenant Usage & Quota Audit (Self-Service)
+usage = client.usage()
+print(f"Quota Used: {usage['requests_total']}/{usage['plan_limit']} ({usage['headroom_pct']}% headroom)")
 ```
 
 ---

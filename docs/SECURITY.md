@@ -144,5 +144,20 @@ FinText enforces defense-in-depth network confinement across both cloud infrastr
 - **Security Group Chaining:** RDS security group allows TCP port 5432 ingress **strictly** from the EC2 security group ID (`aws_security_group.ec2_sg.id`). Direct public Internet access to the database is physically impossible at the hypervisor level.
 - **S3 & KMS Envelope Encryption:** All backup and Parquet archive buckets enforce `block_public_acls = true`, `block_public_policy = true`, versioning, and SSE-KMS customer master key envelope encryption.
 
+---
+
+## 10. Usage & Audit Surfaces Security, Admin Token Gating, and Key Redaction
+
+### 10.1 Tenant Self-Service Scoping (`GET /v1/account/usage`)
+The customer-facing usage endpoint enforces multi-tenant confinement at the database kernel level:
+- **Transaction-Local RLS Scoping:** Every query executes within a PostgreSQL transaction where `set_config('app.current_org_id', clean_org, true)` is applied. Tenant A’s credentials physically cannot return records belonging to Tenant B.
+- **Credential Redaction (Safety Constraint S-1):** The endpoint lists tenant API keys strictly by their safe public prefix (e.g. `fta_live_...` or `ak_live_...`), human-readable label, creation timestamp, and active status. Raw key tokens and Argon2/HMAC hashes are excluded from DTO serialization by design.
+
+### 10.2 Administrative Support Surface & Accountability (`GET /v1/admin/tenants/{org_id}/usage`)
+- **Header Token-Gated:** Protected by `X-Admin-Token` using constant-time comparison (`subtle::ConstantTimeEq`) against the master operations credential (`ADMIN_TOKEN`).
+- **Accountability Audit Trail (Safety Constraint S-2):** Every administrative diagnostic call creates an immutable record in `audit_logs` (`event_type: "admin.tenant_usage_view"`), recording the administrator identity, target `org_id`, and UTC timestamp to guarantee internal support accountability.
+- **Internal-Only Telemetry:** Ingestion telemetry endpoints (`fintext-ingestion:9102/metrics`) are bound to internal container networking and strictly blocked from public security groups.
+
+
 
 

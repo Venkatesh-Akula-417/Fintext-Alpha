@@ -256,4 +256,6 @@ FinText Alpha Vectorizer delivers an empirically proven, survivorship-bias-free,
 - 📘 [`notebooks/README.md`](../notebooks/README.md): 30-Minute Time-To-First-Value Onboarding Guide.
 - 📗 [`docs/CLOUD_COST_OPTIMIZATION.md`](./CLOUD_COST_OPTIMIZATION.md): Infrastructure Run-Rate Optimization ($295/month).
 - 📕 [`docs/LATENCY_RECONCILIATION.md`](./LATENCY_RECONCILIATION.md): CPU vs. GPU Latency Benchmark Reconciliation.
+- 📙 [`docs/PRODUCTION_DEPLOYMENT_RUNBOOK.md`](./PRODUCTION_DEPLOYMENT_RUNBOOK.md): AWS Production Deployment & TLS Phasing Runbook.
+- 📐 [`docs/LATENCY_AND_COLOCATION_DECISION.md`](./LATENCY_AND_COLOCATION_DECISION.md): Latency Architecture & Colocation Roadmap ADR.
 

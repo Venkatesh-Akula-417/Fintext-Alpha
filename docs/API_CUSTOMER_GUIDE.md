@@ -525,6 +525,81 @@ For algorithmic trading compliance questions, SEC Rule 206(4)-1 audit certificat
 - **Developer Support**: Submit issues via the institutional partner portal or email `support@fintext.internal`.
 - **System Architecture**: Consult [`docs/CLOUD_COST_OPTIMIZATION.md`](./CLOUD_COST_OPTIMIZATION.md) and [`docs/LATENCY_RECONCILIATION.md`](./LATENCY_RECONCILIATION.md).
 
+---
+
+## 16. Self-Service Tenant Usage & API Key Audit (`GET /v1/account/usage`)
+
+### 16.1 Institutional Visibility & Security Scoping
+To ensure quant development teams have complete visibility into their monthly consumption without filing support tickets, FinText Alpha provides the `/v1/account/usage` self-service surface.
+
+- **Strict RLS Scoping**: Governed by PostgreSQL Row-Level Security (`with_tenant` context). An authenticated tenant token can **only** inspect their own organization's records; cross-tenant visibility is physically prevented at the database driver level.
+- **Zero Secret Exposure (Safety Constraint S-1)**: API key payloads contain only key identifiers (`prefix` like `fta_live_...`, `name`, `created_utc`, `last_seen_utc`, and `active`). Neither raw secrets nor Argon2/HMAC key hashes are ever returned over the wire.
+- **Billing SSoT Alignment**: Counts are computed directly from the PostgreSQL `usage_events` hypertable, matching invoice line-items 1:1.
+
+### 16.2 Endpoint Contract & Quota Semantics
+
+```http
+GET /v1/account/usage HTTP/1.1
+Host: api.fintext.internal
+Authorization: Bearer <institutional_jwt>
+X-API-Key: fta_live_... (Alternative authentication)
+```
+
+#### Quota Reset Semantics
+- **Billing Boundary**: Monthly quota limits evaluate over the current calendar month in UTC (`date_trunc('month', NOW() AT TIME ZONE 'UTC')`). Quotas reset automatically at `00:00:00 UTC` on the 1st of every month.
+- **Headroom Calculation**: `headroom_pct` represents remaining quota: `((plan_limit - requests_total) / plan_limit) * 100.0`.
+- **HTTP 429 Contract**: If request volume exceeds `plan_limit` or short-term token-bucket rate limits, the gateway returns `HTTP 429 Too Many Requests` accompanied by `X-RateLimit-Limit`, `X-RateLimit-Remaining`, and `Retry-After: <seconds>` headers.
+
+### 16.3 Response Schema & Curl Example
+
+```bash
+curl -s -X GET "https://api.fintext.internal/v1/account/usage" \
+  -H "Authorization: Bearer ${FINTEXT_API_TOKEN}" | jq .
+```
+
+```json
+{
+  "org_id": "fund_sigma_capital",
+  "period_utc": "2026-09",
+  "plan": "enterprise_monthly",
+  "plan_limit": 2000000,
+  "requests_total": 412500,
+  "headroom_pct": 79.38,
+  "daily": [
+    { "date": "2026-09-01", "requests": 14200 },
+    { "date": "2026-09-02", "requests": 15800 }
+  ],
+  "by_endpoint_group": [
+    { "group": "sentiment", "requests": 250000 },
+    { "group": "alpha", "requests": 100000 },
+    { "group": "pit", "requests": 50000 },
+    { "group": "analytics", "requests": 10000 },
+    { "group": "other", "requests": 2500 }
+  ],
+  "keys": [
+    {
+      "prefix": "fta_live_sigm",
+      "name": "Production Execution Alpha",
+      "created_utc": "2026-08-01T00:00:00Z",
+      "last_seen_utc": "2026-09-25T14:30:00Z",
+      "active": true
+    }
+  ],
+  "recent_audit": [
+    {
+      "ts": "2026-09-25T14:20:00Z",
+      "event_type": "api_key.create",
+      "actor": "admin_user"
+    }
+  ],
+  "ip_whitelist": [
+    "198.51.100.0/24"
+  ],
+  "generated_utc": "2026-09-25T15:00:00Z"
+}
+```
+
+
 
 
 

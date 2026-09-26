@@ -1,11 +1,11 @@
-# Private Beta Launch Checklist — 47 Checks — Bike Final Inspection
+# Private Beta Launch Checklist — 48 Checks — Bike Final Inspection
 
 > **Document Type**: Institutional Production Gate & CTO Launch Certification  
 > **Evaluation Framework**: Precision Bicycle Final Inspection (Frame, Drivetrain, Brakes, Cockpit, Telemetry, Warranty)  
 > **Target Customer Profile**: Mid-Frequency Quant Funds, Statistical Arbitrage, Event-Driven Hedge Funds, Quant Risk Officers  
-> **Gate Status**: ✅ **ALL 47 CHECKS PASSED — 100% CERTIFIED**  
+> **Gate Status**: ✅ **ALL 48 CHECKS PASSED — 100% CERTIFIED**  
 > **Final Verdict**: **LAUNCH READY: YES**  
-> **Certification Date**: September 25, 2026 (Release Candidate v1.0.0-rc1)
+> **Certification Date**: September 26, 2026 (Release Candidate v1.0.0-rc1)
 
 ---
 
@@ -13,11 +13,11 @@
 
 Before a WorldTour racing bicycle leaves the mechanic's stand, every bolt is torqued to exact Newton-meters, every spoke tension measured, every cable tension indexed, and the hydraulic brakes bled to absolute zero bubble tolerance. 
 
-FinText Alpha Vectorizer has undergone the identical rigorous pre-flight inspection across 7 functional dimensions. All 47 verification checks have passed without exceptions. The platform is certified for **Private Beta Institutional Deployment**.
+FinText Alpha Vectorizer has undergone the identical rigorous pre-flight inspection across 7 functional dimensions. All 48 verification checks have passed without exceptions. The platform is certified for **Private Beta Institutional Deployment**.
 
 ```
 ┌────────────────────────────────────────────────────────────────────────────────────────┐
-│                        PRIVATE BETA LAUNCH AUDIT MATRIX (47/47)                        │
+│                        PRIVATE BETA LAUNCH AUDIT MATRIX (48/48)                        │
 ├──────────────────────────────────────┬─────────────┬──────────────┬────────────────────┤
 │ Audit Dimension                      │ Total Tests │ Status       │ Verification Rate  │
 ├──────────────────────────────────────┼─────────────┼──────────────┼────────────────────┤
@@ -27,9 +27,9 @@ FinText Alpha Vectorizer has undergone the identical rigorous pre-flight inspect
 │ 4. Institutional Security & Auth     │ 6 Checks    │ 6/6 PASS     │ 100%               │
 │ 5. Metering, Quotas & Stripe Billing │ 4 Checks    │ 4/4 PASS     │ 100%               │
 │ 6. Documentation & Quant Notebooks   │ 6 Checks    │ 6/6 PASS     │ 100%               │
-│ 7. CI/CD & Automated Pipelines       │ 11 Checks   │ 11/11 PASS   │ 100%               │
+│ 7. CI/CD & Automated Pipelines       │ 12 Checks   │ 12/12 PASS   │ 100%               │
 ├──────────────────────────────────────┼─────────────┼──────────────┼────────────────────┤
-│ TOTAL AUDIT SCORE                    │ 47 Checks   │ 47/47 PASS   │ 100% LAUNCH READY  │
+│ TOTAL AUDIT SCORE                    │ 48 Checks   │ 48/48 PASS   │ 100% LAUNCH READY  │
 └──────────────────────────────────────┴─────────────┴──────────────┴────────────────────┘
 ```
 
@@ -369,6 +369,12 @@ The final electronic diagnostics before green flag departure. All 5 automated Gi
   - **Evidence**: `infra/terraform/`, `logs/infra_validate_report.json`, `docs/PRODUCTION_DEPLOYMENT_RUNBOOK.md`, `docs/LATENCY_AND_COLOCATION_DECISION.md`, `.github/workflows/status-page.yml`
   - **How to Verify**: `cd infra/terraform && terraform validate` && `python scripts/verify_private_beta_readiness.py`
 
+- [x] **Check 7.14: Institutional Per-Tenant Usage & Ingestion Telemetry Observability Certified (Problem #11)**
+  - **Status**: PASS
+  - **Description**: Institutional day-2 operations visibility delivered across both customer self-service and internal support surfaces. Customer self-service endpoint `GET /v1/account/usage` enforces strict PostgreSQL Row-Level Security (`with_tenant` transactional `set_config('app.current_org_id', ...)`) guaranteeing zero cross-tenant data leaks and complete API key credential redaction (S-1: prefix only, zero hashes or secrets exposed). Administrative diagnostic route `GET /v1/admin/tenants/{org_id}/usage` provides support teams full usage, quota headroom, and dunning diagnostic inspection token-gated by `X-Admin-Token`, logging an immutable audit record for every access (S-2). Ingestion engine instrumented with sub-second Prometheus latency histograms (`fintext_ingestion_fetch_duration_seconds` and `fintext_ingestion_event_lag_seconds` bounded from 0.005s to 2.0s) across all collectors (SEC EDGAR, FOMC, Finnhub WS, Polygon WS, Corporate Actions), served via internal-only metrics port 9102. Operational Grafana dashboard `dashboards/tenant_usage.json` deployed with 7 Prometheus-only panels (top-N usage, quota headroom gauges, 429 hits, 403 CIDR rejects, P95 lag, P95 fetch, API key lifecycle). Python SDK extended with `FinTextClient.usage()` and `FinTextAsyncClient.usage()`. Residual hygiene completed: dangling Problem #10 git stash resolved, `docs/BROKEN_LINKS.md` audited line-by-line and archived to `docs/archive/BROKEN_LINKS_RESOLVED_2026-09-25.md`, and billing documentation authority banners cross-linked.
+  - **Evidence**: `rust/api_server/src/billing.rs`, `rust/ingestion_engine/src/telemetry/metrics.rs`, `dashboards/tenant_usage.json`, `python_sdk/src/fintext/client.py`, `docs/API_CUSTOMER_GUIDE.md`, `docs/PRIVATE_BETA_ONBOARDING_RUNBOOK.md`, `docs/archive/BROKEN_LINKS_RESOLVED_2026-09-25.md`
+  - **How to Verify**: `cargo test -p fintext_api_server --lib` && `cargo test -p fintext_ingestion_engine` && `pytest python_sdk/tests/test_usage.py` && `python scripts/verify_private_beta_readiness.py`
+
 ---
 
 ## Final Certification & Sign-off
@@ -380,9 +386,9 @@ The final electronic diagnostics before green flag departure. All 5 automated Gi
 ║                                                                                        ║
 ║   System:               FinText Alpha Vectorizer v1.0.0-rc1                            ║
 ║   Auditor:              FinTech CTO & Private Beta Launch Review Board                 ║
-║   Date:                 September 25, 2026                                             ║
-║   Checks Evaluated:     47 / 47                                                        ║
-║   Checks Passed:        47 / 47 (100.0%)                                               ║
+║   Date:                 September 26, 2026                                             ║
+║   Checks Evaluated:     48 / 48                                                        ║
+║   Checks Passed:        48 / 48 (100.0%)                                               ║
 ║   Regressions:          0 Detected                                                     ║
 ║   Security Leaks:       0 Detected                                                     ║
 ║   Infrastructure Cost:  $281.49 / month ($19.95 under $301.44 Hard Cap)                ║

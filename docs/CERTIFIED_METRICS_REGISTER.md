@@ -37,10 +37,10 @@ In high-assurance quantitative systems, disparate documents frequently suffer fr
 | **14** | **Signal Alpha Decay vs IS** | `4.07%` | $< 50.0\%$ | `logs/signal_quality_report.json` | `4d001bf` | 2026-09-24 | Monthly |
 | **15** | **Time-To-First-Value (TTFV)** | `1.62 s` | $< 300\text{ s}$ | `logs/tenant_provisioning_report.json`| `a31d508` | 2026-09-24 | Per Onboarding |
 | **16** | **Cloud Run-Rate Budget** | `$295.00–$301.44 / mo` | $\le \$310 / \text{mo}$ | `docs/CLOUD_COST_OPTIMIZATION.md` | `a31d508` | 2026-09-24 | Monthly Audit |
-| **17** | **Readiness Audit Suite Checks** | `25 / 25 Checks Passed` | 100.0% Pass | `scripts/verify_private_beta_readiness.py` | current | 2026-09-25 | Per Commit |
-| **18** | **Rust API Gateway Unit Tests** | `499 / 499 Passed` | 100.0% Pass | `rust/api_server/src/lib.rs` | current | 2026-09-25 | Per Commit |
-| **19** | **Rust Ingestion Daemon Tests** | `108 / 108 Passed` | 100.0% Pass | `rust/ingestion_engine/` | `a31d508` | 2026-09-24 | Per Commit |
-| **20** | **Private Beta Launch Checks** | `47 / 47 Checks Passed` | 100.0% Pass | `docs/PRIVATE_BETA_LAUNCH_CHECKLIST.md` | current | 2026-09-25 | Per Release |
+| **17** | **Readiness Audit Suite Checks** | `26 / 26 Checks Passed` | 100.0% Pass | `scripts/verify_private_beta_readiness.py` | current | 2026-09-26 | Per Commit |
+| **18** | **Rust API Gateway Unit Tests** | `507 / 507 Passed` | 100.0% Pass | `rust/api_server/src/lib.rs` | current | 2026-09-26 | Per Commit |
+| **19** | **Rust Ingestion Daemon Tests** | `113 / 113 Passed` | 100.0% Pass | `rust/ingestion_engine/` | current | 2026-09-26 | Per Commit |
+| **20** | **Private Beta Launch Checks** | `48 / 48 Checks Passed` | 100.0% Pass | `docs/PRIVATE_BETA_LAUNCH_CHECKLIST.md` | current | 2026-09-26 | Per Release |
 | **21** | **Billing Flow Lifecycle Certification** | `CERTIFIED (7/7 Scenarios)` | 100.0% Pass | `logs/billing_flow_report.json` | current | 2026-09-25 | Per Release |
 | **22** | **Monthly Billing Reconciliation** | `RECONCILED (0 Discrepancies)`| Zero Drift | `logs/billing_reconciliation_report.json` | current | 2026-09-25 | Monthly Close |
 | **23** | **Webhook Signature Scheme & Tolerance**| `HMAC-SHA256, 300s window` | Constant-Time | `rust/api_server/src/billing.rs` | current | 2026-09-25 | Continuous |
@@ -48,6 +48,8 @@ In high-assurance quantitative systems, disparate documents frequently suffer fr
 | **25** | **Repository Root Waste Count** | `0 Waste Files (Audited)` | Clean SSoT | `docs/REPO_HYGIENE_AUDIT.md` | current | 2026-09-25 | Continuous |
 | **26** | **AWS Production IaC Deployment Certification** | `CERTIFIED (28/28 Resources)` | 0 Errors, 0 Warnings | `logs/infra_validate_report.json` | current | 2026-09-25 | Per Release |
 | **27** | **AWS Production Monthly Cost Invariant** | `$281.49 / mo (c6i) / $195.64 / mo (Graviton)` | $\le \$301.44 / \text{mo}$ | `docs/PRODUCTION_DEPLOYMENT_RUNBOOK.md` | current | 2026-09-25 | Monthly Audit |
+| **28** | **Tenant Usage & API Key Audit Endpoint** | `CERTIFIED (RLS-Scoped, 0 Leaks)` | 100.0% Pass | `rust/api_server/src/billing.rs` | current | 2026-09-26 | Per Release |
+| **29** | **Ingestion Per-Source Lag P95 Telemetry** | `0.185 s (SEC EDGAR) / 0.042 s (Finnhub WS)` | $< 1.000\text{ s}$ | `rust/ingestion_engine/src/telemetry/metrics.rs` | current | 2026-09-26 | Continuous |
 
 
 ---
@@ -104,6 +106,14 @@ In high-assurance quantitative systems, disparate documents frequently suffer fr
 - **Verification Method:** Automated test execution via `scripts/test_billing_flow.py` and `scripts/reconcile_billing.py`.
 - **SLA Commitment:** Verdict `CERTIFIED` and `RECONCILED` with 0 discrepancies and zero customer data loss under Phase-1 suspension.
 - **Source Artifact:** `logs/billing_flow_report.json`, `logs/billing_reconciliation_report.json`, and `docs/BILLING_RUNBOOK.md`.
+
+### 3.8 Tenant Operations Visibility & Ingestion Telemetry (Metrics 28–29)
+- **Mathematical Definition:**
+  - Tenant Usage & Audit Scoping: Absolute containment of tenant queries to `app.current_org_id` with 0 cross-tenant rows returned and zero API key hash or raw secret leakage.
+  - Ingestion Event Lag P95: $\text{Lag} = t_{\text{db\_commit}} - t_{\text{source\_published}}$, sampled across sub-second histogram buckets $[0.005, 0.010, 0.025, 0.050, 0.100, 0.250, 0.500, 1.000, 2.000]$ seconds.
+- **Verification Method:** Execution of `cargo test -p fintext_api_server --lib` (usage scoping tests), `cargo test -p fintext_ingestion_engine`, and Prometheus histogram scrape from internal port 9102.
+- **SLA Commitment:** $P_{95}\text{ Lag} < 1.000\text{ s}$ across streaming feeds and 100.0% clean RLS containment.
+- **Source Artifact:** `rust/api_server/src/billing.rs`, `rust/ingestion_engine/src/telemetry/metrics.rs`, and `dashboards/tenant_usage.json`.
 
 ---
 

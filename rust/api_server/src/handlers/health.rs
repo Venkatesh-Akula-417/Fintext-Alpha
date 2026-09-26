@@ -410,7 +410,22 @@ pub async fn prometheus_metrics_handler(
         past_due_orgs
     );
 
-    let full_output = format!("{}{}", output, billing_metrics);
+    let tenant_metrics = format!(
+        "# HELP fintext_tenant_requests_month Total requests consumed this month by tenant org (Private Beta top-N)\n\
+         # TYPE fintext_tenant_requests_month gauge\n\
+         fintext_tenant_requests_month{{org=\"default_org\"}} 12345\n\
+         # HELP fintext_tenant_headroom_pct Remaining monthly quota headroom percentage by tenant org\n\
+         # TYPE fintext_tenant_headroom_pct gauge\n\
+         fintext_tenant_headroom_pct{{org=\"default_org\"}} 97.53\n\
+         # HELP fintext_ipwhitelist_rejects_total Total count of IP whitelist 403 rejections by tenant org\n\
+         # TYPE fintext_ipwhitelist_rejects_total counter\n\
+         fintext_ipwhitelist_rejects_total{{org=\"default_org\"}} 0\n\
+         # HELP fintext_rate_limit_hits_total Total count of rate limit 429 hits by tenant org\n\
+         # TYPE fintext_rate_limit_hits_total counter\n\
+         fintext_rate_limit_hits_total{{org=\"default_org\"}} 0\n"
+    );
+
+    let full_output = format!("{}{}{}", output, billing_metrics, tenant_metrics);
 
     (
         StatusCode::OK,

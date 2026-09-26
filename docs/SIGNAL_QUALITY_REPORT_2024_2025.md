@@ -165,6 +165,8 @@ python scripts/verify_private_beta_readiness.py
 - 📊 [`logs/signal_quality_report.json`](../logs/signal_quality_report.json): Empirical Machine-Readable Metric Proof.
 - 📘 [`docs/API_CUSTOMER_GUIDE.md`](./API_CUSTOMER_GUIDE.md): Client Integration & Latency/Signal SLA Reference.
 - 📗 [`docs/LOAD_TEST_RUNBOOK.md`](./LOAD_TEST_RUNBOOK.md): P95 < 500ms Latency Load Test Runbook.
+- 📙 [`docs/PRODUCTION_DEPLOYMENT_RUNBOOK.md`](./PRODUCTION_DEPLOYMENT_RUNBOOK.md): AWS Production Deployment & TLS Phasing Runbook.
+- 📐 [`docs/LATENCY_AND_COLOCATION_DECISION.md`](./LATENCY_AND_COLOCATION_DECISION.md): Latency Architecture & Colocation Roadmap ADR.
 
 ---
 

@@ -64,7 +64,10 @@ services:
       - KAFKA_BOOTSTRAP_SERVERS=kafka:9092
       - KAFKA_TOPIC=sentiment-events
       - KAFKA_TOPIC_REALTIME=sentiment-updates
+      - INGESTION_METRICS_PORT=9102
       - RUST_LOG=info
+    ports:
+      - "127.0.0.1:9102:9102"
     volumes:
       - ./config:/app/config:ro
       - ./data/stream:/app/data/stream

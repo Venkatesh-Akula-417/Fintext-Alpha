@@ -315,3 +315,78 @@ python scripts/deprovision_tenant.py --slug org_alpha_fund --i-understand-data-l
 | **P2 - Major** | Degraded performance (P95 > 500ms), fallback circuit-breaker active | `< 1 hour` | `< 4 hours` | Principal Platform Engineer / SRE |
 | **P3 - Minor** | Rate limiting dispute, single ticker sentiment missing, universe update | `< 4 hours` | `< 1 business day`| Quant Support / Integration Engineer |
 | **P4 - Request** | New universe onboarding, IP whitelist addition, key rotation assistance | `< 1 business day`| `< 2 business days`| Client Success / Operations Desk |
+
+---
+
+## 11. Support Playbook: Tenant Usage & Day-2 Operational Diagnostics
+
+### 11.1 Support Inspection via Admin Diagnostic Surface
+When a client files a ticket regarding rate-limits, access blocks, or unexpected quota exhaustion, technical support engineers must **never** run ad-hoc database queries using superuser credentials. Instead, use the token-gated admin diagnostic surface (`GET /v1/admin/tenants/{org_id}/usage`).
+
+- **Accountability & Audit Trail (Safety Constraint S-2):** Every call generates an immutable `admin.tenant_usage_view` entry in `audit_logs` capturing the support operator, timestamp, and target `org_id`.
+- **Zero Credential Exposure (Safety Constraint S-1):** Returns safe key metadata (prefix, created, last_seen, active); never leaks secret keys or password hashes.
+
+### 11.2 Diagnostic Execution (Repair-Manual Style)
+
+```bash
+# Execute administrative inspection for tenant organization
+curl -s -X GET "https://api.fintext.internal/v1/admin/tenants/org_quant_alpha_42/usage" \
+  -H "X-Admin-Token: ${ADMIN_TOKEN}" | jq .
+```
+
+#### Expected Output Skeleton:
+```json
+{
+  "usage": {
+    "org_id": "org_quant_alpha_42",
+    "period_utc": "2026-09",
+    "plan": "growth",
+    "plan_limit": 500000,
+    "requests_total": 412500,
+    "headroom_pct": 17.50,
+    "daily": [
+      { "date": "2026-09-24", "requests": 22400 },
+      { "date": "2026-09-25", "requests": 24100 }
+    ],
+    "by_endpoint_group": [
+      { "group": "sentiment", "requests": 280000 },
+      { "group": "alpha", "requests": 95000 },
+      { "group": "pit", "requests": 25000 },
+      { "group": "analytics", "requests": 10000 },
+      { "group": "other", "requests": 2500 }
+    ],
+    "keys": [
+      {
+        "prefix": "ak_live_a1b2",
+        "name": "Production Execution Alpha",
+        "created_utc": "2026-08-15T10:00:00Z",
+        "last_seen_utc": "2026-09-25T14:35:00Z",
+        "active": true
+      }
+    ],
+    "recent_audit": [
+      { "ts": "2026-09-25T14:00:00Z", "event_type": "api_key.create", "actor": "user_admin" }
+    ],
+    "ip_whitelist": [
+      "198.51.100.0/24"
+    ],
+    "generated_utc": "2026-09-25T15:00:00Z"
+  },
+  "subscription": {
+    "plan": "growth",
+    "status": "active",
+    "dunning_fail_count": 0,
+    "grace_until_utc": null
+  }
+}
+```
+
+### 11.3 Support Escalation Matrix & Proactive Action Guide
+
+| Symptom / Inspection Finding | Root Cause | Operator Action |
+| :--- | :--- | :--- |
+| **`headroom_pct <= 20.0%` (Quota >= 80% consumed)** | Rapid backtest or production expansion approaching monthly tier limit | Send proactive quota alert email to fund technical contact advising tier upgrade to `enterprise_monthly` before hard 429 enforcement. |
+| **Client receives HTTP 403 Forbidden** | Egress IP not present in `ip_whitelist` | Check `ip_whitelist` array in payload. If client IP changed (e.g. AWS NAT gateway migration), guide client admin to add new CIDR via `POST /security/ip-whitelist`. |
+| **Client receives HTTP 429 Too Many Requests** | Burst token-bucket exhaustion or `requests_total >= plan_limit` | Inspect `by_endpoint_group` and daily trends. If uncoordinated backtesting parallelization, recommend rate-limit backoff or provide custom burst allocation. |
+| **`subscription.status == 'past_due'`** | Recurring Stripe card charge failed; dunning active | Notify fund billing contact of remaining grace period (`grace_until_utc`). Point client to Stripe customer portal URL (`POST /billing/portal`). |
+

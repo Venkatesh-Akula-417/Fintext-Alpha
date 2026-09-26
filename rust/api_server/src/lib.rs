@@ -75,9 +75,10 @@ use axum::middleware::from_fn_with_state;
 use axum::routing::{any, delete, get, patch, post};
 use axum::Router;
 pub use billing::{
-    create_checkout_handler, create_portal_handler, get_subscription_handler, init_billing_db,
-    stripe_webhook_handler, BillingWebhookResponse, CheckoutRequest, CheckoutResponse,
-    MonthlyQuotaCache, PortalRequest, PortalResponse, SubscriptionResponse,
+    account_usage_handler, admin_tenant_usage_handler, create_checkout_handler,
+    create_portal_handler, get_subscription_handler, init_billing_db, stripe_webhook_handler,
+    BillingWebhookResponse, CheckoutRequest, CheckoutResponse, MonthlyQuotaCache, PortalRequest,
+    PortalResponse, SubscriptionResponse,
 };
 pub use chat_alerts::{
     create_chat_alert_handler, delete_chat_alert_handler, dispatch_chat_alert,
@@ -370,6 +371,10 @@ pub fn internal_router(state: AppState) -> Router<AppState> {
         )
         .route("/admin/reload-pit-data", post(reload_pit_data_handler))
         .route(
+            "/admin/tenants/:org_id/usage",
+            get(admin_tenant_usage_handler),
+        )
+        .route(
             "/retraining/jobs",
             get(list_retraining_jobs_handler).post(create_retraining_job_handler),
         )
@@ -482,6 +487,7 @@ pub fn create_app_with_state(state: AppState) -> Router {
         .route("/billing/checkout", post(create_checkout_handler))
         .route("/billing/portal", post(create_portal_handler))
         .route("/billing/subscription", get(get_subscription_handler))
+        .route("/account/usage", get(account_usage_handler))
         .route("/orgs", post(create_org_handler).get(list_orgs_handler))
         .route("/orgs/:id", get(get_org_handler))
         .route("/orgs/:id/invites", post(invite_member_handler))
@@ -567,6 +573,10 @@ pub fn create_app_with_state(state: AppState) -> Router {
         .route("/audio/transcribe", any(gone_handler))
         .route("/auth/login", post(login_user_handler))
         .route("/billing/webhook", post(stripe_webhook_handler))
+        .route(
+            "/admin/tenants/:org_id/usage",
+            get(admin_tenant_usage_handler),
+        )
         .route("/model-card", get(get_model_card_handler))
         .layer(TimeoutLayer::new(Duration::from_secs(10)));
 
@@ -664,6 +674,8 @@ pub fn public_v1_router(state: AppState) -> Router<AppState> {
             post(register_webhook_handler).get(list_webhooks_handler),
         )
         .route("/webhooks/:id", delete(delete_webhook_handler))
+        // Account usage self-service (Problem #11)
+        .route("/account/usage", get(account_usage_handler))
         // Apply institutional security & governance middleware
         .layer(from_fn_with_state(state.clone(), rate_limit_middleware))
         .layer(from_fn_with_state(state.clone(), metering_middleware))
@@ -682,6 +694,10 @@ pub fn public_v1_router(state: AppState) -> Router<AppState> {
         .route("/news/articles/:id", any(gone_handler))
         .route("/audio/transcribe", any(gone_handler))
         .route("/billing/webhook", post(stripe_webhook_handler))
+        .route(
+            "/admin/tenants/:org_id/usage",
+            get(admin_tenant_usage_handler),
+        )
         .route("/model-card", get(get_model_card_handler));
 
     let v1_all = Router::new()
@@ -700,8 +716,8 @@ mod tests {
     use chrono::Utc;
     use http_body_util::BodyExt;
     use models::{
-        HealthResponse, OptionsIvResponse, SLALatencyResponse, SLAStatusResponse,
-        SentimentFeedResponse, SentimentResponse,
+        AccountUsageResponse, AdminTenantUsageResponse, HealthResponse, OptionsIvResponse,
+        SLALatencyResponse, SLAStatusResponse, SentimentFeedResponse, SentimentResponse,
     };
     use std::sync::Arc;
     use tower::ServiceExt;
@@ -724,6 +740,26 @@ mod tests {
     /// Helper to generate a valid test Bearer token Authorization header for a given user.
     fn test_auth_header_for_user(user_id: &str) -> (header::HeaderName, header::HeaderValue) {
         test_auth_header_with_role(user_id, "institutional")
+    }
+
+    /// Helper to generate a valid test Bearer token Authorization header for a given user and org.
+    fn test_auth_header_for_org(
+        user_id: &str,
+        org_id: &str,
+    ) -> (header::HeaderName, header::HeaderValue) {
+        let token = generate_jwt_with_org(
+            user_id,
+            3600,
+            Some("institutional"),
+            Some(org_id),
+            DEFAULT_DEV_JWT_SECRET.as_bytes(),
+        )
+        .expect("Should generate test JWT with org");
+
+        (
+            header::AUTHORIZATION,
+            header::HeaderValue::from_str(&format!("Bearer {}", token)).unwrap(),
+        )
     }
 
     /// Helper to generate a default test Bearer token Authorization header.
@@ -7182,5 +7218,158 @@ mod tests {
         assert!(status.p99_latency_ms <= 1000.0);
         assert!(status.p95_compliant);
         assert!(status.error_rate_compliant);
+    }
+
+    #[tokio::test]
+    async fn test_account_usage_tenant_authenticated() {
+        let app = create_app();
+        let (auth_k, auth_v) = test_auth_header_for_org("quant_trader_01", "fund_alpha_org");
+
+        let req = Request::builder()
+            .method("GET")
+            .uri("/v1/account/usage")
+            .header(auth_k, auth_v)
+            .body(Body::empty())
+            .unwrap();
+
+        let res = app.oneshot(req).await.unwrap();
+        assert_eq!(res.status(), StatusCode::OK);
+
+        let body = res.into_body().collect().await.unwrap().to_bytes();
+        let body_str = std::str::from_utf8(&body).unwrap();
+
+        // Safety Constraint S-1: Never include key hashes, secrets, or raw keys
+        assert!(!body_str.contains("key_hash"), "Payload leaked key_hash!");
+        assert!(!body_str.contains("secret"), "Payload leaked secret!");
+        assert!(
+            !body_str.contains("password_hash"),
+            "Payload leaked password_hash!"
+        );
+
+        let resp: AccountUsageResponse = serde_json::from_slice(&body).unwrap();
+        assert_eq!(resp.org_id, "fund_alpha_org");
+        assert_eq!(resp.plan, "growth");
+        assert_eq!(resp.plan_limit, Some(500_000));
+        assert!(resp.requests_total > 0);
+        assert!(resp.headroom_pct <= 100.0);
+        assert_eq!(resp.daily.len(), 30);
+        assert!(!resp.by_endpoint_group.is_empty());
+        assert!(!resp.keys.is_empty());
+        for key in &resp.keys {
+            assert!(key.prefix.starts_with("ak_"));
+            assert!(!key.prefix.contains("hash"));
+        }
+        assert!(!resp.recent_audit.is_empty());
+        assert!(!resp.ip_whitelist.is_empty());
+    }
+
+    #[tokio::test]
+    async fn test_account_usage_unauthenticated_rejected() {
+        let app = create_app();
+
+        let req = Request::builder()
+            .method("GET")
+            .uri("/v1/account/usage")
+            .body(Body::empty())
+            .unwrap();
+
+        let res = app.oneshot(req).await.unwrap();
+        assert_eq!(res.status(), StatusCode::UNAUTHORIZED);
+    }
+
+    #[tokio::test]
+    async fn test_admin_tenant_usage_valid_token() {
+        let app = create_app();
+
+        let req = Request::builder()
+            .method("GET")
+            .uri("/v1/admin/tenants/fund_omega_llc/usage")
+            .header("X-Admin-Token", DEFAULT_DEV_ADMIN_TOKEN)
+            .body(Body::empty())
+            .unwrap();
+
+        let res = app.oneshot(req).await.unwrap();
+        assert_eq!(res.status(), StatusCode::OK);
+
+        let body = res.into_body().collect().await.unwrap().to_bytes();
+        let body_str = std::str::from_utf8(&body).unwrap();
+
+        // Safety Constraint S-1: Zero secret or hash exposure
+        assert!(!body_str.contains("key_hash"));
+        assert!(!body_str.contains("password_hash"));
+
+        let resp: AdminTenantUsageResponse = serde_json::from_slice(&body).unwrap();
+        assert_eq!(resp.usage.org_id, "fund_omega_llc");
+        let sub = resp.subscription.expect("Should have subscription details");
+        assert_eq!(sub.plan, "growth");
+        assert_eq!(sub.status, "active");
+        assert_eq!(sub.dunning_fail_count, 0);
+    }
+
+    #[tokio::test]
+    async fn test_admin_tenant_usage_invalid_token_rejected() {
+        let app = create_app();
+
+        let req = Request::builder()
+            .method("GET")
+            .uri("/v1/admin/tenants/fund_omega_llc/usage")
+            .header("X-Admin-Token", "invalid_unauthorized_token")
+            .body(Body::empty())
+            .unwrap();
+
+        let res = app.oneshot(req).await.unwrap();
+        assert_eq!(res.status(), StatusCode::UNAUTHORIZED);
+    }
+
+    #[tokio::test]
+    async fn test_admin_tenant_usage_unknown_org_not_found() {
+        let app = create_app();
+
+        let req = Request::builder()
+            .method("GET")
+            .uri("/v1/admin/tenants/unknown/usage")
+            .header("X-Admin-Token", DEFAULT_DEV_ADMIN_TOKEN)
+            .body(Body::empty())
+            .unwrap();
+
+        let res = app.oneshot(req).await.unwrap();
+        assert_eq!(res.status(), StatusCode::NOT_FOUND);
+    }
+
+    #[tokio::test]
+    async fn test_tenant_usage_rls_isolation_scoping() {
+        let app = create_app();
+
+        // Safety Constraint S-3: Org A token can NEVER see Org B's data
+        let (auth_k_a, auth_v_a) = test_auth_header_for_org("user_a", "fund_alpha_33");
+        let req_a = Request::builder()
+            .method("GET")
+            .uri("/v1/account/usage")
+            .header(auth_k_a, auth_v_a)
+            .body(Body::empty())
+            .unwrap();
+
+        let res_a = app.oneshot(req_a).await.unwrap();
+        assert_eq!(res_a.status(), StatusCode::OK);
+        let body_a = res_a.into_body().collect().await.unwrap().to_bytes();
+        let resp_a: AccountUsageResponse = serde_json::from_slice(&body_a).unwrap();
+        assert_eq!(resp_a.org_id, "fund_alpha_33");
+
+        let app2 = create_app();
+        let (auth_k_b, auth_v_b) = test_auth_header_for_org("user_b", "fund_beta_77");
+        let req_b = Request::builder()
+            .method("GET")
+            .uri("/v1/account/usage")
+            .header(auth_k_b, auth_v_b)
+            .body(Body::empty())
+            .unwrap();
+
+        let res_b = app2.oneshot(req_b).await.unwrap();
+        assert_eq!(res_b.status(), StatusCode::OK);
+        let body_b = res_b.into_body().collect().await.unwrap().to_bytes();
+        let resp_b: AccountUsageResponse = serde_json::from_slice(&body_b).unwrap();
+        assert_eq!(resp_b.org_id, "fund_beta_77");
+
+        assert_ne!(resp_a.org_id, resp_b.org_id);
     }
 }
